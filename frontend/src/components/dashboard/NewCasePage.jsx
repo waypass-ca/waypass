@@ -1,9 +1,19 @@
-import { useState } from 'react'
-import { packages, crematoriums } from '../../data/mockData'
+import { useState, useEffect } from 'react'
+import { fetchPackages, fetchCrematoriums, createCase } from '../../lib/api.js'
 import { PackageCard } from '../widget/PackageCard'
 import { Button } from '../ui/Button'
 
 const STEPS = ['Deceased', 'Contact', 'Package', 'Crematorium', 'Confirm']
+
+function useData() {
+  const [packages, setPackages] = useState([])
+  const [crematoriums, setCrematoriums] = useState([])
+  useEffect(() => {
+    fetchPackages().then(setPackages).catch(console.error)
+    fetchCrematoriums().then(setCrematoriums).catch(console.error)
+  }, [])
+  return { packages, crematoriums }
+}
 
 function StepIndicator({ currentStep }) {
   return (
@@ -108,38 +118,47 @@ function CrematoriumCard({ crm, selected, onSelect }) {
 
 export function NewCasePage({ onBack, onComplete }) {
   const [step, setStep] = useState(0)
+  const { packages, crematoriums } = useData()
 
   // Form state
-  const [deceased, setDeceased] = useState({ firstName: '', lastName: '', dob: '', dop: '', location: '' })
+  const [deceased, setDeceased] = useState({ firstName: '', lastName: '', dob: '', dop: '', location: '', isDeceased: true })
   const [contact, setContact] = useState({ name: '', relationship: '', phone: '', email: '' })
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [selectedCrematorium, setSelectedCrematorium] = useState(null)
   const [isComplete, setIsComplete] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
 
-  function handleConfirm() {
-    const newCase = {
-      id: `PSG-2024-${Math.floor(Math.random() * 900 + 100)}`,
+  async function handleConfirm() {
+    setSubmitError(null)
+    const payload = {
       deceased: `${deceased.firstName} ${deceased.lastName}`.trim() || 'New Decedent',
       family: contact.name ? `${contact.name.split(' ').slice(-1)[0]} Family` : 'New Family',
-      contactName: contact.name,
-      contactPhone: contact.phone,
-      contactEmail: contact.email,
+      contact_name: contact.name,
+      contact_phone: contact.phone,
+      contact_email: contact.email,
       relationship: contact.relationship,
       dob: deceased.dob,
-      dop: deceased.dop,
+      dop: deceased.isDeceased ? deceased.dop : null,
       location: deceased.location,
-      package: selectedPackage?.name ?? 'Essential',
-      packagePrice: selectedPackage?.price ?? 895,
-      addons: [],
+      is_deceased: deceased.isDeceased,
+      package_id: selectedPackage?.id ?? null,
+      package_name: selectedPackage?.name ?? 'Essential',
+      package_price: selectedPackage?.price ?? 895,
+      addon_names: [],
       status: 'pending',
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       amount: selectedPackage?.price ?? 895,
-      crematorium: selectedCrematorium?.name ?? null,
-      notes: [],
+      crematorium_id: selectedCrematorium?.id ?? null,
+      crematorium_name: selectedCrematorium?.name ?? null,
       documents: [],
     }
-    setIsComplete(true)
-    onComplete?.(newCase)
+    try {
+      const newCase = await createCase(payload)
+      setIsComplete(true)
+      onComplete?.(newCase)
+    } catch (err) {
+      setSubmitError(err.message)
+    }
   }
 
   if (isComplete) {
@@ -185,12 +204,32 @@ export function NewCasePage({ onBack, onComplete }) {
       {step === 0 && (
         <div className="bg-warm-white rounded-xl border border-border p-7 max-w-2xl">
           <h2 className="font-sans text-sm font-semibold text-charcoal uppercase tracking-wide mb-5">About the Deceased</h2>
+
+          {/* Deceased toggle */}
+          <div className={`flex items-center justify-between p-4 rounded-xl border-2 mb-6 transition-colors ${deceased.isDeceased ? 'border-sage bg-sage-light/40' : 'border-border bg-cream'}`}>
+            <div>
+              <p className="font-sans text-sm font-medium text-charcoal">Confirmed Deceased</p>
+              <p className="font-sans text-xs text-muted mt-0.5">
+                {deceased.isDeceased ? 'Person has passed — date of passing required' : 'Pre-arrangement — person is still living'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDeceased(p => ({ ...p, isDeceased: !p.isDeceased }))}
+              className={`w-11 h-6 rounded-full transition-all cursor-pointer flex-shrink-0 ml-6 relative border-0 outline-none ${deceased.isDeceased ? 'bg-sage' : 'bg-border'}`}
+            >
+              <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${deceased.isDeceased ? 'left-6' : 'left-1'}`} />
+            </button>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <InputField label="First Name" placeholder="First name" value={deceased.firstName} onChange={v => setDeceased(p => ({ ...p, firstName: v }))} />
             <InputField label="Last Name" placeholder="Last name" value={deceased.lastName} onChange={v => setDeceased(p => ({ ...p, lastName: v }))} />
             <InputField label="Date of Birth" type="date" value={deceased.dob} onChange={v => setDeceased(p => ({ ...p, dob: v }))} />
-            <InputField label="Date of Passing" type="date" value={deceased.dop} onChange={v => setDeceased(p => ({ ...p, dop: v }))} />
-            <div className="col-span-2">
+            {deceased.isDeceased && (
+              <InputField label="Date of Passing" type="date" value={deceased.dop} onChange={v => setDeceased(p => ({ ...p, dop: v }))} />
+            )}
+            <div className={deceased.isDeceased ? 'col-span-2' : 'col-span-1'}>
               <SelectField
                 label="Current Location"
                 options={['Hospital', 'Residence / Home', 'Nursing Facility', 'Hospice', 'Other']}
@@ -306,6 +345,9 @@ export function NewCasePage({ onBack, onComplete }) {
             </div>
           </div>
 
+          {submitError && (
+            <p className="font-sans text-xs text-red-soft mb-3">{submitError}</p>
+          )}
           <div className="flex justify-between">
             <Button variant="secondary" onClick={() => setStep(3)}>← Back</Button>
             <Button variant="sage" onClick={handleConfirm}>Create Case →</Button>

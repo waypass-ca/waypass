@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { addCaseNote } from '../../lib/api.js'
 import { StatusPill } from '../ui/StatusPill'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
@@ -67,13 +68,20 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
     }
   }
 
-  function addNote() {
+  async function addNote() {
     if (!newNote.trim()) return
-    setNotes(prev => [
-      ...prev,
-      { author: 'You', text: newNote.trim(), time: 'Just now' },
-    ])
+    const text = newNote.trim()
+    const time = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    // Optimistic
+    setNotes(prev => [...prev, { author: 'You', text, time }])
     setNewNote('')
+    try {
+      const saved = await addCaseNote(caseData.id, { author: 'You', text, time })
+      // Replace optimistic note with saved data
+      setNotes(prev => [...prev.slice(0, -1), saved])
+    } catch (err) {
+      console.error('Failed to save note:', err.message)
+    }
   }
 
   return (

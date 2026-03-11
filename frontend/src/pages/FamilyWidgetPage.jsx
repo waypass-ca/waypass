@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { packages, addons } from '../data/mockData'
+import { useState, useEffect } from 'react'
+import { fetchPackages, fetchAddons } from '../lib/api.js'
 import { PackageCard } from '../components/widget/PackageCard'
 import { AddonRow } from '../components/widget/AddonRow'
 import { OrderSummary } from '../components/widget/OrderSummary'
@@ -54,7 +54,7 @@ function StepIndicator({ currentStep }) {
 }
 
 // ——— Step 1: Package Selection ———
-function StepPackage({ selected, onSelect, onNext }) {
+function StepPackage({ packages, selected, onSelect, onNext }) {
   return (
     <div>
       <div className="mb-6">
@@ -204,7 +204,7 @@ function StepDetails({ onBack, onNext }) {
 }
 
 // ——— Step 3: Add-ons ———
-function StepAddons({ selectedAddons, onToggle, selectedPackage, onBack, onNext }) {
+function StepAddons({ addons, selectedAddons, onToggle, selectedPackage, onBack, onNext }) {
   return (
     <div>
       <div className="mb-6">
@@ -282,6 +282,13 @@ export function FamilyWidgetPage() {
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [selectedAddons, setSelectedAddons] = useState([])
   const [isComplete, setIsComplete] = useState(false)
+  const [packages, setPackages] = useState([])
+  const [addons, setAddons] = useState([])
+
+  useEffect(() => {
+    fetchPackages().then(setPackages).catch(console.error)
+    fetchAddons().then(setAddons).catch(console.error)
+  }, [])
 
   function toggleAddon(addon) {
     setSelectedAddons(prev =>
@@ -326,6 +333,7 @@ export function FamilyWidgetPage() {
       {/* Step content */}
       {currentStep === 0 && (
         <StepPackage
+          packages={packages}
           selected={selectedPackage}
           onSelect={setSelectedPackage}
           onNext={() => setCurrentStep(1)}
@@ -339,6 +347,7 @@ export function FamilyWidgetPage() {
       )}
       {currentStep === 2 && (
         <StepAddons
+          addons={addons}
           selectedAddons={selectedAddons}
           onToggle={toggleAddon}
           selectedPackage={selectedPackage}

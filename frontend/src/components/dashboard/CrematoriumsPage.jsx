@@ -1,12 +1,11 @@
-import { crematoriums, crematoriumOrders } from '../../data/mockData'
+import { useState, useEffect } from 'react'
+import { fetchCrematoriums, fetchOrders } from '../../lib/api.js'
 import { PageHeader } from '../layout/PageHeader'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { StatusPill } from '../ui/StatusPill'
 
 function CrematoriumCard({ crm }) {
-  const recentOrders = crematoriumOrders.filter(o => o.funeral_home === 'Evergreen Memorial').slice(0, 2)
-
   return (
     <div className="bg-warm-white rounded-xl border border-border overflow-hidden">
       {/* Card header */}
@@ -49,6 +48,26 @@ function CrematoriumCard({ crm }) {
 }
 
 export function CrematoriumsPage() {
+  const [crematoriums, setCrematoriums] = useState([])
+  const [crematoriumOrders, setCrematoriumOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([fetchCrematoriums(), fetchOrders()])
+      .then(([crms, orders]) => {
+        setCrematoriums(crms)
+        setCrematoriumOrders(orders)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[200px]">
+      <p className="font-sans text-sm text-muted">Loading…</p>
+    </div>
+  )
+
   const activeCount = crematoriums.filter(c => c.status === 'active').length
   const totalCompleted = crematoriums.reduce((s, c) => s + c.completedYTD, 0)
   const activeOrders = crematoriums.reduce((s, c) => s + c.active, 0)

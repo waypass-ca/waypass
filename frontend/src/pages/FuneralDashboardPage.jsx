@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { cases as initialCases } from '../data/mockData'
+import { useState, useEffect } from 'react'
+import { fetchCases, updateCaseStatus, createCase } from '../lib/api.js'
 import { Sidebar } from '../components/layout/Sidebar'
 import { PageHeader } from '../components/layout/PageHeader'
 import { StatsRow } from '../components/dashboard/StatsRow'
@@ -16,17 +16,41 @@ import { Button } from '../components/ui/Button'
 // Map sidebar ids to views
 const SIDEBAR_VIEWS = ['dashboard', 'cases', 'crematoriums', 'revenue', 'documents', 'settings']
 
-// Determine which sidebar item is active given a view
 function activeSidebarItem(view) {
   if (view === 'case-detail' || view === 'new-case') return 'cases'
   if (SIDEBAR_VIEWS.includes(view)) return view
   return 'dashboard'
 }
 
+function LoadingState() {
+  return (
+    <div className="flex items-center justify-center min-h-[200px]">
+      <p className="font-sans text-sm text-muted">Loading…</p>
+    </div>
+  )
+}
+
+function ErrorState({ message }) {
+  return (
+    <div className="p-8 text-center">
+      <p className="font-sans text-sm text-red-soft">Failed to load: {message}</p>
+    </div>
+  )
+}
+
 export function FuneralDashboardPage() {
   const [view, setView] = useState('dashboard')
   const [selectedCaseId, setSelectedCaseId] = useState(null)
-  const [cases, setCases] = useState(initialCases)
+  const [cases, setCases] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    fetchCases()
+      .then(setCases)
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
+  }, [])
 
   function navigate(v) {
     setView(v)
@@ -38,15 +62,34 @@ export function FuneralDashboardPage() {
     setView('case-detail')
   }
 
-  function handleCaseStatusChange(id, newStatus) {
-    setCases(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c))
+  async function handleCaseStatusChange(id, newStatus) {
+    try {
+      const updated = await updateCaseStatus(id, newStatus)
+      setCases(prev => prev.map(c => c.id === id ? { ...c, status: updated.status } : c))
+    } catch (err) {
+      console.error('Failed to update status:', err.message)
+    }
   }
 
   function handleNewCase(newCase) {
-    setCases(prev => [...prev, newCase])
+    setCases(prev => [newCase, ...prev])
   }
 
   const selectedCase = cases.find(c => c.id === selectedCaseId)
+
+  if (loading) return (
+    <div className="flex min-h-screen">
+      <Sidebar activeItem="dashboard" onItemChange={() => {}} />
+      <main className="flex-1 px-8 py-7 bg-cream overflow-auto"><LoadingState /></main>
+    </div>
+  )
+
+  if (error) return (
+    <div className="flex min-h-screen">
+      <Sidebar activeItem="dashboard" onItemChange={() => {}} />
+      <main className="flex-1 px-8 py-7 bg-cream overflow-auto"><ErrorState message={error} /></main>
+    </div>
+  )
 
   return (
     <div className="flex min-h-screen">

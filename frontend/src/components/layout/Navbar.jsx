@@ -6,7 +6,7 @@ const TABS = [
   { label: 'Crematorium', badge: null },
 ]
 
-export function Navbar({ activeTab, onTabChange }) {
+export function Navbar({ activeTab, onTabChange, user, onSignOut }) {
   return (
     <nav className="bg-charcoal h-[54px] flex items-center px-6 sticky top-0 z-50">
       {/* Logo */}
@@ -41,9 +41,21 @@ export function Navbar({ activeTab, onTabChange }) {
         ))}
       </div>
 
-      {/* Right label */}
-      <div className="flex-1 flex justify-end">
-        <span className="text-xs text-muted font-sans">Prototype v0.1</span>
+      {/* Right — user info + sign out */}
+      <div className="flex-1 flex justify-end items-center gap-3">
+        {user ? (
+          <>
+            <span className="text-xs text-muted font-sans">{user.email}</span>
+            <button
+              onClick={onSignOut}
+              className="text-xs text-muted hover:text-warm-white font-sans transition-colors cursor-pointer border-0 bg-transparent outline-none"
+            >
+              Sign out
+            </button>
+          </>
+        ) : (
+          <span className="text-xs text-muted font-sans">Prototype v0.1</span>
+        )}
       </div>
     </nav>
   )
