@@ -238,7 +238,7 @@ export function SettingsPage() {
 
   return (
     <div>
-      <PageHeader title="Settings" subtitle="Manage your funeral home account" date="March 10, 2024" />
+      <PageHeader title="Settings" subtitle="Manage your funeral home account"  />
 
       {/* Tab bar */}
       <div className="flex gap-1 bg-warm-white border border-border rounded-xl p-1 mb-6 w-fit">

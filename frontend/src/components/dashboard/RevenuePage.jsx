@@ -28,7 +28,7 @@ export function RevenuePage() {
       <PageHeader
         title="Revenue"
         subtitle="6-month performance overview"
-        date="March 10, 2024"
+        // date="March 10, 2024"
         rightSlot={
           <Button variant="secondary">
             <svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

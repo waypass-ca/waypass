@@ -21,10 +21,10 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
     const q = search.toLowerCase()
     const matchesSearch =
       !q ||
-      c.deceased.toLowerCase().includes(q) ||
-      c.family.toLowerCase().includes(q) ||
-      c.id.toLowerCase().includes(q) ||
-      c.package.toLowerCase().includes(q)
+      c.deceased?.toLowerCase().includes(q) ||
+      c.family?.toLowerCase().includes(q) ||
+      c.id?.toLowerCase().includes(q) ||
+      c.package?.toLowerCase().includes(q)
     return matchesFilter && matchesSearch
   })
 
@@ -38,7 +38,7 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
       <PageHeader
         title="Cases"
         subtitle={`${cases.length} total · ${cases.filter(c => c.status !== 'complete').length} active`}
-        date="March 10, 2024"
+        // date="March 10, 2024"
         rightSlot={<Button variant="primary" onClick={onNewCase}>+ New Case</Button>}
       />
 

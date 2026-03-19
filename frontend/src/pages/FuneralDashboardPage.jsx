@@ -9,6 +9,7 @@ import { CasesPage } from '../components/dashboard/CasesPage'
 import { CaseDetailPage } from '../components/dashboard/CaseDetailPage'
 import { NewCasePage } from '../components/dashboard/NewCasePage'
 import { CrematoriumsPage } from '../components/dashboard/CrematoriumsPage'
+import { NewCrematoriumPage } from '../components/dashboard/NewCrematoriumPage'
 import { RevenuePage } from '../components/dashboard/RevenuePage'
 import { SettingsPage } from '../components/dashboard/SettingsPage'
 import { Button } from '../components/ui/Button'
@@ -18,6 +19,7 @@ const SIDEBAR_VIEWS = ['dashboard', 'cases', 'crematoriums', 'revenue', 'documen
 
 function activeSidebarItem(view) {
   if (view === 'case-detail' || view === 'new-case') return 'cases'
+  if (view === 'new-crematorium') return 'crematoriums'
   if (SIDEBAR_VIEWS.includes(view)) return view
   return 'dashboard'
 }
@@ -108,7 +110,7 @@ export function FuneralDashboardPage() {
             <PageHeader
               title="Dashboard"
               subtitle="Evergreen Memorial · San Francisco, CA"
-              date="March 10, 2024"
+              // date="March 10, 2024"
               rightSlot={<Button variant="primary" onClick={() => setView('new-case')}>+ New Case</Button>}
             />
             <StatsRow />
@@ -151,7 +153,17 @@ export function FuneralDashboardPage() {
         )}
 
         {/* ── Crematoriums ── */}
-        {view === 'crematoriums' && <CrematoriumsPage />}
+        {view === 'crematoriums' && (
+          <CrematoriumsPage onAddPartner={() => setView('new-crematorium')} />
+        )}
+
+        {/* ── New crematorium ── */}
+        {view === 'new-crematorium' && (
+          <NewCrematoriumPage
+            onBack={() => navigate('crematoriums')}
+            onComplete={() => navigate('crematoriums')}
+          />
+        )}
 
         {/* ── Revenue ── */}
         {view === 'revenue' && <RevenuePage />}

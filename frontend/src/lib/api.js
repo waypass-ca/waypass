@@ -4,13 +4,14 @@ const BASE = import.meta.env.VITE_API_URL
 
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
+    headers: { 'Content-Type': 'application/json', ...options.headers },
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error ?? `HTTP ${res.status}`)
   }
+  if (res.status === 204) return null
   return res.json()
 }
 
@@ -43,6 +44,12 @@ export const addCaseNote = (id, note) =>
 
 // ── Crematoriums ──────────────────────────────────────
 export const fetchCrematoriums = () => request('/api/crematoriums')
+export const createCrematorium = (payload) =>
+  mutate('/api/crematoriums', { method: 'POST', body: JSON.stringify(payload) })
+export const updateCrematorium = (id, payload) =>
+  mutate(`/api/crematoriums/${id}`, { method: 'PATCH', body: JSON.stringify(payload) })
+export const deleteCrematorium = (id) =>
+  mutate(`/api/crematoriums/${id}`, { method: 'DELETE' })
 
 // ── Orders ────────────────────────────────────────────
 export const fetchOrders = () => request('/api/orders')
