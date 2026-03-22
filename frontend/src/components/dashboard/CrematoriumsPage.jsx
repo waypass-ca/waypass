@@ -278,7 +278,6 @@ export function CrematoriumsPage({ onAddPartner }) {
       <PageHeader
         title="Crematoriums"
         subtitle="Manage your cremation service partners"
-        // date="March 10, 2024"
         rightSlot={<Button variant="primary" onClick={onAddPartner}>+ Add Partner</Button>}
       />
 
