@@ -55,3 +55,8 @@ export const deleteCrematorium = (id) =>
 export const fetchOrders = () => request('/api/orders')
 export const advanceOrder = (id) =>
   mutate(`/api/orders/${id}/advance`, { method: 'PATCH' })
+
+// ── Portal settings ───────────────────────────────────
+export const fetchPortalSettings = () => request('/api/portal-settings')
+export const savePortalSettings = (payload) =>
+  mutate('/api/portal-settings', { method: 'PUT', body: JSON.stringify(payload) })

@@ -12,10 +12,11 @@ import { CrematoriumsPage } from '../components/dashboard/CrematoriumsPage'
 import { NewCrematoriumPage } from '../components/dashboard/NewCrematoriumPage'
 import { RevenuePage } from '../components/dashboard/RevenuePage'
 import { SettingsPage } from '../components/dashboard/SettingsPage'
+import { FamilyPageEditorPage } from '../components/dashboard/FamilyPageEditorPage'
 import { Button } from '../components/ui/Button'
 
 // Map sidebar ids to views
-const SIDEBAR_VIEWS = ['dashboard', 'cases', 'crematoriums', 'revenue', 'documents', 'settings']
+const SIDEBAR_VIEWS = ['dashboard', 'cases', 'crematoriums', 'revenue', 'documents', 'family-portal', 'settings']
 
 function activeSidebarItem(view) {
   if (view === 'case-detail' || view === 'new-case') return 'cases'
@@ -189,6 +190,9 @@ export function FuneralDashboardPage() {
             </div>
           </>
         )}
+
+        {/* ── Family portal editor ── */}
+        {view === 'family-portal' && <FamilyPageEditorPage />}
 
         {/* ── Settings ── */}
         {view === 'settings' && <SettingsPage />}

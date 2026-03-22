@@ -56,6 +56,17 @@ const NAV_ITEMS = [
     ),
   },
   {
+    id: 'family-portal',
+    label: 'Family Portal',
+    badge: null,
+    icon: (
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-4a4 4 0 100-8 4 4 0 000 8z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 14v6" />
+      </svg>
+    ),
+  },
+  {
     id: 'settings',
     label: 'Settings',
     badge: null,

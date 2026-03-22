@@ -6,6 +6,7 @@ import addonsRouter from './routes/addons.js'
 import casesRouter from './routes/cases.js'
 import crematoriumsRouter from './routes/crematoriums.js'
 import ordersRouter from './routes/orders.js'
+import portalRouter from './routes/portal.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -18,6 +19,7 @@ app.use('/api/addons', addonsRouter)
 app.use('/api/cases', casesRouter)
 app.use('/api/crematoriums', crematoriumsRouter)
 app.use('/api/orders', ordersRouter)
+app.use('/api/portal-settings', portalRouter)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
