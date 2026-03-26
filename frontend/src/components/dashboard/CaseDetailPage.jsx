@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { addCaseNote } from '../../lib/api.js'
+import { supabase } from '../../lib/supabase.js'
 import { StatusPill } from '../ui/StatusPill'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
@@ -35,19 +36,37 @@ function NoteCard({ note }) {
   )
 }
 
-function DocRow({ filename }) {
-  const ext = filename.split('.').pop().toUpperCase()
+function DocRow({ doc }) {
+  // Support both legacy string format and new {type, path, name} object format
+  const name = typeof doc === 'string' ? doc : doc.name
+  const path = typeof doc === 'string' ? null : doc.path
+  const ext = name?.split('.').pop().toUpperCase() ?? 'FILE'
+
+  async function handleDownload() {
+    if (!path) return
+    const { data, error } = await supabase.storage
+      .from('case-documents')
+      .createSignedUrl(path, 60)
+    if (error || !data?.signedUrl) return
+    window.open(data.signedUrl, '_blank')
+  }
+
   return (
     <div className="flex items-center justify-between py-3 border-b border-border last:border-0">
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-blue-light flex items-center justify-center">
           <span className="font-sans text-[9px] font-bold text-blue-soft">{ext}</span>
         </div>
-        <span className="font-sans text-sm text-charcoal">{filename}</span>
+        <span className="font-sans text-sm text-charcoal">{name}</span>
       </div>
-      <button className="font-sans text-xs font-medium text-sage hover:text-sage/80 transition-colors cursor-pointer border-0 bg-transparent outline-none">
-        Download
-      </button>
+      {path && (
+        <button
+          onClick={handleDownload}
+          className="font-sans text-xs font-medium text-sage hover:text-sage/80 transition-colors cursor-pointer border-0 bg-transparent outline-none"
+        >
+          Download
+        </button>
+      )}
     </div>
   )
 }
@@ -175,7 +194,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
               </div>
             ) : (
               <div>
-                {caseData.documents.map((doc, i) => <DocRow key={i} filename={doc} />)}
+                {caseData.documents.map((doc, i) => <DocRow key={i} doc={doc} />)}
               </div>
             )}
           </div>

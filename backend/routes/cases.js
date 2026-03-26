@@ -24,6 +24,10 @@ function shapeRow(row) {
     date: row.date,
     amount: row.amount,
     crematorium: row.crematorium_name,
+    timeOfDeath: row.time_of_death,
+    removalStaff: row.removal_staff,
+    removalTime: row.removal_time,
+    wristbandId: row.wristband_id,
     documents: row.documents ?? [],
     notes: (row.case_notes ?? [])
       .sort((a, b) => a.id - b.id)
@@ -90,6 +94,10 @@ router.post('/', requireAuth, async (req, res, next) => {
         amount: body.amount,
         crematorium_id: body.crematorium_id ?? null,
         crematorium_name: body.crematorium_name ?? null,
+        time_of_death: body.time_of_death ?? null,
+        removal_staff: body.removal_staff ?? null,
+        removal_time: body.removal_time ?? null,
+        wristband_id: body.wristband_id ?? null,
         documents: body.documents ?? [],
       })
       .select('*, case_notes(*)')
