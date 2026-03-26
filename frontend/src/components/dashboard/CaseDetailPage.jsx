@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { addCaseNote } from '../../lib/api.js'
+import { useState, useRef } from 'react'
+import { addCaseNote, addCaseDocument } from '../../lib/api.js'
 import { supabase } from '../../lib/supabase.js'
 import { StatusPill } from '../ui/StatusPill'
 import { Badge } from '../ui/Badge'
@@ -75,6 +75,28 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
   const [notes, setNotes] = useState(caseData.notes ?? [])
   const [newNote, setNewNote] = useState('')
   const [status, setStatus] = useState(caseData.status)
+  const [documents, setDocuments] = useState(caseData.documents ?? [])
+  const [uploading, setUploading] = useState(false)
+  const uploadInputRef = useRef(null)
+
+  async function handleUpload(file) {
+    setUploading(true)
+    const ext = file.name.split('.').pop()
+    const path = `cases/${caseData.id}/${Date.now()}.${ext}`
+    const { error: storageError } = await supabase.storage
+      .from('case-documents')
+      .upload(path, file, { upsert: true })
+    if (storageError) { setUploading(false); return }
+    try {
+      const saved = await addCaseDocument(caseData.id, { path, name: file.name })
+      setDocuments(prev => [...prev, saved])
+    } catch {
+      // file is in storage but DB failed; still show it locally
+      setDocuments(prev => [...prev, { path, name: file.name }])
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const stepIndex = STATUS_ORDER.indexOf(status)
   const nextLabel = STATUS_NEXT_LABEL[status]
@@ -179,22 +201,40 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
           <div className="bg-warm-white rounded-xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-xl text-charcoal">Documents</h2>
-              <Button variant="secondary">
-                <svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                </svg>
-                Upload
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={e => { if (e.target.files[0]) handleUpload(e.target.files[0]); e.target.value = '' }}
+              />
+              <Button
+                variant="secondary"
+                onClick={() => uploadInputRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <svg className="w-3.5 h-3.5 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                )}
+                {uploading ? 'Uploading…' : 'Upload'}
               </Button>
             </div>
 
-            {caseData.documents.length === 0 ? (
+            {documents.length === 0 ? (
               <div className="border-2 border-dashed border-border rounded-xl py-8 text-center">
                 <p className="font-sans text-sm text-muted">No documents uploaded yet.</p>
                 <p className="font-sans text-xs text-muted mt-1">Click Upload to add files.</p>
               </div>
             ) : (
               <div>
-                {caseData.documents.map((doc, i) => <DocRow key={i} doc={doc} />)}
+                {documents.map((doc, i) => <DocRow key={i} doc={doc} />)}
               </div>
             )}
           </div>

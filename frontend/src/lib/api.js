@@ -41,6 +41,8 @@ export const updateCaseStatus = (id, status) =>
   mutate(`/api/cases/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) })
 export const addCaseNote = (id, note) =>
   mutate(`/api/cases/${id}/notes`, { method: 'POST', body: JSON.stringify(note) })
+export const addCaseDocument = (id, doc) =>
+  mutate(`/api/cases/${id}/documents`, { method: 'POST', body: JSON.stringify(doc) })
 
 // ── Crematoriums ──────────────────────────────────────
 export const fetchCrematoriums = () => request('/api/crematoriums')

@@ -159,4 +159,33 @@ router.post('/:id/notes', requireAuth, async (req, res, next) => {
   }
 })
 
+// ── POST /api/cases/:id/documents ───────────────
+router.post('/:id/documents', requireAuth, async (req, res, next) => {
+  try {
+    const { type, path, name } = req.body
+    if (!path || !name) return res.status(400).json({ error: 'path and name are required' })
+
+    // Fetch current documents array then append
+    const { data: existing, error: fetchError } = await supabase
+      .from('cases')
+      .select('documents')
+      .eq('id', req.params.id)
+      .single()
+    if (fetchError) throw fetchError
+
+    const current = existing.documents ?? []
+    const updated = [...current, { type: type ?? null, path, name }]
+
+    const { error } = await supabase
+      .from('cases')
+      .update({ documents: updated })
+      .eq('id', req.params.id)
+    if (error) throw error
+
+    res.status(201).json({ type: type ?? null, path, name })
+  } catch (err) {
+    next(err)
+  }
+})
+
 export default router
