@@ -4,9 +4,7 @@ import { supabase } from '../../lib/supabase.js'
 import { StatusPill } from '../ui/StatusPill'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
-import { ProgressTrack } from '../ui/ProgressTrack'
 
-const STATUS_ORDER = ['pending', 'transit', 'cremation', 'complete']
 
 const CUSTODY_STAGES = [
   'Removal from Location',
@@ -134,7 +132,7 @@ function CustodyModal({ stage, entry, onSave, onClose }) {
   )
 }
 
-function CustodyTimeline({ entries, onUpdate }) {
+function CustodyTimeline({ entries, onUpdate, authRequired }) {
   const [modalIdx, setModalIdx] = useState(null)
   const lastCompletedIdx = entries.reduce((acc, e, i) => e.completed ? i : acc, -1)
   const nextIdx = lastCompletedIdx + 1
@@ -182,16 +180,27 @@ function CustodyTimeline({ entries, onUpdate }) {
 
               <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-5'}`}>
                 {isNext ? (
+                  i === 2 && authRequired ? (
+                    <div className="w-full bg-amber-light border border-amber/30 rounded-lg px-3 py-2.5 -mx-3">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5 text-amber flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
+                        <span className="font-sans text-sm font-semibold text-amber">{stage}</span>
+                      </div>
+                      <p className="font-sans text-xs text-amber/70 mt-0.5">Complete authorization before logging transport</p>
+                    </div>
+                  ) : (
                   <button
                     onClick={() => setModalIdx(i)}
                     className="w-full text-left bg-sage/10 border border-sage/30 rounded-lg px-3 py-2.5 -mx-3 hover:bg-sage/20 transition-colors cursor-pointer outline-none group"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-sans text-sm font-semibold text-sage">{stage}</span>
-                      
                     </div>
                     <p className="font-sans text-xs text-sage/70 mt-0.5">Tap to record staff &amp; time</p>
                   </button>
+                  )
                 ) : (
                   <>
                     <div className="flex items-center gap-2 flex-wrap">
@@ -280,7 +289,7 @@ function AuthStatusRow({ label, uploaded, onUpload }) {
   )
 }
 
-function AuthorizationCard({ dop, status, onUpload, authComplete, onAuthComplete }) {
+function AuthorizationCard({ dop, onUpload, authComplete, onAuthComplete }) {
   const [authFormUploaded, setAuthFormUploaded] = useState(false)
   const [permitUploaded, setPermitUploaded] = useState(false)
   const [meSignOff, setMeSignOff] = useState(false)
@@ -291,8 +300,6 @@ function AuthorizationCard({ dop, status, onUpload, authComplete, onAuthComplete
     dt.setHours(dt.getHours() + 48)
     return dt.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
   })()
-
-  if (status !== 'pending') return null
 
   if (authComplete) {
     return (
@@ -371,13 +378,8 @@ function AuthorizationCard({ dop, status, onUpload, authComplete, onAuthComplete
   )
 }
 
-const STEPS = ['Arrangements', 'Transport', 'Cremation', 'Complete']
-const STATUS_NEXT_LABEL = {
-  pending: 'Mark In Transit',
-  transit: 'Mark In Cremation',
-  cremation: 'Mark Complete',
-  complete: null,
-}
+// Status auto-advances when these custody stage indices are completed
+const CUSTODY_STATUS_MILESTONES = { 2: 'transit', 4: 'cremation', 8: 'complete' }
 
 function InfoRow({ label, value }) {
   return (
@@ -454,6 +456,11 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
   async function handleCustodyUpdate(stageIdx, payload) {
     const saved = await updateCustodyStage(caseData.id, stageIdx, payload)
     setCustody(prev => prev.map((e, i) => i === stageIdx ? { ...e, ...saved } : e))
+    if (payload.completed && CUSTODY_STATUS_MILESTONES[stageIdx]) {
+      const next = CUSTODY_STATUS_MILESTONES[stageIdx]
+      setStatus(next)
+      onStatusChange?.(caseData.id, next)
+    }
   }
 
   async function handleUpload(file) {
@@ -472,17 +479,6 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
       setDocuments(prev => [...prev, { path, name: file.name }])
     } finally {
       setUploading(false)
-    }
-  }
-
-  const stepIndex = STATUS_ORDER.indexOf(status)
-  const nextLabel = STATUS_NEXT_LABEL[status]
-
-  function advanceStatus() {
-    if (stepIndex < 3) {
-      const next = STATUS_ORDER[stepIndex + 1]
-      setStatus(next)
-      onStatusChange?.(caseData.id, next)
     }
   }
 
@@ -526,14 +522,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
             <p className="font-sans text-sm text-muted mt-1">{caseData.family} · Opened {caseData.date}</p>
           </div>
           <div className="flex gap-2 mt-2">
-            {nextLabel && (
-              <div title={status === 'pending' && !authorizationComplete ? 'Complete authorization before advancing' : undefined}>
-                <Button variant="sage" onClick={advanceStatus} disabled={status === 'pending' && !authorizationComplete}>
-                  {nextLabel}
-                </Button>
-              </div>
-            )}
-            <Button variant="secondary">
+            <Button variant="secondary" onClick={() => window.print()}>
               <svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
@@ -543,17 +532,10 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
         </div>
       </div>
 
-      {/* Progress track */}
-      <div className="bg-warm-white rounded-xl border border-border px-6 py-5 mb-5">
-        <p className="font-sans text-xs text-muted uppercase tracking-wide mb-4">Case Progress</p>
-        <ProgressTrack steps={STEPS} currentStep={stepIndex} />
-      </div>
-
-      
 
       {/* Main 2-col layout */}
       {(() => {
-        const authPending = status === 'pending'
+        const authPending = !custody[2]?.completed
 
         const documentsCard = (
           <div className="bg-warm-white rounded-xl border border-border p-6">
@@ -602,13 +584,12 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
           <div className="grid grid-cols-5 gap-5">
             {/* Left column */}
             <div className="col-span-3 space-y-5">
-              <AuthorizationCard
+              {authPending && <AuthorizationCard
                 dop={caseData.dop}
-                status={status}
                 onUpload={handleUpload}
                 authComplete={authorizationComplete}
                 onAuthComplete={() => setAuthorizationComplete(true)}
-              />
+              />}
               <div className="bg-warm-white rounded-xl border border-border p-5">
                 <div className="p-3">
                   <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Deceased Details</h3>
@@ -640,7 +621,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
 
             {/* Right column */}
             <div className="col-span-2 space-y-5">
-              <CustodyTimeline entries={custody} onUpdate={handleCustodyUpdate} />
+              <CustodyTimeline entries={custody} onUpdate={handleCustodyUpdate} authRequired={!authorizationComplete} />
               <div className="bg-warm-white rounded-xl border border-border p-6">
                 <h2 className="font-display text-xl text-charcoal mb-4">Case Notes</h2>
                 {notes.length === 0 ? (
