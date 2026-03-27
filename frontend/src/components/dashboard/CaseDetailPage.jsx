@@ -173,7 +173,7 @@ function CustodyTimeline({ entries, onUpdate }) {
 
           return (
             <div key={i} className="flex gap-3.5">
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center pr-3">
                 <CustodyNode completed={isCompleted} gap={isGap} />
                 {!isLast && (
                   <div className={`w-px flex-1 my-1 min-h-[28px] ${isCompleted ? 'bg-sage' : 'bg-border'}`} />
@@ -232,6 +232,145 @@ function CustodyTimeline({ entries, onUpdate }) {
     </div>
   )
 }
+function AuthStatusRow({ label, uploaded, onUpload }) {
+  const inputRef = useRef(null)
+  const [uploading, setUploading] = useState(false)
+
+  async function handleChange(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    e.target.value = ''
+    setUploading(true)
+    await onUpload(file)
+    setUploading(false)
+  }
+
+  return (
+    <div className="flex items-center justify-between py-2.5 border-b border-border last:border-0">
+      <div className="flex items-center gap-3">
+        {uploaded ? (
+          <div className="w-5 h-5 rounded-full bg-sage/15 flex items-center justify-center flex-shrink-0">
+            <svg className="w-3 h-3 text-sage" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        ) : (
+          <div className="w-5 h-5 rounded-full bg-amber-light flex items-center justify-center flex-shrink-0">
+            <svg className="w-3 h-3 text-amber" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 102 0V6zm-1 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
+        <span className="font-sans text-sm text-charcoal">{label}</span>
+      </div>
+      <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleChange} />
+      {uploading ? (
+        <span className="font-sans text-xs text-muted">Uploading…</span>
+      ) : uploaded ? (
+        <span className="font-sans text-xs text-sage font-medium">Uploaded</span>
+      ) : (
+        <button
+          onClick={() => inputRef.current?.click()}
+          className="font-sans text-xs font-medium text-sage hover:text-sage/80 transition-colors cursor-pointer border-0 bg-transparent outline-none"
+        >
+          Upload
+        </button>
+      )}
+    </div>
+  )
+}
+
+function AuthorizationCard({ dop, status, onUpload, authComplete, onAuthComplete }) {
+  const [authFormUploaded, setAuthFormUploaded] = useState(false)
+  const [permitUploaded, setPermitUploaded] = useState(false)
+  const [meSignOff, setMeSignOff] = useState(false)
+
+  const earliestCremation = (() => {
+    const dt = dop ? new Date(dop) : null
+    if (!dt || isNaN(dt.getTime())) return 'to be determined'
+    dt.setHours(dt.getHours() + 48)
+    return dt.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+  })()
+
+  if (status !== 'pending') return null
+
+  if (authComplete) {
+    return (
+      <div
+        className="rounded-xl border border-border bg-warm-white px-5 py-4 flex items-center gap-3"
+        style={{ borderLeft: '3px solid var(--color-sage)' }}
+      >
+        <div className="w-5 h-5 rounded-full bg-sage flex items-center justify-center flex-shrink-0">
+          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <span className="font-sans text-sm font-semibold text-sage">Authorization complete</span>
+      </div>
+    )
+  }
+
+  async function handleAuthFormUpload(file) {
+    await onUpload(file)
+    setAuthFormUploaded(true)
+  }
+
+  async function handlePermitUpload(file) {
+    await onUpload(file)
+    setPermitUploaded(true)
+  }
+
+  return (
+    <div
+      className="rounded-xl border border-border bg-warm-white p-5"
+      style={{ borderLeft: '3px solid var(--color-amber)' }}
+    >
+      <p className="font-sans text-xs text-muted uppercase tracking-wide mb-1">Requires action</p>
+      <h3 className="font-display text-xl text-charcoal mb-4">Authorization &amp; Permitting</h3>
+
+      <div className="mb-1">
+        <AuthStatusRow
+          label="Signed cremation authorization form"
+          uploaded={authFormUploaded}
+          onUpload={handleAuthFormUpload}
+        />
+        <AuthStatusRow
+          label="Cremation permit"
+          uploaded={permitUploaded}
+          onUpload={handlePermitUpload}
+        />
+      </div>
+
+      <label className="flex items-center gap-3 py-2.5 border-b border-border cursor-pointer mb-4">
+        <input
+          type="checkbox"
+          checked={meSignOff}
+          onChange={e => setMeSignOff(e.target.checked)}
+          className="w-4 h-4 rounded border-border cursor-pointer"
+          style={{ accentColor: 'var(--color-amber)' }}
+        />
+        <span className="font-sans text-sm text-charcoal">Medical examiner sign-off required</span>
+      </label>
+
+      <div className="bg-amber-light rounded-lg px-4 py-3 mb-5">
+        <p className="font-sans text-xs text-amber font-semibold uppercase tracking-wide mb-1">Mandatory wait period</p>
+        <p className="font-sans text-sm text-charcoal">
+          Minimum 48 hours required. Earliest cremation: <strong>{earliestCremation}</strong>.
+        </p>
+      </div>
+
+      <Button
+        variant="primary"
+        onClick={onAuthComplete}
+        disabled={!(authFormUploaded && permitUploaded)}
+        className="w-full justify-center"
+      >
+        Mark Authorization Complete
+      </Button>
+    </div>
+  )
+}
+
 const STEPS = ['Arrangements', 'Transport', 'Cremation', 'Complete']
 const STATUS_NEXT_LABEL = {
   pending: 'Mark In Transit',
@@ -304,6 +443,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
   const [status, setStatus] = useState(caseData.status)
   const [documents, setDocuments] = useState(caseData.documents ?? [])
   const [uploading, setUploading] = useState(false)
+  const [authorizationComplete, setAuthorizationComplete] = useState(false)
   const [custody, setCustody] = useState(EMPTY_CUSTODY)
   const uploadInputRef = useRef(null)
 
@@ -387,7 +527,11 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
           </div>
           <div className="flex gap-2 mt-2">
             {nextLabel && (
-              <Button variant="sage" onClick={advanceStatus}>{nextLabel}</Button>
+              <div title={status === 'pending' && !authorizationComplete ? 'Complete authorization before advancing' : undefined}>
+                <Button variant="sage" onClick={advanceStatus} disabled={status === 'pending' && !authorizationComplete}>
+                  {nextLabel}
+                </Button>
+              </div>
             )}
             <Button variant="secondary">
               <svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -399,51 +543,19 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
         </div>
       </div>
 
-      {/* Progress track
+      {/* Progress track */}
       <div className="bg-warm-white rounded-xl border border-border px-6 py-5 mb-5">
         <p className="font-sans text-xs text-muted uppercase tracking-wide mb-4">Case Progress</p>
         <ProgressTrack steps={STEPS} currentStep={stepIndex} />
-      </div> */}
+      </div>
 
       
 
       {/* Main 2-col layout */}
-      <div className="grid grid-cols-5 gap-5">
+      {(() => {
+        const authPending = status === 'pending'
 
-        
-        {/* Left — notes + documents */}
-        <div className="col-span-3 space-y-5">
-          {/* Case details */}
-          <div className="bg-warm-white rounded-xl border border-border p-5">
-            <div className="p-3">
-            <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Deceased Details</h3>
-            <InfoRow label="Full Name" value={caseData.deceased} />
-            <InfoRow label="Date of Birth" value={caseData.dob} />
-            <InfoRow label="Date of Passing" value={caseData.dop} />
-            <InfoRow label="Location" value={caseData.location} />
-          </div>
-
-          <div className="p-3">
-            <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Family Contact</h3>
-            <InfoRow label="Name" value={caseData.contactName} />
-            <InfoRow label="Relationship" value={caseData.relationship} />
-            <InfoRow label="Phone" value={caseData.contactPhone} />
-            <InfoRow label="Email" value={caseData.contactEmail} />
-          </div>
-
-          <div className="p-3">
-            <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Arrangement</h3>
-            <InfoRow label="Package" value={caseData.package} />
-            <InfoRow label="Add-ons" value={caseData.addons?.join(', ') || 'None'} />
-            <InfoRow label="Crematorium" value={caseData.crematorium} />
-            <div className="flex justify-between pt-3 mt-1">
-              <span className="font-sans text-xs font-semibold text-charcoal">Total</span>
-              <span className="font-display text-xl text-charcoal">${caseData.amount.toLocaleString()}</span>
-            </div>
-          </div>
-          </div>
-          {/* Notes */}
-          {/* Documents */}
+        const documentsCard = (
           <div className="bg-warm-white rounded-xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-xl text-charcoal">Documents</h2>
@@ -484,44 +596,77 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
               </div>
             )}
           </div>
-          
+        )
 
-          
-
-
-        </div>
-
-        {/* Right — case info */}
-        <div className="space-y-5 col-span-2">
-
-          {/* Chain of Custody */}
-          <CustodyTimeline entries={custody} onUpdate={handleCustodyUpdate} />
-          <div className="bg-warm-white rounded-xl border border-border p-6">
-            <h2 className="font-display text-xl text-charcoal mb-4">Case Notes</h2>
-
-            {notes.length === 0 ? (
-              <p className="font-sans text-sm text-muted italic mb-4">No notes yet.</p>
-            ) : (
-              <div className="space-y-3 mb-5">
-                {notes.map((n, i) => <NoteCard key={i} note={n} />)}
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Add a note…"
-                value={newNote}
-                onChange={e => setNewNote(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addNote()}
-                className="flex-1 border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+        return (
+          <div className="grid grid-cols-5 gap-5">
+            {/* Left column */}
+            <div className="col-span-3 space-y-5">
+              <AuthorizationCard
+                dop={caseData.dop}
+                status={status}
+                onUpload={handleUpload}
+                authComplete={authorizationComplete}
+                onAuthComplete={() => setAuthorizationComplete(true)}
               />
-              <Button variant="primary" onClick={addNote}>Add</Button>
+              <div className="bg-warm-white rounded-xl border border-border p-5">
+                <div className="p-3">
+                  <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Deceased Details</h3>
+                  <InfoRow label="Full Name" value={caseData.deceased} />
+                  <InfoRow label="Date of Birth" value={caseData.dob} />
+                  <InfoRow label="Date of Passing" value={caseData.dop} />
+                  <InfoRow label="Location" value={caseData.location} />
+                </div>
+                <div className="p-3">
+                  <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Family Contact</h3>
+                  <InfoRow label="Name" value={caseData.contactName} />
+                  <InfoRow label="Relationship" value={caseData.relationship} />
+                  <InfoRow label="Phone" value={caseData.contactPhone} />
+                  <InfoRow label="Email" value={caseData.contactEmail} />
+                </div>
+                <div className="p-3">
+                  <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Arrangement</h3>
+                  <InfoRow label="Package" value={caseData.package} />
+                  <InfoRow label="Add-ons" value={caseData.addons?.join(', ') || 'None'} />
+                  <InfoRow label="Crematorium" value={caseData.crematorium} />
+                  <div className="flex justify-between pt-3 mt-1">
+                    <span className="font-sans text-xs font-semibold text-charcoal">Total</span>
+                    <span className="font-display text-xl text-charcoal">${caseData.amount.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+              {!authPending && documentsCard}
+            </div>
+
+            {/* Right column */}
+            <div className="col-span-2 space-y-5">
+              <CustodyTimeline entries={custody} onUpdate={handleCustodyUpdate} />
+              <div className="bg-warm-white rounded-xl border border-border p-6">
+                <h2 className="font-display text-xl text-charcoal mb-4">Case Notes</h2>
+                {notes.length === 0 ? (
+                  <p className="font-sans text-sm text-muted italic mb-4">No notes yet.</p>
+                ) : (
+                  <div className="space-y-3 mb-5">
+                    {notes.map((n, i) => <NoteCard key={i} note={n} />)}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Add a note…"
+                    value={newNote}
+                    onChange={e => setNewNote(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && addNote()}
+                    className="flex-1 border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+                  />
+                  <Button variant="primary" onClick={addNote}>Add</Button>
+                </div>
+              </div>
+              {authPending && documentsCard}
             </div>
           </div>
-          
-        </div>
-      </div>
+        )
+      })()}
     </div>
   )
 }
