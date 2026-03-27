@@ -447,19 +447,29 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
   const [uploading, setUploading] = useState(false)
   const [authorizationComplete, setAuthorizationComplete] = useState(false)
   const [custody, setCustody] = useState(EMPTY_CUSTODY)
+  const [authPending, setAuthPending] = useState(false)
   const uploadInputRef = useRef(null)
 
   useEffect(() => {
-    fetchCustody(caseData.id).then(setCustody).catch(() => {})
+    fetchCustody(caseData.id)
+      .then(data => {
+        setCustody(data)
+        setAuthPending(!data[2]?.completed)
+      })
+      .catch(() => {
+        setAuthPending(true)
+      })
   }, [caseData.id])
 
   async function handleCustodyUpdate(stageIdx, payload) {
     const saved = await updateCustodyStage(caseData.id, stageIdx, payload)
-    setCustody(prev => prev.map((e, i) => i === stageIdx ? { ...e, ...saved } : e))
+    const next = custody.map((e, i) => i === stageIdx ? { ...e, ...saved } : e)
+    setCustody(next)
+    setAuthPending(!next[2]?.completed)
     if (payload.completed && CUSTODY_STATUS_MILESTONES[stageIdx]) {
-      const next = CUSTODY_STATUS_MILESTONES[stageIdx]
-      setStatus(next)
-      onStatusChange?.(caseData.id, next)
+      const nextStatus = CUSTODY_STATUS_MILESTONES[stageIdx]
+      setStatus(nextStatus)
+      onStatusChange?.(caseData.id, nextStatus)
     }
   }
 
@@ -535,8 +545,6 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
 
       {/* Main 2-col layout */}
       {(() => {
-        const authPending = !custody[2]?.completed
-
         const documentsCard = (
           <div className="bg-warm-white rounded-xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
@@ -584,12 +592,14 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
           <div className="grid grid-cols-5 gap-5">
             {/* Left column */}
             <div className="col-span-3 space-y-5">
-              {authPending && <AuthorizationCard
+              {!authPending ?  null : (
+                <AuthorizationCard
                 dop={caseData.dop}
                 onUpload={handleUpload}
                 authComplete={authorizationComplete}
                 onAuthComplete={() => setAuthorizationComplete(true)}
-              />}
+              />
+              )}
               <div className="bg-warm-white rounded-xl border border-border p-5">
                 <div className="p-3">
                   <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Deceased Details</h3>
