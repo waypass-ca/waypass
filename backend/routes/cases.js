@@ -188,4 +188,53 @@ router.post('/:id/documents', requireAuth, async (req, res, next) => {
   }
 })
 
+// ── GET /api/cases/:id/custody ───────────────────
+router.get('/:id/custody', async (req, res, next) => {
+  try {
+    const { data, error } = await supabase
+      .from('case_custody')
+      .select('stage, completed, staff, timestamp')
+      .eq('case_id', req.params.id)
+      .order('stage')
+    if (error) throw error
+
+    // Return sparse array — client fills gaps with { completed: false }
+    const stages = Array.from({ length: 9 }, (_, i) => {
+      const row = data.find(r => r.stage === i)
+      return row
+        ? { completed: row.completed, staff: row.staff ?? null, timestamp: row.timestamp ?? null }
+        : { completed: false, staff: null, timestamp: null }
+    })
+    res.json(stages)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// ── PUT /api/cases/:id/custody/:stage ────────────
+router.put('/:id/custody/:stage', requireAuth, async (req, res, next) => {
+  try {
+    const stage = parseInt(req.params.stage, 10)
+    if (isNaN(stage) || stage < 0 || stage > 8) {
+      return res.status(400).json({ error: 'stage must be 0–8' })
+    }
+
+    const { completed, staff, timestamp } = req.body
+
+    const { data, error } = await supabase
+      .from('case_custody')
+      .upsert(
+        { case_id: req.params.id, stage, completed: !!completed, staff: staff ?? null, timestamp: timestamp ?? null },
+        { onConflict: 'case_id,stage' }
+      )
+      .select()
+      .single()
+
+    if (error) throw error
+    res.json({ completed: data.completed, staff: data.staff, timestamp: data.timestamp })
+  } catch (err) {
+    next(err)
+  }
+})
+
 export default router

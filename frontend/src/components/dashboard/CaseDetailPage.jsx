@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import { addCaseNote, addCaseDocument } from '../../lib/api.js'
+import { useState, useRef, useEffect } from 'react'
+import { addCaseNote, addCaseDocument, fetchCustody, updateCustodyStage } from '../../lib/api.js'
 import { supabase } from '../../lib/supabase.js'
 import { StatusPill } from '../ui/StatusPill'
 import { Badge } from '../ui/Badge'
@@ -20,20 +20,14 @@ const CUSTODY_STAGES = [
   'Delivered to Family',
 ]
 
-// First 4 completed; stage 4 (Cremation Started) is overdue — logged Mar 13, expected Mar 14
-const MOCK_CUSTODY = [
-  { completed: true,  timestamp: 'Mar 12, 2024 · 11:30 PM', staff: 'Marcus Chen' },
-  { completed: true,  timestamp: 'Mar 13, 2024 · 12:45 AM', staff: 'Sandra Okafor' },
-  { completed: true,  timestamp: 'Mar 13, 2024 · 9:15 AM',  staff: 'James Whitfield' },
-  { completed: true,  timestamp: 'Mar 13, 2024 · 10:02 AM', staff: 'D. Holt — Pacific Cremations' },
-  { completed: false, expectedBy: 'Mar 14, 2024 10:00 AM' },
-  { completed: false },
-  { completed: false },
-  { completed: false },
-  { completed: false },
-]
+function now() {
+  return new Date().toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  })
+}
 
-function CustodyNode({ completed, overdue, gap }) {
+function CustodyNode({ completed, gap }) {
   if (completed) {
     return (
       <div className="w-5 h-5 rounded-full bg-sage flex items-center justify-center flex-shrink-0">
@@ -43,7 +37,7 @@ function CustodyNode({ completed, overdue, gap }) {
       </div>
     )
   }
-  if (overdue || gap) {
+  if (gap) {
     return (
       <div className="w-5 h-5 rounded-full bg-amber-light border-2 border-amber flex items-center justify-center flex-shrink-0">
         <svg className="w-2.5 h-2.5 text-amber" fill="currentColor" viewBox="0 0 20 20">
@@ -57,8 +51,103 @@ function CustodyNode({ completed, overdue, gap }) {
   )
 }
 
-function CustodyTimeline({ entries }) {
+// Modal shown when clicking a custody stage row
+function CustodyModal({ stage, entry, onSave, onClose }) {
+  const isCompleted = entry?.completed === true
+  const [staff, setStaff] = useState(entry?.staff ?? '')
+  const [timestamp, setTimestamp] = useState(entry?.timestamp ?? now())
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave(completed) {
+    setSaving(true)
+    await onSave(completed, completed ? staff : null, completed ? timestamp : null)
+    setSaving(false)
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/40"
+      onClick={onClose}
+    >
+      <div
+        className="bg-warm-white rounded-2xl border border-border shadow-xl w-full max-w-sm mx-4 p-6"
+        onClick={e => e.stopPropagation()}
+      >
+        <p className="font-sans text-xs text-muted uppercase tracking-wide mb-1">Chain of Custody</p>
+        <h3 className="font-display text-xl text-charcoal mb-5">{stage}</h3>
+
+        {isCompleted ? (
+          <>
+            <p className="font-sans text-sm text-slate mb-5">
+              Logged by <strong>{entry.staff}</strong> on {entry.timestamp}.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={onClose} className="flex-1">Cancel</Button>
+              <button
+                onClick={() => handleSave(false)}
+                disabled={saving}
+                className="flex-1 rounded-lg border border-red-soft bg-red-light text-red-soft font-sans text-sm font-medium py-2.5 px-4 hover:opacity-80 transition-opacity cursor-pointer disabled:opacity-50"
+              >
+                {saving ? 'Reverting…' : 'Revert step'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-3 mb-5">
+              <div>
+                <label className="font-sans text-xs text-muted block mb-1">Staff member</label>
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="Full name"
+                  value={staff}
+                  onChange={e => setStaff(e.target.value)}
+                  className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+                />
+              </div>
+              <div>
+                <label className="font-sans text-xs text-muted block mb-1">Date &amp; time</label>
+                <input
+                  type="text"
+                  value={timestamp}
+                  onChange={e => setTimestamp(e.target.value)}
+                  className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={onClose} className="flex-1">Cancel</Button>
+              <Button
+                variant="sage"
+                onClick={() => handleSave(true)}
+                disabled={saving || !staff.trim()}
+                className="flex-1"
+              >
+                {saving ? 'Saving…' : 'Mark complete'}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function CustodyTimeline({ entries, onUpdate }) {
+  const [modalIdx, setModalIdx] = useState(null)
   const lastCompletedIdx = entries.reduce((acc, e, i) => e.completed ? i : acc, -1)
+  const nextIdx = lastCompletedIdx + 1
+
+  async function handleSave(i, completed, staff, timestamp) {
+    await onUpdate(i, { completed, staff, timestamp })
+    setModalIdx(null)
+  }
+
+  function canInteract(i) {
+    // Allow: the next pending stage, or the last completed stage (to revert)
+    return i === nextIdx || i === lastCompletedIdx
+  }
 
   return (
     <div className="bg-warm-white rounded-xl border border-border px-6 py-5 mb-5">
@@ -77,54 +166,69 @@ function CustodyTimeline({ entries }) {
           const entry = entries[i] ?? {}
           const isCompleted = entry.completed === true
           const isGap = !isCompleted && i < lastCompletedIdx
-          const isOverdue = !isCompleted && !isGap && !!entry.expectedBy
           const isLast = i === CUSTODY_STAGES.length - 1
+          const interactive = canInteract(i)
+
+          const isNext = i === nextIdx && !isCompleted
 
           return (
             <div key={i} className="flex gap-3.5">
-              {/* Node + vertical connector */}
               <div className="flex flex-col items-center">
-                <CustodyNode completed={isCompleted} overdue={isOverdue} gap={isGap} />
+                <CustodyNode completed={isCompleted} gap={isGap} />
                 {!isLast && (
                   <div className={`w-px flex-1 my-1 min-h-[28px] ${isCompleted ? 'bg-sage' : 'bg-border'}`} />
                 )}
               </div>
 
-              {/* Row content */}
               <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-5'}`}>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`font-sans text-sm font-medium ${
-                    isCompleted ? 'text-charcoal' : isGap || isOverdue ? 'text-amber' : 'text-muted'
-                  }`}>
-                    {stage}
-                  </span>
-                  {isGap && (
-                    <Badge variant="amber">Gap detected</Badge>
-                  )}
-                  {isOverdue && (
-                    <Badge variant="amber">Overdue</Badge>
-                  )}
-                </div>
-                {isCompleted ? (
-                  <p className="font-sans text-xs text-muted mt-0.5">
-                    {entry.timestamp} · {entry.staff}
-                  </p>
-                ) : isOverdue ? (
-                  <p className="font-sans text-xs text-amber mt-0.5">
-                    Expected by {entry.expectedBy} — not yet logged
-                  </p>
-                ) : isGap ? (
-                  <p className="font-sans text-xs text-amber mt-0.5">
-                    No log entry — gap in chain
-                  </p>
+                {isNext ? (
+                  <button
+                    onClick={() => setModalIdx(i)}
+                    className="w-full text-left bg-sage/10 border border-sage/30 rounded-lg px-3 py-2.5 -mx-3 hover:bg-sage/20 transition-colors cursor-pointer outline-none group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-sans text-sm font-semibold text-sage">{stage}</span>
+                      
+                    </div>
+                    <p className="font-sans text-xs text-sage/70 mt-0.5">Tap to record staff &amp; time</p>
+                  </button>
                 ) : (
-                  <p className="font-sans text-xs text-muted mt-0.5">Pending</p>
+                  <>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => interactive && setModalIdx(i)}
+                        disabled={!interactive}
+                        className={`font-sans text-sm font-medium text-left border-0 bg-transparent outline-none transition-colors ${
+                          interactive ? 'cursor-pointer hover:underline' : 'cursor-default'
+                        } ${isCompleted ? 'text-charcoal' : isGap ? 'text-amber' : 'text-muted'}`}
+                      >
+                        {stage}
+                      </button>
+                      {isGap && <Badge variant="amber">Gap detected</Badge>}
+                    </div>
+                    {isCompleted ? (
+                      <p className="font-sans text-xs text-muted mt-0.5">{entry.timestamp} · {entry.staff}</p>
+                    ) : isGap ? (
+                      <p className="font-sans text-xs text-amber mt-0.5">No log entry — gap in chain</p>
+                    ) : (
+                      <p className="font-sans text-xs text-muted mt-0.5">Pending</p>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           )
         })}
       </div>
+
+      {modalIdx !== null && (
+        <CustodyModal
+          stage={CUSTODY_STAGES[modalIdx]}
+          entry={entries[modalIdx]}
+          onSave={(completed, staff, timestamp) => handleSave(modalIdx, completed, staff, timestamp)}
+          onClose={() => setModalIdx(null)}
+        />
+      )}
     </div>
   )
 }
@@ -192,13 +296,25 @@ function DocRow({ doc }) {
   )
 }
 
+const EMPTY_CUSTODY = Array.from({ length: 9 }, () => ({ completed: false, staff: null, timestamp: null }))
+
 export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
   const [notes, setNotes] = useState(caseData.notes ?? [])
   const [newNote, setNewNote] = useState('')
   const [status, setStatus] = useState(caseData.status)
   const [documents, setDocuments] = useState(caseData.documents ?? [])
   const [uploading, setUploading] = useState(false)
+  const [custody, setCustody] = useState(EMPTY_CUSTODY)
   const uploadInputRef = useRef(null)
+
+  useEffect(() => {
+    fetchCustody(caseData.id).then(setCustody).catch(() => {})
+  }, [caseData.id])
+
+  async function handleCustodyUpdate(stageIdx, payload) {
+    const saved = await updateCustodyStage(caseData.id, stageIdx, payload)
+    setCustody(prev => prev.map((e, i) => i === stageIdx ? { ...e, ...saved } : e))
+  }
 
   async function handleUpload(file) {
     setUploading(true)
@@ -379,7 +495,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
         <div className="space-y-5 col-span-2">
 
           {/* Chain of Custody */}
-          <CustodyTimeline entries={MOCK_CUSTODY} />
+          <CustodyTimeline entries={custody} onUpdate={handleCustodyUpdate} />
           <div className="bg-warm-white rounded-xl border border-border p-6">
             <h2 className="font-display text-xl text-charcoal mb-4">Case Notes</h2>
 
