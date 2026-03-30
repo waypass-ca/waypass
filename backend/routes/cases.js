@@ -24,10 +24,6 @@ function shapeRow(row) {
     date: row.date,
     amount: row.amount,
     crematorium: row.crematorium_name,
-    timeOfDeath: row.time_of_death,
-    removalStaff: row.removal_staff,
-    removalTime: row.removal_time,
-    wristbandId: row.wristband_id,
     documents: row.documents ?? [],
     notes: (row.case_notes ?? [])
       .sort((a, b) => a.id - b.id)
@@ -94,10 +90,6 @@ router.post('/', requireAuth, async (req, res, next) => {
         amount: body.amount,
         crematorium_id: body.crematorium_id ?? null,
         crematorium_name: body.crematorium_name ?? null,
-        time_of_death: body.time_of_death ?? null,
-        removal_staff: body.removal_staff ?? null,
-        removal_time: body.removal_time ?? null,
-        wristband_id: body.wristband_id ?? null,
         documents: body.documents ?? [],
       })
       .select('*, case_notes(*)')
@@ -154,84 +146,6 @@ router.post('/:id/notes', requireAuth, async (req, res, next) => {
 
     if (error) throw error
     res.status(201).json({ author: data.author, text: data.text, time: data.time })
-  } catch (err) {
-    next(err)
-  }
-})
-
-// ── POST /api/cases/:id/documents ───────────────
-router.post('/:id/documents', requireAuth, async (req, res, next) => {
-  try {
-    const { type, path, name } = req.body
-    if (!path || !name) return res.status(400).json({ error: 'path and name are required' })
-
-    // Fetch current documents array then append
-    const { data: existing, error: fetchError } = await supabase
-      .from('cases')
-      .select('documents')
-      .eq('id', req.params.id)
-      .single()
-    if (fetchError) throw fetchError
-
-    const current = existing.documents ?? []
-    const updated = [...current, { type: type ?? null, path, name }]
-
-    const { error } = await supabase
-      .from('cases')
-      .update({ documents: updated })
-      .eq('id', req.params.id)
-    if (error) throw error
-
-    res.status(201).json({ type: type ?? null, path, name })
-  } catch (err) {
-    next(err)
-  }
-})
-
-// ── GET /api/cases/:id/custody ───────────────────
-router.get('/:id/custody', async (req, res, next) => {
-  try {
-    const { data, error } = await supabase
-      .from('case_custody')
-      .select('stage, completed, staff, timestamp')
-      .eq('case_id', req.params.id)
-      .order('stage')
-    if (error) throw error
-
-    // Return sparse array — client fills gaps with { completed: false }
-    const stages = Array.from({ length: 9 }, (_, i) => {
-      const row = data.find(r => r.stage === i)
-      return row
-        ? { completed: row.completed, staff: row.staff ?? null, timestamp: row.timestamp ?? null }
-        : { completed: false, staff: null, timestamp: null }
-    })
-    res.json(stages)
-  } catch (err) {
-    next(err)
-  }
-})
-
-// ── PUT /api/cases/:id/custody/:stage ────────────
-router.put('/:id/custody/:stage', requireAuth, async (req, res, next) => {
-  try {
-    const stage = parseInt(req.params.stage, 10)
-    if (isNaN(stage) || stage < 0 || stage > 8) {
-      return res.status(400).json({ error: 'stage must be 0–8' })
-    }
-
-    const { completed, staff, timestamp } = req.body
-
-    const { data, error } = await supabase
-      .from('case_custody')
-      .upsert(
-        { case_id: req.params.id, stage, completed: !!completed, staff: staff ?? null, timestamp: timestamp ?? null },
-        { onConflict: 'case_id,stage' }
-      )
-      .select()
-      .single()
-
-    if (error) throw error
-    res.json({ completed: data.completed, staff: data.staff, timestamp: data.timestamp })
   } catch (err) {
     next(err)
   }
