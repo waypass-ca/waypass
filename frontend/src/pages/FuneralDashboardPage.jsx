@@ -3,7 +3,6 @@ import { fetchCases, updateCaseStatus, createCase } from '../lib/api.js'
 import { Sidebar } from '../components/layout/Sidebar'
 import { PageHeader } from '../components/layout/PageHeader'
 import { StatsRow } from '../components/dashboard/StatsRow'
-import { OperationalAlerts } from '../components/dashboard/OperationalAlerts'
 import { CasesTable } from '../components/dashboard/CasesTable'
 import { RevenueChart } from '../components/dashboard/RevenueChart'
 import { CasesPage } from '../components/dashboard/CasesPage'
@@ -116,7 +115,6 @@ export function FuneralDashboardPage() {
               rightSlot={<Button variant="primary" onClick={() => setView('new-case')}>+ New Case</Button>}
             />
             <StatsRow />
-            <OperationalAlerts />
             <CasesTable
               cases={cases.slice(0, 5)}
               onViewCase={viewCase}

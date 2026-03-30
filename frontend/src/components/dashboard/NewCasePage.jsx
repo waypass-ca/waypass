@@ -1,25 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { fetchPackages, fetchCrematoriums, createCase } from '../../lib/api.js'
-import { supabase } from '../../lib/supabase.js'
 import { PackageCard } from '../widget/PackageCard'
-import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 
-const STEPS = ['First Call', 'Removal Log', 'Documents', 'Package', 'Crematorium', 'Confirm']
-
-const STAFF_MEMBERS = [
-  'James Whitfield',
-  'Sandra Okafor',
-  'Marcus Chen',
-  'Priya Delacroix',
-  'Tom Estrada',
-]
-
-const INITIAL_DOCS = {
-  deathCertificate: { status: 'idle' },
-  cremationPermit: { status: 'idle' },
-  nokAuthorization: { status: 'idle' },
-}
+const STEPS = ['Deceased', 'Contact', 'Package', 'Crematorium', 'Confirm']
 
 function useData() {
   const [packages, setPackages] = useState([])
@@ -54,7 +38,7 @@ function StepIndicator({ currentStep }) {
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`w-8 h-0.5 mx-1 mb-4 ${i < currentStep ? 'bg-sage' : 'bg-border'}`} />
+              <div className={`w-10 h-0.5 mx-1 mb-4 ${i < currentStep ? 'bg-sage' : 'bg-border'}`} />
             )}
           </div>
         )
@@ -90,61 +74,6 @@ function SelectField({ label, options, value, onChange }) {
         <option value="">Select…</option>
         {options.map(o => <option key={o}>{o}</option>)}
       </select>
-    </div>
-  )
-}
-
-function DocumentSlot({ label, doc, onUpload }) {
-  const inputRef = useRef(null)
-  const isDone = doc.status === 'done'
-  const isUploading = doc.status === 'uploading'
-  const isError = doc.status === 'error'
-
-  return (
-    <div className="flex items-center justify-between py-3.5 border-b border-border last:border-0">
-      <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-sage-light' : 'bg-cream'}`}>
-          {isUploading ? (
-            <svg className="w-4 h-4 text-muted animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-          ) : (
-            <svg className={`w-4 h-4 ${isDone ? 'text-sage' : isError ? 'text-red-soft' : 'text-muted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              {isDone
-                ? <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                : <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-              }
-            </svg>
-          )}
-        </div>
-        <div>
-          <p className="font-sans text-sm font-medium text-charcoal">{label}</p>
-          <p className="font-sans text-xs text-muted mt-0.5 max-w-[200px] truncate">
-            {isDone ? doc.name : isError ? 'Upload failed — try again' : 'Required'}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <Badge variant={isDone ? 'sage' : isError ? 'red' : 'amber'}>
-          {isDone ? 'Uploaded' : isError ? 'Error' : 'Pending'}
-        </Badge>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
-          className="hidden"
-          onChange={e => { if (e.target.files[0]) onUpload(e.target.files[0]); e.target.value = '' }}
-        />
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={isUploading}
-          className="text-xs font-sans text-slate hover:text-charcoal transition-colors border border-border rounded-lg px-3 py-1.5 bg-white hover:border-charcoal cursor-pointer outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isUploading ? 'Uploading…' : isDone ? 'Replace' : 'Upload'}
-        </button>
-      </div>
     </div>
   )
 }
@@ -190,52 +119,28 @@ function CrematoriumCard({ crm, selected, onSelect }) {
 export function NewCasePage({ onBack, onComplete }) {
   const [step, setStep] = useState(0)
   const { packages, crematoriums } = useData()
-  const sessionId = useRef(crypto.randomUUID()).current
 
-  const [firstCall, setFirstCall] = useState({
-    firstName: '', lastName: '',
-    dateOfDeath: '', timeOfDeath: '',
-    placeOfDeath: '',
-    nokName: '', nokRelationship: '', nokPhone: '', nokEmail: '',
-  })
-  const [removalLog, setRemovalLog] = useState({
-    staffMember: '', timeOfRemoval: '', wristbandId: '',
-  })
-  const [documents, setDocuments] = useState({ ...INITIAL_DOCS })
+  // Form state
+  const [deceased, setDeceased] = useState({ firstName: '', lastName: '', dob: '', dop: '', location: '', isDeceased: true })
+  const [contact, setContact] = useState({ name: '', relationship: '', phone: '', email: '' })
   const [selectedPackage, setSelectedPackage] = useState(null)
   const [selectedCrematorium, setSelectedCrematorium] = useState(null)
   const [isComplete, setIsComplete] = useState(false)
   const [submitError, setSubmitError] = useState(null)
 
-  function setFC(key, val) { setFirstCall(p => ({ ...p, [key]: val })) }
-  function setRL(key, val) { setRemovalLog(p => ({ ...p, [key]: val })) }
-
-  async function uploadDocument(type, file) {
-    setDocuments(p => ({ ...p, [type]: { status: 'uploading' } }))
-    const ext = file.name.split('.').pop()
-    const path = `${sessionId}/${type}/${Date.now()}.${ext}`
-    const { error } = await supabase.storage
-      .from('case-documents')
-      .upload(path, file, { upsert: true })
-    if (error) {
-      setDocuments(p => ({ ...p, [type]: { status: 'error' } }))
-      return
-    }
-    setDocuments(p => ({ ...p, [type]: { status: 'done', path, name: file.name } }))
-  }
-
   async function handleConfirm() {
     setSubmitError(null)
     const payload = {
-      deceased: `${firstCall.firstName} ${firstCall.lastName}`.trim() || 'New Decedent',
-      family: firstCall.nokName ? `${firstCall.nokName.split(' ').slice(-1)[0]} Family` : 'New Family',
-      contact_name: firstCall.nokName,
-      contact_phone: firstCall.nokPhone,
-      contact_email: firstCall.nokEmail,
-      relationship: firstCall.nokRelationship,
-      dop: firstCall.dateOfDeath || null,
-      location: firstCall.placeOfDeath,
-      is_deceased: true,
+      deceased: `${deceased.firstName} ${deceased.lastName}`.trim() || 'New Decedent',
+      family: contact.name ? `${contact.name.split(' ').slice(-1)[0]} Family` : 'New Family',
+      contact_name: contact.name,
+      contact_phone: contact.phone,
+      contact_email: contact.email,
+      relationship: contact.relationship,
+      dob: deceased.dob,
+      dop: deceased.isDeceased ? deceased.dop : null,
+      location: deceased.location,
+      is_deceased: deceased.isDeceased,
       package_id: selectedPackage?.id ?? null,
       package_name: selectedPackage?.name ?? 'Essential',
       package_price: selectedPackage?.price ?? 895,
@@ -245,13 +150,7 @@ export function NewCasePage({ onBack, onComplete }) {
       amount: selectedPackage?.price ?? 895,
       crematorium_id: selectedCrematorium?.id ?? null,
       crematorium_name: selectedCrematorium?.name ?? null,
-      time_of_death: firstCall.timeOfDeath || null,
-      removal_staff: removalLog.staffMember || null,
-      removal_time: removalLog.timeOfRemoval || null,
-      wristband_id: removalLog.wristbandId || null,
-      documents: Object.entries(documents)
-        .filter(([, v]) => v.status === 'done')
-        .map(([type, { path, name }]) => ({ type, path, name })),
+      documents: [],
     }
     try {
       const newCase = await createCase(payload)
@@ -301,87 +200,69 @@ export function NewCasePage({ onBack, onComplete }) {
 
       <StepIndicator currentStep={step} />
 
-      {/* Step 0 — First Call */}
+      {/* Step 0 — Deceased Info */}
       {step === 0 && (
-        <div className="bg-warm-white rounded-xl border border-border p-7 max-w-2xl m-auto">
-          <h2 className="font-sans text-sm font-semibold text-charcoal uppercase tracking-wide mb-5">First Call Information</h2>
+        <div className="bg-warm-white rounded-xl border border-border p-7 max-w-2xl">
+          <h2 className="font-sans text-sm font-semibold text-charcoal uppercase tracking-wide mb-5">About the Deceased</h2>
+
+          {/* Deceased toggle */}
+          <div className={`flex items-center justify-between p-4 rounded-xl border-2 mb-6 transition-colors ${deceased.isDeceased ? 'border-sage bg-sage-light/40' : 'border-border bg-cream'}`}>
+            <div>
+              <p className="font-sans text-sm font-medium text-charcoal">Confirmed Deceased</p>
+              <p className="font-sans text-xs text-muted mt-0.5">
+                {deceased.isDeceased ? 'Person has passed — date of passing required' : 'Pre-arrangement — person is still living'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDeceased(p => ({ ...p, isDeceased: !p.isDeceased }))}
+              className={`w-11 h-6 rounded-full transition-all cursor-pointer flex-shrink-0 ml-6 relative border-0 outline-none ${deceased.isDeceased ? 'bg-sage' : 'bg-border'}`}
+            >
+              <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${deceased.isDeceased ? 'left-6' : 'left-1'}`} />
+            </button>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
-            <InputField label="First Name" placeholder="Deceased first name" value={firstCall.firstName} onChange={v => setFC('firstName', v)} />
-            <InputField label="Last Name" placeholder="Deceased last name" value={firstCall.lastName} onChange={v => setFC('lastName', v)} />
-            <InputField label="Date of Death" type="date" value={firstCall.dateOfDeath} onChange={v => setFC('dateOfDeath', v)} />
-            <InputField label="Time of Death" type="time" value={firstCall.timeOfDeath} onChange={v => setFC('timeOfDeath', v)} />
-            <div className="col-span-2">
+            <InputField label="First Name" placeholder="First name" value={deceased.firstName} onChange={v => setDeceased(p => ({ ...p, firstName: v }))} />
+            <InputField label="Last Name" placeholder="Last name" value={deceased.lastName} onChange={v => setDeceased(p => ({ ...p, lastName: v }))} />
+            <InputField label="Date of Birth" type="date" value={deceased.dob} onChange={v => setDeceased(p => ({ ...p, dob: v }))} />
+            {deceased.isDeceased && (
+              <InputField label="Date of Passing" type="date" value={deceased.dop} onChange={v => setDeceased(p => ({ ...p, dop: v }))} />
+            )}
+            <div className={deceased.isDeceased ? 'col-span-2' : 'col-span-1'}>
               <SelectField
-                label="Place of Death"
+                label="Current Location"
                 options={['Hospital', 'Residence / Home', 'Nursing Facility', 'Hospice', 'Other']}
-                value={firstCall.placeOfDeath}
-                onChange={v => setFC('placeOfDeath', v)}
+                value={deceased.location}
+                onChange={v => setDeceased(p => ({ ...p, location: v }))}
               />
             </div>
           </div>
-
-          <div className="border-t border-border mt-6 pt-6">
-            <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-4">Next of Kin</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <InputField label="Full Name" placeholder="Contact's full name" value={firstCall.nokName} onChange={v => setFC('nokName', v)} />
-              </div>
-              <SelectField
-                label="Relationship to Deceased"
-                options={['Spouse / Partner', 'Child', 'Parent', 'Sibling', 'Other Family', 'Legal Representative']}
-                value={firstCall.nokRelationship}
-                onChange={v => setFC('nokRelationship', v)}
-              />
-              <InputField label="Phone Number" placeholder="(415) 555-0100" type="tel" value={firstCall.nokPhone} onChange={v => setFC('nokPhone', v)} />
-              <div className="col-span-2">
-                <InputField label="Email Address" placeholder="email@example.com" type="email" value={firstCall.nokEmail} onChange={v => setFC('nokEmail', v)} />
-              </div>
-            </div>
-          </div>
-
           <div className="flex justify-end mt-6">
             <Button variant="primary" onClick={() => setStep(1)}>Continue →</Button>
           </div>
         </div>
       )}
 
-      {/* Step 1 — Removal Log */}
+      {/* Step 1 — Contact Info */}
       {step === 1 && (
-        <div className="bg-warm-white rounded-xl border border-border p-7 max-w-2xl m-auto">
-          <h2 className="font-sans text-sm font-semibold text-charcoal uppercase tracking-wide mb-1">Removal Log</h2>
-
-          <div className="flex items-start gap-2.5 bg-blue-light rounded-lg px-4 py-3 mb-6 mt-3">
-            <svg className="w-4 h-4 text-blue-soft flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-            </svg>
-            <p className="font-sans text-xs text-blue-soft leading-relaxed">
-              Saving this step automatically creates the first chain-of-custody entry for this case, timestamped to the time of removal.
-            </p>
-          </div>
-
+        <div className="bg-warm-white rounded-xl border border-border p-7 max-w-2xl">
+          <h2 className="font-sans text-sm font-semibold text-charcoal uppercase tracking-wide mb-5">Family Contact</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <SelectField
-                label="Dispatching Staff Member"
-                options={STAFF_MEMBERS}
-                value={removalLog.staffMember}
-                onChange={v => setRL('staffMember', v)}
-              />
+              <InputField label="Full Name" placeholder="Contact's full name" value={contact.name} onChange={v => setContact(p => ({ ...p, name: v }))} />
             </div>
-            <InputField
-              label="Time of Removal"
-              type="datetime-local"
-              value={removalLog.timeOfRemoval}
-              onChange={v => setRL('timeOfRemoval', v)}
+            <SelectField
+              label="Relationship to Deceased"
+              options={['Spouse / Partner', 'Child', 'Parent', 'Sibling', 'Other Family', 'Legal Representative']}
+              value={contact.relationship}
+              onChange={v => setContact(p => ({ ...p, relationship: v }))}
             />
-            <InputField
-              label="Temporary ID Wristband #"
-              placeholder="e.g. WB-2024-0031"
-              value={removalLog.wristbandId}
-              onChange={v => setRL('wristbandId', v)}
-            />
+            <InputField label="Phone Number" placeholder="(415) 555-0100" type="tel" value={contact.phone} onChange={v => setContact(p => ({ ...p, phone: v }))} />
+            <div className="col-span-2">
+              <InputField label="Email Address" placeholder="email@example.com" type="email" value={contact.email} onChange={v => setContact(p => ({ ...p, email: v }))} />
+            </div>
           </div>
-
           <div className="flex justify-between mt-6">
             <Button variant="secondary" onClick={() => setStep(0)}>← Back</Button>
             <Button variant="primary" onClick={() => setStep(2)}>Continue →</Button>
@@ -389,43 +270,8 @@ export function NewCasePage({ onBack, onComplete }) {
         </div>
       )}
 
-      {/* Step 2 — Documents */}
+      {/* Step 2 — Package */}
       {step === 2 && (
-        <div className="bg-warm-white rounded-xl border border-border p-7 max-w-2xl m-auto">
-          <h2 className="font-sans text-sm font-semibold text-charcoal uppercase tracking-wide mb-1">Required Documents</h2>
-          <p className="font-sans text-xs text-muted mb-6 mt-1">Upload documents now or continue — you can upload later from the case file.</p>
-
-          <div>
-            <DocumentSlot
-              label="Death Certificate"
-              doc={documents.deathCertificate}
-              onUpload={file => uploadDocument('deathCertificate', file)}
-            />
-            <DocumentSlot
-              label="Cremation Permit"
-              doc={documents.cremationPermit}
-              onUpload={file => uploadDocument('cremationPermit', file)}
-            />
-            <DocumentSlot
-              label="Next-of-Kin Authorization"
-              doc={documents.nokAuthorization}
-              onUpload={file => uploadDocument('nokAuthorization', file)}
-            />
-          </div>
-
-          <p className="font-sans text-xs text-muted mt-5 leading-relaxed">
-            Case will be flagged as <span className="text-amber font-medium">Authorization Pending</span> until all three documents are uploaded.
-          </p>
-
-          <div className="flex justify-between mt-6">
-            <Button variant="secondary" onClick={() => setStep(1)}>← Back</Button>
-            <Button variant="primary" onClick={() => setStep(3)}>Continue →</Button>
-          </div>
-        </div>
-      )}
-
-      {/* Step 3 — Package */}
-      {step === 3 && (
         <div>
           <div className="grid grid-cols-3 gap-4 max-w-3xl mb-6">
             {packages.map(pkg => (
@@ -438,16 +284,16 @@ export function NewCasePage({ onBack, onComplete }) {
             ))}
           </div>
           <div className="flex justify-between max-w-3xl">
-            <Button variant="secondary" onClick={() => setStep(2)}>← Back</Button>
-            <Button variant="primary" onClick={() => setStep(4)} disabled={!selectedPackage}>
+            <Button variant="secondary" onClick={() => setStep(1)}>← Back</Button>
+            <Button variant="primary" onClick={() => setStep(3)} disabled={!selectedPackage}>
               {selectedPackage ? `Continue with ${selectedPackage.name} →` : 'Select a package'}
             </Button>
           </div>
         </div>
       )}
 
-      {/* Step 4 — Crematorium */}
-      {step === 4 && (
+      {/* Step 3 — Crematorium */}
+      {step === 3 && (
         <div>
           <div className="grid grid-cols-3 gap-4 max-w-3xl mb-6">
             {crematoriums.map(crm => (
@@ -460,16 +306,16 @@ export function NewCasePage({ onBack, onComplete }) {
             ))}
           </div>
           <div className="flex justify-between max-w-3xl">
-            <Button variant="secondary" onClick={() => setStep(3)}>← Back</Button>
-            <Button variant="primary" onClick={() => setStep(5)} disabled={!selectedCrematorium}>
+            <Button variant="secondary" onClick={() => setStep(2)}>← Back</Button>
+            <Button variant="primary" onClick={() => setStep(4)} disabled={!selectedCrematorium}>
               {selectedCrematorium ? `Assign ${selectedCrematorium.name.split(' ')[0]} →` : 'Select a crematorium'}
             </Button>
           </div>
         </div>
       )}
 
-      {/* Step 5 — Confirm */}
-      {step === 5 && (
+      {/* Step 4 — Confirm */}
+      {step === 4 && (
         <div className="max-w-2xl">
           <div className="bg-charcoal rounded-xl p-6 text-warm-white mb-4">
             <h3 className="font-display text-xl mb-5">Case Summary</h3>
@@ -477,26 +323,12 @@ export function NewCasePage({ onBack, onComplete }) {
               <div className="flex justify-between py-3 border-b border-white/10">
                 <span className="font-sans text-sm text-white/60">Deceased</span>
                 <span className="font-sans text-sm font-medium">
-                  {firstCall.firstName} {firstCall.lastName}
+                  {deceased.firstName} {deceased.lastName}
                 </span>
               </div>
               <div className="flex justify-between py-3 border-b border-white/10">
-                <span className="font-sans text-sm text-white/60">Date of Death</span>
-                <span className="font-sans text-sm font-medium">{firstCall.dateOfDeath || '—'}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-white/10">
-                <span className="font-sans text-sm text-white/60">Next of Kin</span>
-                <span className="font-sans text-sm font-medium">{firstCall.nokName || '—'}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-white/10">
-                <span className="font-sans text-sm text-white/60">Removal Staff</span>
-                <span className="font-sans text-sm font-medium">{removalLog.staffMember || '—'}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-white/10">
-                <span className="font-sans text-sm text-white/60">Documents</span>
-                <span className="font-sans text-sm font-medium">
-                  {Object.values(documents).filter(v => v.status === 'done').length} / 3 uploaded
-                </span>
+                <span className="font-sans text-sm text-white/60">Family Contact</span>
+                <span className="font-sans text-sm font-medium">{contact.name || '—'}</span>
               </div>
               <div className="flex justify-between py-3 border-b border-white/10">
                 <span className="font-sans text-sm text-white/60">Package</span>
@@ -517,7 +349,7 @@ export function NewCasePage({ onBack, onComplete }) {
             <p className="font-sans text-xs text-red-soft mb-3">{submitError}</p>
           )}
           <div className="flex justify-between">
-            <Button variant="secondary" onClick={() => setStep(4)}>← Back</Button>
+            <Button variant="secondary" onClick={() => setStep(3)}>← Back</Button>
             <Button variant="sage" onClick={handleConfirm}>Create Case →</Button>
           </div>
         </div>
