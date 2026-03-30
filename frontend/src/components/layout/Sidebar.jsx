@@ -2,15 +2,17 @@ import { useState } from 'react'
 import {
   Search, Home, Inbox, Archive, Building2, UserPen,
   CalendarPlus, MapPinPen, FileText, Landmark, Settings, ChevronDown,
-  ChevronsUpDown,
+  ChevronsUpDown, ArrowLeftToLine, ArrowRightToLine,
 } from 'lucide-react'
 
-function NavItem({ id, label, icon: Icon, badge, isActive, onClick }) {
+function NavItem({ id, label, icon: Icon, badge, isActive, onClick, collapsed }) {
   return (
     <button
       onClick={() => onClick(id)}
+      title={collapsed ? label : undefined}
       className={`
-        w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-sans mb-px text-left transition-colors cursor-pointer border-0 outline-none
+        w-full flex items-center rounded-md text-[13px] font-sans mb-px text-left transition-colors cursor-pointer border-0 outline-none
+        ${collapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5'}
         ${isActive
           ? 'bg-charcoal/[0.06] text-charcoal font-medium'
           : 'text-slate hover:bg-charcoal/[0.04] font-normal'
@@ -18,17 +20,22 @@ function NavItem({ id, label, icon: Icon, badge, isActive, onClick }) {
       `}
     >
       <Icon size={14} className={`flex-shrink-0 ${isActive ? 'text-charcoal' : 'text-muted'}`} strokeWidth={1.8} />
-      <span className="flex-1 truncate">{label}</span>
-      {badge && (
-        <span className="font-sans text-[10px] font-semibold text-muted bg-border rounded-full px-1.5 py-px leading-none">
-          {badge}
-        </span>
+      {!collapsed && (
+        <>
+          <span className="flex-1 truncate">{label}</span>
+          {badge && (
+            <span className="font-sans text-[10px] font-semibold text-muted bg-border rounded-full px-1.5 py-px leading-none">
+              {badge}
+            </span>
+          )}
+        </>
       )}
     </button>
   )
 }
 
-function SectionHeader({ label, collapsed, onToggle }) {
+function SectionHeader({ label, collapsed: sectionCollapsed, onToggle, sidebarCollapsed }) {
+  if (sidebarCollapsed) return <div className="border-t border-border my-2" />
   return (
     <button
       onClick={onToggle}
@@ -36,7 +43,7 @@ function SectionHeader({ label, collapsed, onToggle }) {
     >
       <ChevronDown
         size={12}
-        className={`text-muted transition-transform duration-150 ${collapsed ? '-rotate-90' : ''}`}
+        className={`text-muted transition-transform duration-150 ${sectionCollapsed ? '-rotate-90' : ''}`}
         strokeWidth={2}
       />
       <span className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider group-hover:text-slate transition-colors">
@@ -47,6 +54,7 @@ function SectionHeader({ label, collapsed, onToggle }) {
 }
 
 export function Sidebar({ activeItem = 'home', onItemChange }) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [collapsed, setCollapsed] = useState({ patients: false, crematoriums: false })
 
   function toggle(id) {
@@ -54,52 +62,72 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
   }
 
   return (
-    <aside className="w-[220px] bg-warm-white border-r border-border flex flex-col flex-shrink-0 min-h-screen">
+    <aside
+      className="bg-warm-white border-r border-border flex flex-col flex-shrink-0 min-h-screen transition-[width] duration-200"
+      style={{ width: sidebarCollapsed ? '52px' : '220px' }}
+    >
       {/* Org header */}
-      <div className="px-3 py-4 border-b border-border">
-        <button className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-charcoal/[0.04] transition-colors cursor-pointer border-0 bg-transparent outline-none text-left">
-          <div className="w-5 h-5 rounded bg-charcoal flex items-center justify-center flex-shrink-0">
+      <div className={`py-4 border-b border-border ${sidebarCollapsed ? 'px-2' : 'px-3'}`}>
+        {sidebarCollapsed ? (
+          <div className="w-7 h-7 rounded bg-charcoal flex items-center justify-center mx-auto">
             <span className="font-sans text-[9px] font-bold text-warm-white leading-none">EG</span>
           </div>
-          <span className="font-sans text-[13px] font-semibold text-charcoal flex-1 truncate">Evergreen Medical</span>
-          <ChevronsUpDown size={12} className="text-muted flex-shrink-0" strokeWidth={2} />
-        </button>
+        ) : (
+          <button className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-charcoal/[0.04] transition-colors cursor-pointer border-0 bg-transparent outline-none text-left">
+            <div className="w-5 h-5 rounded bg-charcoal flex items-center justify-center flex-shrink-0">
+              <span className="font-sans text-[9px] font-bold text-warm-white leading-none">EG</span>
+            </div>
+            <span className="font-sans text-[13px] font-semibold text-charcoal flex-1 truncate">Evergreen Medical</span>
+            <ChevronsUpDown size={12} className="text-muted flex-shrink-0" strokeWidth={2} />
+          </button>
+        )}
       </div>
 
       {/* Nav */}
-      <nav className="px-2.5 py-3 flex-1 overflow-y-auto">
-        {/* Top items */}
-        <NavItem id="search"  label="Search"  icon={Search}  isActive={activeItem === 'search'}  onClick={onItemChange} />
-        <NavItem id="home"    label="Home"    icon={Home}    isActive={activeItem === 'home'}    onClick={onItemChange} />
-        <NavItem id="inbox"   label="Inbox"   icon={Inbox}   isActive={activeItem === 'inbox'}   onClick={onItemChange} />
+      <nav className={`py-3 flex-1 overflow-y-auto overflow-x-hidden ${sidebarCollapsed ? 'px-1.5' : 'px-2.5'}`}>
+        <NavItem id="search"  label="Search"  icon={Search}  isActive={activeItem === 'search'}  onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="home"    label="Home"    icon={Home}    isActive={activeItem === 'home'}    onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="inbox"   label="Inbox"   icon={Inbox}   isActive={activeItem === 'inbox'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
 
-        {/* Patients section */}
-        <SectionHeader label="Patients" collapsed={collapsed.patients} onToggle={() => toggle('patients')} />
+        <SectionHeader label="Patients" collapsed={collapsed.patients} onToggle={() => toggle('patients')} sidebarCollapsed={sidebarCollapsed} />
         {!collapsed.patients && (
           <>
-            <NavItem id="cases"         label="Cases"         icon={Archive}     isActive={activeItem === 'cases'}         onClick={onItemChange} />
-            <NavItem id="family-editor" label="Family Editor" icon={UserPen}       isActive={activeItem === 'family-editor'} onClick={onItemChange} />
+            <NavItem id="cases"         label="Cases"         icon={Archive}  isActive={activeItem === 'cases'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="family-editor" label="Family Editor" icon={UserPen}  isActive={activeItem === 'family-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
           </>
         )}
 
-        {/* Crematoriums section */}
-        <SectionHeader label="Crematoriums" collapsed={collapsed.crematoriums} onToggle={() => toggle('crematoriums')} />
+        <SectionHeader label="Crematoriums" collapsed={collapsed.crematoriums} onToggle={() => toggle('crematoriums')} sidebarCollapsed={sidebarCollapsed} />
         {!collapsed.crematoriums && (
           <>
-            <NavItem id="partners"         label="Partners"         icon={Building2}   isActive={activeItem === 'partners'}         onClick={onItemChange} />
-            <NavItem id="book-cremation"   label="Book Cremation"   icon={CalendarPlus} isActive={activeItem === 'book-cremation'}   onClick={onItemChange} />
-            <NavItem id="crematory-editor" label="Crematory Editor" icon={MapPinPen}  isActive={activeItem === 'crematory-editor'} onClick={onItemChange} />
+            <NavItem id="partners"         label="Partners"         icon={Building2}   isActive={activeItem === 'partners'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="book-cremation"   label="Book Cremation"   icon={CalendarPlus} isActive={activeItem === 'book-cremation'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="crematory-editor" label="Crematory Editor" icon={MapPinPen}    isActive={activeItem === 'crematory-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
           </>
         )}
 
-        {/* Divider */}
         <div className="border-t border-border my-3" />
 
-        {/* Bottom items */}
-        <NavItem id="documents"  label="Documents"  icon={FileText}    isActive={activeItem === 'documents'}  onClick={onItemChange} />
-        <NavItem id="financials" label="Financials" icon={Landmark}  isActive={activeItem === 'financials'} onClick={onItemChange} />
-        <NavItem id="settings"   label="Settings"   icon={Settings}    isActive={activeItem === 'settings'}   onClick={onItemChange} />
+        <NavItem id="documents"  label="Documents"  icon={FileText}   isActive={activeItem === 'documents'}  onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="financials" label="Financials" icon={Landmark}   isActive={activeItem === 'financials'} onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="settings"   label="Settings"   icon={Settings}   isActive={activeItem === 'settings'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
+
+        <div className="border-t border-border my-3" />
+
+        <button
+          onClick={() => setSidebarCollapsed(p => !p)}
+          className={`w-full flex items-center rounded-md text-[13px] font-sans mb-px text-left transition-colors cursor-pointer border-0 outline-none text-muted hover:bg-charcoal/[0.04] hover:text-charcoal ${sidebarCollapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5'}`}
+        >
+          {sidebarCollapsed
+            ? <ArrowRightToLine size={14} strokeWidth={1.8} />
+            : <>
+                <ArrowLeftToLine size={14} strokeWidth={1.8} className="flex-shrink-0" />
+                <span>Close sidebar</span>
+              </>
+          }
+        </button>
       </nav>
+
     </aside>
   )
 }

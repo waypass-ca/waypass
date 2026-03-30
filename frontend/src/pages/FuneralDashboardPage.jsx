@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react'
-import { fetchCases, updateCaseStatus, createCase } from '../lib/api.js'
+import { fetchCases, updateCaseStatus } from '../lib/api.js'
 import { Sidebar } from '../components/layout/Sidebar'
 import { PageHeader } from '../components/layout/PageHeader'
-import { StatsRow } from '../components/dashboard/StatsRow'
-import { OperationalAlerts } from '../components/dashboard/OperationalAlerts'
-import { CasesTable } from '../components/dashboard/CasesTable'
-import { RevenueChart } from '../components/dashboard/RevenueChart'
+import { HomeDashboard } from '../components/dashboard/HomeDashboard'
 import { CasesPage } from '../components/dashboard/CasesPage'
 import { CaseDetailPage } from '../components/dashboard/CaseDetailPage'
 import { NewCasePage } from '../components/dashboard/NewCasePage'
@@ -137,22 +134,11 @@ export function FuneralDashboardPage() {
 
         {/* ── Dashboard ── */}
         {view === 'dashboard' && (
-          <>
-            <PageHeader
-              title="Dashboard"
-              subtitle="Evergreen Memorial · San Francisco, CA"
-              // date="March 10, 2024"
-              rightSlot={<Button variant="primary" onClick={() => setView('new-case')}>+ New Case</Button>}
-            />
-            <StatsRow />
-            <OperationalAlerts />
-            <CasesTable
-              cases={cases.slice(0, 5)}
-              onViewCase={viewCase}
-              onViewAll={() => navigate('cases')}
-            />
-            <RevenueChart />
-          </>
+          <HomeDashboard
+            cases={cases}
+            onViewCase={viewCase}
+            onNewCase={() => setView('new-case')}
+          />
         )}
 
         {/* ── Cases list ── */}
