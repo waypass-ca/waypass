@@ -13,16 +13,26 @@ export function StatsRow() {
         value="$7,225"
         change="↑ 18% vs February"
       />
-      <StatCard
+      {/* <StatCard
         label="Avg Case Value"
         value="$1,446"
         change="↑ $112 vs last month"
-      />
+      /> */}
       <StatCard
         label="Cases YTD"
         value="31"
         change="↑ 34% vs last year"
       />
+      <StatCard
+        label="Pending Authorization"
+        value="2"
+        change="Auth form or permit missing"
+      />
+      {/* <StatCard
+        label="Avg Turnaround"
+        value="4.2d"
+        change="Days: intake → remains returned"
+      /> */}
     </div>
   )
 }
