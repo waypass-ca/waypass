@@ -16,14 +16,42 @@ import { SettingsPage } from '../components/dashboard/SettingsPage'
 import { FamilyPageEditorPage } from '../components/dashboard/FamilyPageEditorPage'
 import { Button } from '../components/ui/Button'
 
-// Map sidebar ids to views
-const SIDEBAR_VIEWS = ['dashboard', 'cases', 'crematoriums', 'revenue', 'documents', 'family-portal', 'settings']
+// Map sidebar ids to internal views
+const SIDEBAR_TO_VIEW = {
+  home:               'dashboard',
+  search:             'dashboard',
+  inbox:              'inbox',
+  cases:              'cases',
+  'family-editor':    'family-portal',
+  partners:           'crematoriums',
+  'book-cremation':   'book-cremation',
+  'crematory-editor': 'crematory-editor',
+  documents:          'documents',
+  financials:         'revenue',
+  settings:           'settings',
+}
 
 function activeSidebarItem(view) {
   if (view === 'case-detail' || view === 'new-case') return 'cases'
-  if (view === 'new-crematorium') return 'crematoriums'
-  if (SIDEBAR_VIEWS.includes(view)) return view
-  return 'dashboard'
+  if (view === 'new-crematorium') return 'partners'
+  if (view === 'dashboard') return 'home'
+  if (view === 'family-portal') return 'family-editor'
+  if (view === 'crematoriums') return 'partners'
+  if (view === 'revenue') return 'financials'
+  const found = Object.entries(SIDEBAR_TO_VIEW).find(([, v]) => v === view)
+  return found ? found[0] : 'home'
+}
+
+function BlankPage({ title, description, icon }) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+      <div className="w-12 h-12 rounded-xl bg-cream border border-border flex items-center justify-center mb-4">
+        {icon}
+      </div>
+      <p className="font-display text-2xl text-charcoal mb-2">{title}</p>
+      <p className="font-sans text-sm text-muted max-w-xs">{description}</p>
+    </div>
+  )
 }
 
 function LoadingState() {
@@ -100,7 +128,8 @@ export function FuneralDashboardPage() {
       <Sidebar
         activeItem={activeSidebarItem(view)}
         onItemChange={id => {
-          if (SIDEBAR_VIEWS.includes(id)) navigate(id)
+          const target = SIDEBAR_TO_VIEW[id]
+          if (target) navigate(target)
         }}
       />
 
@@ -191,6 +220,33 @@ export function FuneralDashboardPage() {
               </div>
             </div>
           </>
+        )}
+
+        {/* ── Inbox ── */}
+        {view === 'inbox' && (
+          <BlankPage
+            title="Inbox"
+            description="Notifications and messages from families and crematory partners will appear here."
+            icon={<svg className="w-6 h-6 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4m13 0l-3 3m0 0l-3-3" /></svg>}
+          />
+        )}
+
+        {/* ── Book cremation ── */}
+        {view === 'book-cremation' && (
+          <BlankPage
+            title="Book Cremation"
+            description="Schedule and manage cremation bookings with partner crematories."
+            icon={<svg className="w-6 h-6 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+          />
+        )}
+
+        {/* ── Crematory editor ── */}
+        {view === 'crematory-editor' && (
+          <BlankPage
+            title="Crematory Editor"
+            description="Configure and manage crematory partner profiles and service details."
+            icon={<svg className="w-6 h-6 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>}
+          />
         )}
 
         {/* ── Family portal editor ── */}
