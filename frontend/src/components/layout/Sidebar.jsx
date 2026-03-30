@@ -122,7 +122,7 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
             ? <ArrowRightToLine size={14} strokeWidth={1.8} />
             : <>
                 <ArrowLeftToLine size={14} strokeWidth={1.8} className="flex-shrink-0" />
-                <span>Close sidebar</span>
+                <span>Close Sidebar</span>
               </>
           }
         </button>
