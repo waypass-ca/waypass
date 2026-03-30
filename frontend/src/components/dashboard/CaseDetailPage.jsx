@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { addCaseNote, addCaseDocument, fetchCustody, updateCustodyStage } from '../../lib/api.js'
+import { crematoriums } from '../../data/mockData.js'
 import { supabase } from '../../lib/supabase.js'
 import { StatusPill } from '../ui/StatusPill'
 import { Badge } from '../ui/Badge'
@@ -437,6 +438,128 @@ function DocRow({ doc }) {
   )
 }
 
+function ScheduleTransportCard({ show }) {
+  const [selectedCrematory, setSelectedCrematory] = useState('')
+  const [pickupDate, setPickupDate] = useState('')
+  const [pickupTime, setPickupTime] = useState('')
+  const [container, setContainer] = useState('')
+  const [idDisc, setIdDisc] = useState('')
+  const [orderSent, setOrderSent] = useState(false)
+  const [sentTime, setSentTime] = useState(null)
+
+  if (!show) return null
+
+  function handleSend() {
+    const t = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+    setSentTime(t)
+    setOrderSent(true)
+  }
+
+  const selectedName = crematoriums.find(c => c.id === selectedCrematory)?.name ?? ''
+  const canSend = selectedCrematory && pickupDate && pickupTime
+
+  if (orderSent) {
+    return (
+      <div className="bg-warm-white rounded-xl border border-border p-6">
+        <p className="font-sans text-xs text-muted uppercase tracking-wide mb-1">Transport</p>
+        <h2 className="font-display text-xl text-charcoal mb-4">Schedule Transport</h2>
+        <div className="flex items-start gap-3 bg-sage/10 border border-sage/30 rounded-lg px-4 py-3 mb-4">
+          <div className="w-5 h-5 rounded-full bg-sage flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-sans text-sm font-semibold text-sage">Order sent — awaiting crematory confirmation</p>
+            <p className="font-sans text-xs text-muted mt-0.5">{sentTime}</p>
+          </div>
+        </div>
+        <InfoRow label="Crematory" value={selectedName} />
+        <InfoRow label="Pickup window" value={`${pickupDate} · ${pickupTime}`} />
+        {container && <InfoRow label="Container" value={container} />}
+        {idDisc && <InfoRow label="ID disc" value={idDisc} />}
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-warm-white rounded-xl border border-border p-6">
+      <p className="font-sans text-xs text-muted uppercase tracking-wide mb-1">Transport</p>
+      <h2 className="font-display text-xl text-charcoal mb-5">Schedule Transport</h2>
+
+      <div className="space-y-4">
+        <div>
+          <label className="font-sans text-xs text-muted block mb-1.5">Crematory</label>
+          <select
+            value={selectedCrematory}
+            onChange={e => setSelectedCrematory(e.target.value)}
+            className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white cursor-pointer"
+          >
+            <option value="">Select crematory…</option>
+            {crematoriums.map(c => (
+              <option key={c.id} value={c.id}>{c.name} — {c.distance}</option>
+            ))}
+          </select>
+          <p className="font-sans text-xs text-muted mt-1.5">Order will include all authorization documents attached to this case.</p>
+        </div>
+
+        <div>
+          <label className="font-sans text-xs text-muted block mb-1.5">Preferred pickup window</label>
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={pickupDate}
+              onChange={e => setPickupDate(e.target.value)}
+              className="flex-1 border border-border rounded-lg px-3 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+            />
+            <select
+              value={pickupTime}
+              onChange={e => setPickupTime(e.target.value)}
+              className="border border-border rounded-lg px-3 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white cursor-pointer"
+            >
+              <option value="">Time…</option>
+              <option value="Morning">Morning</option>
+              <option value="Afternoon">Afternoon</option>
+              <option value="Evening">Evening</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="font-sans text-xs text-muted block mb-1.5">Combustible container</label>
+          <input
+            type="text"
+            placeholder="e.g. Cardboard alternative container"
+            value={container}
+            onChange={e => setContainer(e.target.value)}
+            className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+          />
+        </div>
+
+        <div>
+          <label className="font-sans text-xs text-muted block mb-1.5">ID disc number</label>
+          <input
+            type="text"
+            placeholder="e.g. 2024-0047"
+            value={idDisc}
+            onChange={e => setIdDisc(e.target.value)}
+            className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+          />
+        </div>
+      </div>
+
+      <Button
+        variant="primary"
+        onClick={handleSend}
+        disabled={!canSend}
+        className="w-full justify-center mt-5"
+      >
+        Send Order to Crematory
+      </Button>
+    </div>
+  )
+}
+
 const EMPTY_CUSTODY = Array.from({ length: 9 }, () => ({ completed: false, staff: null, timestamp: null }))
 
 export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
@@ -448,6 +571,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
   const [authorizationComplete, setAuthorizationComplete] = useState(false)
   const [custody, setCustody] = useState(EMPTY_CUSTODY)
   const [authPending, setAuthPending] = useState(false)
+  const [activeTab, setActiveTab] = useState('details')
   const uploadInputRef = useRef(null)
 
   useEffect(() => {
@@ -508,6 +632,14 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
     }
   }
 
+  const docsActionNeeded = authPending && !authorizationComplete
+
+  const tabs = [
+    { id: 'details', label: 'Details & Notes' },
+    { id: 'custody', label: 'Chain of Custody', badge: authorizationComplete },
+    { id: 'documents', label: 'Documents', badge: docsActionNeeded },
+  ]
+
   return (
     <div>
       {/* Back + header */}
@@ -542,10 +674,106 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
         </div>
       </div>
 
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-border mb-6">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`relative flex items-center gap-2 px-4 py-2.5 font-sans text-sm font-medium border-0 bg-transparent outline-none cursor-pointer transition-colors ${
+              activeTab === tab.id
+                ? 'text-charcoal border-b-2 border-charcoal -mb-px'
+                : 'text-muted hover:text-charcoal'
+            }`}
+          >
+            {tab.label}
+            {tab.badge && (
+              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-amber">
+                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
-      {/* Main 2-col layout */}
-      {(() => {
-        const documentsCard = (
+      {/* Tab: Details & Notes */}
+      {activeTab === 'details' && (
+        <div className="grid grid-cols-5 gap-5">
+          <div className="col-span-3">
+            <div className="bg-warm-white rounded-xl border border-border p-5">
+              <div className="p-3">
+                <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Deceased Details</h3>
+                <InfoRow label="Full Name" value={caseData.deceased} />
+                <InfoRow label="Date of Birth" value={caseData.dob} />
+                <InfoRow label="Date of Passing" value={caseData.dop} />
+                <InfoRow label="Location" value={caseData.location} />
+              </div>
+              <div className="p-3">
+                <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Family Contact</h3>
+                <InfoRow label="Name" value={caseData.contactName} />
+                <InfoRow label="Relationship" value={caseData.relationship} />
+                <InfoRow label="Phone" value={caseData.contactPhone} />
+                <InfoRow label="Email" value={caseData.contactEmail} />
+              </div>
+              <div className="p-3">
+                <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Arrangement</h3>
+                <InfoRow label="Package" value={caseData.package} />
+                <InfoRow label="Add-ons" value={caseData.addons?.join(', ') || 'None'} />
+                <InfoRow label="Crematorium" value={caseData.crematorium} />
+                <div className="flex justify-between pt-3 mt-1">
+                  <span className="font-sans text-xs font-semibold text-charcoal">Total</span>
+                  <span className="font-display text-xl text-charcoal">${caseData.amount.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="col-span-2">
+            <div className="bg-warm-white rounded-xl border border-border p-6">
+              <h2 className="font-display text-xl text-charcoal mb-4">Case Notes</h2>
+              {notes.length === 0 ? (
+                <p className="font-sans text-sm text-muted italic mb-4">No notes yet.</p>
+              ) : (
+                <div className="space-y-3 mb-5">
+                  {notes.map((n, i) => <NoteCard key={i} note={n} />)}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Add a note…"
+                  value={newNote}
+                  onChange={e => setNewNote(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addNote()}
+                  className="flex-1 border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+                />
+                <Button variant="primary" onClick={addNote}>Add</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab: Chain of Custody */}
+      {activeTab === 'custody' && (
+        <div className="max-w-2xl space-y-5">
+          <CustodyTimeline entries={custody} onUpdate={handleCustodyUpdate} authRequired={!authorizationComplete} />
+          <ScheduleTransportCard show={authorizationComplete} />
+        </div>
+      )}
+
+      {/* Tab: Documents */}
+      {activeTab === 'documents' && (
+        <div className="max-w-2xl space-y-5">
+          {authPending && (
+            <AuthorizationCard
+              dop={caseData.dop}
+              onUpload={handleUpload}
+              authComplete={authorizationComplete}
+              onAuthComplete={() => setAuthorizationComplete(true)}
+            />
+          )}
           <div className="bg-warm-white rounded-xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-xl text-charcoal">Documents</h2>
@@ -586,78 +814,8 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
               </div>
             )}
           </div>
-        )
-
-        return (
-          <div className="grid grid-cols-5 gap-5">
-            {/* Left column */}
-            <div className="col-span-3 space-y-5">
-              {!authPending ?  null : (
-                <AuthorizationCard
-                dop={caseData.dop}
-                onUpload={handleUpload}
-                authComplete={authorizationComplete}
-                onAuthComplete={() => setAuthorizationComplete(true)}
-              />
-              )}
-              <div className="bg-warm-white rounded-xl border border-border p-5">
-                <div className="p-3">
-                  <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Deceased Details</h3>
-                  <InfoRow label="Full Name" value={caseData.deceased} />
-                  <InfoRow label="Date of Birth" value={caseData.dob} />
-                  <InfoRow label="Date of Passing" value={caseData.dop} />
-                  <InfoRow label="Location" value={caseData.location} />
-                </div>
-                <div className="p-3">
-                  <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Family Contact</h3>
-                  <InfoRow label="Name" value={caseData.contactName} />
-                  <InfoRow label="Relationship" value={caseData.relationship} />
-                  <InfoRow label="Phone" value={caseData.contactPhone} />
-                  <InfoRow label="Email" value={caseData.contactEmail} />
-                </div>
-                <div className="p-3">
-                  <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Arrangement</h3>
-                  <InfoRow label="Package" value={caseData.package} />
-                  <InfoRow label="Add-ons" value={caseData.addons?.join(', ') || 'None'} />
-                  <InfoRow label="Crematorium" value={caseData.crematorium} />
-                  <div className="flex justify-between pt-3 mt-1">
-                    <span className="font-sans text-xs font-semibold text-charcoal">Total</span>
-                    <span className="font-display text-xl text-charcoal">${caseData.amount.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-              {!authPending && documentsCard}
-            </div>
-
-            {/* Right column */}
-            <div className="col-span-2 space-y-5">
-              <CustodyTimeline entries={custody} onUpdate={handleCustodyUpdate} authRequired={!authorizationComplete} />
-              <div className="bg-warm-white rounded-xl border border-border p-6">
-                <h2 className="font-display text-xl text-charcoal mb-4">Case Notes</h2>
-                {notes.length === 0 ? (
-                  <p className="font-sans text-sm text-muted italic mb-4">No notes yet.</p>
-                ) : (
-                  <div className="space-y-3 mb-5">
-                    {notes.map((n, i) => <NoteCard key={i} note={n} />)}
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Add a note…"
-                    value={newNote}
-                    onChange={e => setNewNote(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && addNote()}
-                    className="flex-1 border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
-                  />
-                  <Button variant="primary" onClick={addNote}>Add</Button>
-                </div>
-              </div>
-              {authPending && documentsCard}
-            </div>
-          </div>
-        )
-      })()}
+        </div>
+      )}
     </div>
   )
 }
