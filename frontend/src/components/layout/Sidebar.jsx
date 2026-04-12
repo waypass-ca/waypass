@@ -1,125 +1,133 @@
-const NAV_ITEMS = [
-  {
-    id: 'dashboard',
-    label: 'Dashboard',
-    badge: null,
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <rect x="3" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="14" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" />
-      </svg>
-    ),
-  },
-  {
-    id: 'cases',
-    label: 'Cases',
-    badge: '5',
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16 3v4M8 3v4M3 11h18" />
-      </svg>
-    ),
-  },
-  {
-    id: 'crematoriums',
-    label: 'Crematoriums',
-    badge: null,
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343M12 3v2M12 19v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M3 12H1M23 12h-2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-      </svg>
-    ),
-  },
-  {
-    id: 'revenue',
-    label: 'Revenue',
-    badge: null,
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l4-8 4 4 4-6 4 4" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18" />
-      </svg>
-    ),
-  },
-  {
-    id: 'documents',
-    label: 'Documents',
-    badge: null,
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6M9 16h6M7 3H5a2 2 0 00-2 2v16a2 2 0 002 2h14a2 2 0 002-2V8l-5-5H7z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 3v5h5" />
-      </svg>
-    ),
-  },
-  {
-    id: 'family-portal',
-    label: 'Family Portal',
-    badge: null,
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m4-4a4 4 0 100-8 4 4 0 000 8z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 14v6" />
-      </svg>
-    ),
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    badge: null,
-    icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <circle cx="12" cy="12" r="3" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
-      </svg>
-    ),
-  },
-]
+import { useState } from 'react'
+import {
+  Search, Home, Inbox, Archive, Building2, UserPen,
+  CalendarPlus, MapPinPen, FileText, Landmark, Settings, ChevronDown,
+  ChevronsUpDown, ArrowLeftToLine, ArrowRightToLine,
+} from 'lucide-react'
 
-export function Sidebar({ activeItem = 'dashboard', onItemChange }) {
+function NavItem({ id, label, icon: Icon, badge, isActive, onClick, collapsed }) {
   return (
-    <aside className="w-[220px] bg-warm-white border-r border-border flex flex-col flex-shrink-0 min-h-screen">
-      {/* Funeral home info */}
-      <div className="px-5 py-5 border-b border-border">
-        <p className="font-sans font-semibold text-charcoal text-sm leading-tight">Evergreen Memorial</p>
-        <p className="font-sans text-xs text-muted mt-0.5">San Francisco, CA</p>
+    <button
+      onClick={() => onClick(id)}
+      title={collapsed ? label : undefined}
+      className={`
+        w-full flex items-center rounded-md text-[13px] font-sans mb-px text-left transition-colors cursor-pointer border-0 outline-none
+        ${collapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5'}
+        ${isActive
+          ? 'bg-charcoal/[0.06] text-charcoal font-medium'
+          : 'text-slate hover:bg-charcoal/[0.04] font-normal'
+        }
+      `}
+    >
+      <Icon size={14} className={`flex-shrink-0 ${isActive ? 'text-charcoal' : 'text-muted'}`} strokeWidth={1.8} />
+      {!collapsed && (
+        <>
+          <span className="flex-1 truncate">{label}</span>
+          {badge && (
+            <span className="font-sans text-[10px] font-semibold text-muted bg-border rounded-full px-1.5 py-px leading-none">
+              {badge}
+            </span>
+          )}
+        </>
+      )}
+    </button>
+  )
+}
+
+function SectionHeader({ label, collapsed: sectionCollapsed, onToggle, sidebarCollapsed }) {
+  if (sidebarCollapsed) return <div className="border-t border-border my-2" />
+  return (
+    <button
+      onClick={onToggle}
+      className="w-full flex items-center gap-1.5 px-2.5 py-1 mb-0.5 mt-3 text-left cursor-pointer border-0 bg-transparent outline-none group"
+    >
+      <ChevronDown
+        size={12}
+        className={`text-muted transition-transform duration-150 ${sectionCollapsed ? '-rotate-90' : ''}`}
+        strokeWidth={2}
+      />
+      <span className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider group-hover:text-slate transition-colors">
+        {label}
+      </span>
+    </button>
+  )
+}
+
+export function Sidebar({ activeItem = 'home', onItemChange }) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState({ patients: false, crematoriums: false })
+
+  function toggle(id) {
+    setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  return (
+    <aside
+      className="bg-warm-white border-r border-border flex flex-col flex-shrink-0 min-h-screen transition-[width] duration-200"
+      style={{ width: sidebarCollapsed ? '52px' : '220px' }}
+    >
+      {/* Org header */}
+      <div className={`py-4 border-b border-border ${sidebarCollapsed ? 'px-2' : 'px-3'}`}>
+        {sidebarCollapsed ? (
+          <div className="w-7 h-7 rounded bg-charcoal flex items-center justify-center mx-auto">
+            <span className="font-sans text-[9px] font-bold text-warm-white leading-none">EG</span>
+          </div>
+        ) : (
+          <button className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-charcoal/[0.04] transition-colors cursor-pointer border-0 bg-transparent outline-none text-left">
+            <div className="w-5 h-5 rounded bg-charcoal flex items-center justify-center flex-shrink-0">
+              <span className="font-sans text-[9px] font-bold text-warm-white leading-none">EG</span>
+            </div>
+            <span className="font-sans text-[13px] font-semibold text-charcoal flex-1 truncate">Evergreen Medical</span>
+            <ChevronsUpDown size={12} className="text-muted flex-shrink-0" strokeWidth={2} />
+          </button>
+        )}
       </div>
 
       {/* Nav */}
-      <nav className="px-3 py-4 flex-1">
-        {NAV_ITEMS.map(item => {
-          const isActive = activeItem === item.id
-          return (
-            <button
-              key={item.id}
-              onClick={() => onItemChange?.(item.id)}
-              className={`
-                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-sans font-medium mb-0.5 text-left transition-all cursor-pointer border-0 outline-none
-                ${isActive
-                  ? 'bg-sage-light text-sage'
-                  : 'text-slate hover:bg-cream hover:text-charcoal'
-                }
-              `}
-            >
-              <span className={isActive ? 'text-sage' : 'text-muted'}>{item.icon}</span>
-              <span className="flex-1">{item.label}</span>
-              {item.badge && (
-                <span className="bg-amber-light text-amber text-[10px] font-semibold rounded-full px-1.5 py-0.5 leading-none">
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          )
-        })}
+      <nav className={`py-3 flex-1 overflow-y-auto overflow-x-hidden ${sidebarCollapsed ? 'px-1.5' : 'px-2.5'}`}>
+        <NavItem id="search"  label="Search"  icon={Search}  isActive={activeItem === 'search'}  onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="home"    label="Home"    icon={Home}    isActive={activeItem === 'home'}    onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="inbox"   label="Inbox"   icon={Inbox}   isActive={activeItem === 'inbox'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
+
+        <SectionHeader label="Patients" collapsed={collapsed.patients} onToggle={() => toggle('patients')} sidebarCollapsed={sidebarCollapsed} />
+        {!collapsed.patients && (
+          <>
+            <NavItem id="cases"         label="Cases"         icon={Archive}  isActive={activeItem === 'cases'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="family-editor" label="Family Editor" icon={UserPen}  isActive={activeItem === 'family-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
+          </>
+        )}
+
+        <SectionHeader label="Crematoriums" collapsed={collapsed.crematoriums} onToggle={() => toggle('crematoriums')} sidebarCollapsed={sidebarCollapsed} />
+        {!collapsed.crematoriums && (
+          <>
+            <NavItem id="partners"         label="Partners"         icon={Building2}   isActive={activeItem === 'partners'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="book-cremation"   label="Book Cremation"   icon={CalendarPlus} isActive={activeItem === 'book-cremation'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="crematory-editor" label="Crematory Editor" icon={MapPinPen}    isActive={activeItem === 'crematory-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
+          </>
+        )}
+
+        <div className="border-t border-border my-3" />
+
+        <NavItem id="documents"  label="Documents"  icon={FileText}   isActive={activeItem === 'documents'}  onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="financials" label="Financials" icon={Landmark}   isActive={activeItem === 'financials'} onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="settings"   label="Settings"   icon={Settings}   isActive={activeItem === 'settings'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
+
+        <div className="border-t border-border my-3" />
+
+        <button
+          onClick={() => setSidebarCollapsed(p => !p)}
+          className={`w-full flex items-center rounded-md text-[13px] font-sans mb-px text-left transition-colors cursor-pointer border-0 outline-none text-muted hover:bg-charcoal/[0.04] hover:text-charcoal ${sidebarCollapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5'}`}
+        >
+          {sidebarCollapsed
+            ? <ArrowRightToLine size={14} strokeWidth={1.8} />
+            : <>
+                <ArrowLeftToLine size={14} strokeWidth={1.8} className="flex-shrink-0" />
+                <span>Close Sidebar</span>
+              </>
+          }
+        </button>
       </nav>
 
-      {/* Footer */}
-      <div className="px-5 py-4 border-t border-border">
-        <p className="text-xs text-muted font-sans">Powered by Passage</p>
-      </div>
     </aside>
   )
 }
