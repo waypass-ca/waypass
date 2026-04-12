@@ -1,0 +1,3508 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "fast_refresh_plugin_options",
+        "label": "Fast Refresh Plugin Alternatives (Babel/OXC vs SWC)",
+        "nodes": [
+          "readme_plugin_react_babel",
+          "readme_plugin_react_swc",
+          "readme_hmr"
+        ],
+        "relation": "implement",
+        "confidence": "EXTRACTED",
+        "confidence_score": 0.95,
+        "source_file": "frontend/README.md"
+      },
+      {
+        "id": "js_transpilers",
+        "label": "JavaScript Transpiler Options",
+        "nodes": [
+          "readme_babel",
+          "readme_oxc",
+          "readme_swc"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.82,
+        "source_file": "frontend/README.md"
+      },
+      {
+        "id": "brand_logos",
+        "label": "React + Vite Brand Assets",
+        "nodes": [
+          "asset_react_svg",
+          "asset_vite_svg",
+          "readme_react_vite_template"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.78,
+        "source_file": "frontend/src/assets/react.svg"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "label": "vite.config.js",
+      "file_type": "code",
+      "source_file": "frontend/vite.config.js",
+      "source_location": "L1",
+      "id": "frontend_vite_config_js",
+      "community": 43
+    },
+    {
+      "label": "eslint.config.js",
+      "file_type": "code",
+      "source_file": "frontend/eslint.config.js",
+      "source_location": "L1",
+      "id": "frontend_eslint_config_js",
+      "community": 44
+    },
+    {
+      "label": "main.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/main.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_main_jsx",
+      "community": 45
+    },
+    {
+      "label": "App.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/App.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_app_jsx",
+      "community": 10
+    },
+    {
+      "label": "AppInner()",
+      "file_type": "code",
+      "source_file": "frontend/src/App.jsx",
+      "source_location": "L12",
+      "id": "app_appinner",
+      "community": 10
+    },
+    {
+      "label": "App()",
+      "file_type": "code",
+      "source_file": "frontend/src/App.jsx",
+      "source_location": "L43",
+      "id": "app_app",
+      "community": 10
+    },
+    {
+      "label": "AuthContext.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/context/AuthContext.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_context_authcontext_jsx",
+      "community": 11
+    },
+    {
+      "label": "AuthProvider()",
+      "file_type": "code",
+      "source_file": "frontend/src/context/AuthContext.jsx",
+      "source_location": "L6",
+      "id": "authcontext_authprovider",
+      "community": 11
+    },
+    {
+      "label": "useAuth()",
+      "file_type": "code",
+      "source_file": "frontend/src/context/AuthContext.jsx",
+      "source_location": "L38",
+      "id": "authcontext_useauth",
+      "community": 11
+    },
+    {
+      "label": "Button.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ui/Button.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_ui_button_jsx",
+      "community": 14
+    },
+    {
+      "label": "Button()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ui/Button.jsx",
+      "source_location": "L1",
+      "id": "button_button",
+      "community": 14
+    },
+    {
+      "label": "Badge.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ui/Badge.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_ui_badge_jsx",
+      "community": 15
+    },
+    {
+      "label": "Badge()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ui/Badge.jsx",
+      "source_location": "L1",
+      "id": "badge_badge",
+      "community": 15
+    },
+    {
+      "label": "StatusPill.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ui/StatusPill.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_ui_statuspill_jsx",
+      "community": 16
+    },
+    {
+      "label": "StatusPill()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ui/StatusPill.jsx",
+      "source_location": "L8",
+      "id": "statuspill_statuspill",
+      "community": 16
+    },
+    {
+      "label": "StatCard.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ui/StatCard.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_ui_statcard_jsx",
+      "community": 17
+    },
+    {
+      "label": "StatCard()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ui/StatCard.jsx",
+      "source_location": "L1",
+      "id": "statcard_statcard",
+      "community": 17
+    },
+    {
+      "label": "ProgressTrack.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ui/ProgressTrack.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_ui_progresstrack_jsx",
+      "community": 18
+    },
+    {
+      "label": "ProgressTrack()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/ui/ProgressTrack.jsx",
+      "source_location": "L1",
+      "id": "progresstrack_progresstrack",
+      "community": 18
+    },
+    {
+      "label": "OrderQueue.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/crematorium/OrderQueue.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_crematorium_orderqueue_jsx",
+      "community": 19
+    },
+    {
+      "label": "OrderQueue()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/crematorium/OrderQueue.jsx",
+      "source_location": "L3",
+      "id": "orderqueue_orderqueue",
+      "community": 19
+    },
+    {
+      "label": "OrderCard.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/crematorium/OrderCard.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_crematorium_ordercard_jsx",
+      "community": 20
+    },
+    {
+      "label": "OrderCard()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/crematorium/OrderCard.jsx",
+      "source_location": "L12",
+      "id": "ordercard_ordercard",
+      "community": 20
+    },
+    {
+      "label": "EarningsCard.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/crematorium/EarningsCard.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_crematorium_earningscard_jsx",
+      "community": 21
+    },
+    {
+      "label": "EarningsCard()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/crematorium/EarningsCard.jsx",
+      "source_location": "L1",
+      "id": "earningscard_earningscard",
+      "community": 21
+    },
+    {
+      "label": "OrderSummary.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/widget/OrderSummary.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_widget_ordersummary_jsx",
+      "community": 22
+    },
+    {
+      "label": "OrderSummary()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/widget/OrderSummary.jsx",
+      "source_location": "L1",
+      "id": "ordersummary_ordersummary",
+      "community": 22
+    },
+    {
+      "label": "AddonRow.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/widget/AddonRow.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_widget_addonrow_jsx",
+      "community": 23
+    },
+    {
+      "label": "AddonRow()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/widget/AddonRow.jsx",
+      "source_location": "L1",
+      "id": "addonrow_addonrow",
+      "community": 23
+    },
+    {
+      "label": "SuccessScreen.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/widget/SuccessScreen.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_widget_successscreen_jsx",
+      "community": 24
+    },
+    {
+      "label": "SuccessScreen()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/widget/SuccessScreen.jsx",
+      "source_location": "L3",
+      "id": "successscreen_successscreen",
+      "community": 24
+    },
+    {
+      "label": "PackageCard.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/widget/PackageCard.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_widget_packagecard_jsx",
+      "community": 25
+    },
+    {
+      "label": "PackageCard()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/widget/PackageCard.jsx",
+      "source_location": "L3",
+      "id": "packagecard_packagecard",
+      "community": 25
+    },
+    {
+      "label": "LoginScreen.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/auth/LoginScreen.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_auth_loginscreen_jsx",
+      "community": 26
+    },
+    {
+      "label": "LoginScreen()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/auth/LoginScreen.jsx",
+      "source_location": "L5",
+      "id": "loginscreen_loginscreen",
+      "community": 26
+    },
+    {
+      "label": "Sidebar.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/layout/Sidebar.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_layout_sidebar_jsx",
+      "community": 27
+    },
+    {
+      "label": "Sidebar()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/layout/Sidebar.jsx",
+      "source_location": "L82",
+      "id": "sidebar_sidebar",
+      "community": 27
+    },
+    {
+      "label": "Navbar.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/layout/Navbar.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_layout_navbar_jsx",
+      "community": 28
+    },
+    {
+      "label": "Navbar()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/layout/Navbar.jsx",
+      "source_location": "L9",
+      "id": "navbar_navbar",
+      "community": 28
+    },
+    {
+      "label": "PageHeader.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/layout/PageHeader.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_layout_pageheader_jsx",
+      "community": 29
+    },
+    {
+      "label": "PageHeader()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/layout/PageHeader.jsx",
+      "source_location": "L1",
+      "id": "pageheader_pageheader",
+      "community": 29
+    },
+    {
+      "label": "CasesPage.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CasesPage.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_casespage_jsx",
+      "community": 30
+    },
+    {
+      "label": "CasesPage()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CasesPage.jsx",
+      "source_location": "L16",
+      "id": "casespage_casespage",
+      "community": 30
+    },
+    {
+      "label": "CaseDetailPage.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "community": 2
+    },
+    {
+      "label": "now()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L22",
+      "id": "casedetailpage_now",
+      "community": 2
+    },
+    {
+      "label": "CustodyNode()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L29",
+      "id": "casedetailpage_custodynode",
+      "community": 2
+    },
+    {
+      "label": "CustodyModal()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L54",
+      "id": "casedetailpage_custodymodal",
+      "community": 2
+    },
+    {
+      "label": "CustodyTimeline()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L136",
+      "id": "casedetailpage_custodytimeline",
+      "community": 2
+    },
+    {
+      "label": "AuthStatusRow()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L245",
+      "id": "casedetailpage_authstatusrow",
+      "community": 2
+    },
+    {
+      "label": "AuthorizationCard()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L293",
+      "id": "casedetailpage_authorizationcard",
+      "community": 2
+    },
+    {
+      "label": "InfoRow()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L385",
+      "id": "casedetailpage_inforow",
+      "community": 2
+    },
+    {
+      "label": "NoteCard()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L394",
+      "id": "casedetailpage_notecard",
+      "community": 2
+    },
+    {
+      "label": "DocRow()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L406",
+      "id": "casedetailpage_docrow",
+      "community": 2
+    },
+    {
+      "label": "ScheduleTransportCard()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L441",
+      "id": "casedetailpage_scheduletransportcard",
+      "community": 2
+    },
+    {
+      "label": "CaseDetailPage()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L565",
+      "id": "casedetailpage_casedetailpage",
+      "community": 2
+    },
+    {
+      "label": "RevenuePage.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/RevenuePage.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_revenuepage_jsx",
+      "community": 31
+    },
+    {
+      "label": "RevenuePage()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/RevenuePage.jsx",
+      "source_location": "L21",
+      "id": "revenuepage_revenuepage",
+      "community": 31
+    },
+    {
+      "label": "OperationalAlerts.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/OperationalAlerts.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_operationalalerts_jsx",
+      "community": 12
+    },
+    {
+      "label": "AlertRow()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/OperationalAlerts.jsx",
+      "source_location": "L30",
+      "id": "operationalalerts_alertrow",
+      "community": 12
+    },
+    {
+      "label": "OperationalAlerts()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/OperationalAlerts.jsx",
+      "source_location": "L50",
+      "id": "operationalalerts_operationalalerts",
+      "community": 12
+    },
+    {
+      "label": "CasesTable.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CasesTable.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_casestable_jsx",
+      "community": 32
+    },
+    {
+      "label": "CasesTable()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CasesTable.jsx",
+      "source_location": "L4",
+      "id": "casestable_casestable",
+      "community": 32
+    },
+    {
+      "label": "RevenueChart.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/RevenueChart.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_revenuechart_jsx",
+      "community": 33
+    },
+    {
+      "label": "RevenueChart()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/RevenueChart.jsx",
+      "source_location": "L7",
+      "id": "revenuechart_revenuechart",
+      "community": 33
+    },
+    {
+      "label": "SettingsPage.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_settingspage_jsx",
+      "community": 4
+    },
+    {
+      "label": "SectionHeader()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L7",
+      "id": "settingspage_sectionheader",
+      "community": 4
+    },
+    {
+      "label": "Field()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L16",
+      "id": "settingspage_field",
+      "community": 4
+    },
+    {
+      "label": "Toggle()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L31",
+      "id": "settingspage_toggle",
+      "community": 4
+    },
+    {
+      "label": "ProfileTab()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L49",
+      "id": "settingspage_profiletab",
+      "community": 4
+    },
+    {
+      "label": "BrandingTab()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L91",
+      "id": "settingspage_brandingtab",
+      "community": 4
+    },
+    {
+      "label": "NotificationsTab()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L141",
+      "id": "settingspage_notificationstab",
+      "community": 4
+    },
+    {
+      "label": "BillingTab()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L157",
+      "id": "settingspage_billingtab",
+      "community": 4
+    },
+    {
+      "label": "SettingsPage()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L235",
+      "id": "settingspage_settingspage",
+      "community": 4
+    },
+    {
+      "label": "CrematoriumsPage.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CrematoriumsPage.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_crematoriumspage_jsx",
+      "community": 7
+    },
+    {
+      "label": "InputField()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CrematoriumsPage.jsx",
+      "source_location": "L9",
+      "id": "crematoriumspage_inputfield",
+      "community": 7
+    },
+    {
+      "label": "EditModal()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CrematoriumsPage.jsx",
+      "source_location": "L38",
+      "id": "crematoriumspage_editmodal",
+      "community": 7
+    },
+    {
+      "label": "DeleteModal()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CrematoriumsPage.jsx",
+      "source_location": "L132",
+      "id": "crematoriumspage_deletemodal",
+      "community": 7
+    },
+    {
+      "label": "CrematoriumCard()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CrematoriumsPage.jsx",
+      "source_location": "L178",
+      "id": "crematoriumspage_crematoriumcard",
+      "community": 7
+    },
+    {
+      "label": "CrematoriumsPage()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/CrematoriumsPage.jsx",
+      "source_location": "L232",
+      "id": "crematoriumspage_crematoriumspage",
+      "community": 7
+    },
+    {
+      "label": "StatsRow.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/StatsRow.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_statsrow_jsx",
+      "community": 34
+    },
+    {
+      "label": "StatsRow()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/StatsRow.jsx",
+      "source_location": "L3",
+      "id": "statsrow_statsrow",
+      "community": 34
+    },
+    {
+      "label": "NewCrematoriumPage.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCrematoriumPage.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_newcrematoriumpage_jsx",
+      "community": 8
+    },
+    {
+      "label": "StepIndicator()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCrematoriumPage.jsx",
+      "source_location": "L7",
+      "id": "newcrematoriumpage_stepindicator",
+      "community": 8
+    },
+    {
+      "label": "InputField()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCrematoriumPage.jsx",
+      "source_location": "L39",
+      "id": "newcrematoriumpage_inputfield",
+      "community": 8
+    },
+    {
+      "label": "ConfirmRow()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCrematoriumPage.jsx",
+      "source_location": "L68",
+      "id": "newcrematoriumpage_confirmrow",
+      "community": 8
+    },
+    {
+      "label": "NewCrematoriumPage()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCrematoriumPage.jsx",
+      "source_location": "L77",
+      "id": "newcrematoriumpage_newcrematoriumpage",
+      "community": 8
+    },
+    {
+      "label": "FamilyPageEditorPage.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "community": 3
+    },
+    {
+      "label": "uploadToCloudinary()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L48",
+      "id": "familypageeditorpage_uploadtocloudinary",
+      "community": 3
+    },
+    {
+      "label": "EditorSection()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L71",
+      "id": "familypageeditorpage_editorsection",
+      "community": 3
+    },
+    {
+      "label": "Field()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L82",
+      "id": "familypageeditorpage_field",
+      "community": 3
+    },
+    {
+      "label": "TextInput()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L91",
+      "id": "familypageeditorpage_textinput",
+      "community": 3
+    },
+    {
+      "label": "ColorField()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L103",
+      "id": "familypageeditorpage_colorfield",
+      "community": 3
+    },
+    {
+      "label": "Toggle()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L128",
+      "id": "familypageeditorpage_toggle",
+      "community": 3
+    },
+    {
+      "label": "LogoUpload()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L153",
+      "id": "familypageeditorpage_logoupload",
+      "community": 3
+    },
+    {
+      "label": "FamilyPortalPreview()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L240",
+      "id": "familypageeditorpage_familyportalpreview",
+      "community": 3
+    },
+    {
+      "label": "FamilyPageEditorPage()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L449",
+      "id": "familypageeditorpage_familypageeditorpage",
+      "community": 3
+    },
+    {
+      "label": "NewCasePage.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_components_dashboard_newcasepage_jsx",
+      "community": 5
+    },
+    {
+      "label": "useData()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L24",
+      "id": "newcasepage_usedata",
+      "community": 5
+    },
+    {
+      "label": "StepIndicator()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L34",
+      "id": "newcasepage_stepindicator",
+      "community": 5
+    },
+    {
+      "label": "InputField()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L66",
+      "id": "newcasepage_inputfield",
+      "community": 5
+    },
+    {
+      "label": "SelectField()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L81",
+      "id": "newcasepage_selectfield",
+      "community": 5
+    },
+    {
+      "label": "DocumentSlot()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L97",
+      "id": "newcasepage_documentslot",
+      "community": 5
+    },
+    {
+      "label": "CrematoriumCard()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L152",
+      "id": "newcasepage_crematoriumcard",
+      "community": 5
+    },
+    {
+      "label": "NewCasePage()",
+      "file_type": "code",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L190",
+      "id": "newcasepage_newcasepage",
+      "community": 5
+    },
+    {
+      "label": "useOrders.js",
+      "file_type": "code",
+      "source_file": "frontend/src/hooks/useOrders.js",
+      "source_location": "L1",
+      "id": "frontend_src_hooks_useorders_js",
+      "community": 35
+    },
+    {
+      "label": "useOrders()",
+      "file_type": "code",
+      "source_file": "frontend/src/hooks/useOrders.js",
+      "source_location": "L4",
+      "id": "useorders_useorders",
+      "community": 35
+    },
+    {
+      "label": "supabase.js",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/supabase.js",
+      "source_location": "L1",
+      "id": "frontend_src_lib_supabase_js",
+      "community": 46
+    },
+    {
+      "label": "api.js",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L1",
+      "id": "frontend_src_lib_api_js",
+      "community": 0
+    },
+    {
+      "label": "request()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L5",
+      "id": "api_request",
+      "community": 0
+    },
+    {
+      "label": "getAuthHeader()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L18",
+      "id": "api_getauthheader",
+      "community": 0
+    },
+    {
+      "label": "mutate()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L24",
+      "id": "api_mutate",
+      "community": 0
+    },
+    {
+      "label": "fetchPackages()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L30",
+      "id": "api_fetchpackages",
+      "community": 0
+    },
+    {
+      "label": "fetchAddons()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L33",
+      "id": "api_fetchaddons",
+      "community": 0
+    },
+    {
+      "label": "fetchCases()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L36",
+      "id": "api_fetchcases",
+      "community": 0
+    },
+    {
+      "label": "fetchCase()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L37",
+      "id": "api_fetchcase",
+      "community": 0
+    },
+    {
+      "label": "createCase()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L38",
+      "id": "api_createcase",
+      "community": 0
+    },
+    {
+      "label": "updateCaseStatus()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L40",
+      "id": "api_updatecasestatus",
+      "community": 0
+    },
+    {
+      "label": "addCaseNote()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L42",
+      "id": "api_addcasenote",
+      "community": 0
+    },
+    {
+      "label": "fetchCustody()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L44",
+      "id": "api_fetchcustody",
+      "community": 0
+    },
+    {
+      "label": "updateCustodyStage()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L45",
+      "id": "api_updatecustodystage",
+      "community": 0
+    },
+    {
+      "label": "addCaseDocument()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L48",
+      "id": "api_addcasedocument",
+      "community": 0
+    },
+    {
+      "label": "fetchCrematoriums()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L52",
+      "id": "api_fetchcrematoriums",
+      "community": 0
+    },
+    {
+      "label": "createCrematorium()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L53",
+      "id": "api_createcrematorium",
+      "community": 0
+    },
+    {
+      "label": "updateCrematorium()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L55",
+      "id": "api_updatecrematorium",
+      "community": 0
+    },
+    {
+      "label": "deleteCrematorium()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L57",
+      "id": "api_deletecrematorium",
+      "community": 0
+    },
+    {
+      "label": "fetchOrders()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L61",
+      "id": "api_fetchorders",
+      "community": 0
+    },
+    {
+      "label": "advanceOrder()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L62",
+      "id": "api_advanceorder",
+      "community": 0
+    },
+    {
+      "label": "fetchPortalSettings()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L66",
+      "id": "api_fetchportalsettings",
+      "community": 0
+    },
+    {
+      "label": "savePortalSettings()",
+      "file_type": "code",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L67",
+      "id": "api_saveportalsettings",
+      "community": 0
+    },
+    {
+      "label": "mockData.js",
+      "file_type": "code",
+      "source_file": "frontend/src/data/mockData.js",
+      "source_location": "L1",
+      "id": "frontend_src_data_mockdata_js",
+      "community": 47
+    },
+    {
+      "label": "CrematoriumPortalPage.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/CrematoriumPortalPage.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_pages_crematoriumportalpage_jsx",
+      "community": 36
+    },
+    {
+      "label": "CrematoriumPortalPage()",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/CrematoriumPortalPage.jsx",
+      "source_location": "L8",
+      "id": "crematoriumportalpage_crematoriumportalpage",
+      "community": 36
+    },
+    {
+      "label": "FuneralDashboardPage.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FuneralDashboardPage.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_pages_funeraldashboardpage_jsx",
+      "community": 9
+    },
+    {
+      "label": "activeSidebarItem()",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FuneralDashboardPage.jsx",
+      "source_location": "L22",
+      "id": "funeraldashboardpage_activesidebaritem",
+      "community": 9
+    },
+    {
+      "label": "LoadingState()",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FuneralDashboardPage.jsx",
+      "source_location": "L29",
+      "id": "funeraldashboardpage_loadingstate",
+      "community": 9
+    },
+    {
+      "label": "ErrorState()",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FuneralDashboardPage.jsx",
+      "source_location": "L37",
+      "id": "funeraldashboardpage_errorstate",
+      "community": 9
+    },
+    {
+      "label": "FuneralDashboardPage()",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FuneralDashboardPage.jsx",
+      "source_location": "L45",
+      "id": "funeraldashboardpage_funeraldashboardpage",
+      "community": 9
+    },
+    {
+      "label": "FamilyWidgetPage.jsx",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L1",
+      "id": "frontend_src_pages_familywidgetpage_jsx",
+      "community": 6
+    },
+    {
+      "label": "StepIndicator()",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L11",
+      "id": "familywidgetpage_stepindicator",
+      "community": 6
+    },
+    {
+      "label": "StepPackage()",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L57",
+      "id": "familywidgetpage_steppackage",
+      "community": 6
+    },
+    {
+      "label": "StepDetails()",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L92",
+      "id": "familywidgetpage_stepdetails",
+      "community": 6
+    },
+    {
+      "label": "StepAddons()",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L207",
+      "id": "familywidgetpage_stepaddons",
+      "community": 6
+    },
+    {
+      "label": "StepReview()",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L245",
+      "id": "familywidgetpage_stepreview",
+      "community": 6
+    },
+    {
+      "label": "FamilyWidgetPage()",
+      "file_type": "code",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L280",
+      "id": "familywidgetpage_familywidgetpage",
+      "community": 6
+    },
+    {
+      "label": "server.js",
+      "file_type": "code",
+      "source_file": "backend/server.js",
+      "source_location": "L1",
+      "id": "backend_server_js",
+      "community": 48
+    },
+    {
+      "label": "vitest.config.js",
+      "file_type": "code",
+      "source_file": "backend/vitest.config.js",
+      "source_location": "L1",
+      "id": "backend_vitest_config_js",
+      "community": 49
+    },
+    {
+      "label": "auth.js",
+      "file_type": "code",
+      "source_file": "backend/middleware/auth.js",
+      "source_location": "L1",
+      "id": "backend_middleware_auth_js",
+      "community": 37
+    },
+    {
+      "label": "requireAuth()",
+      "file_type": "code",
+      "source_file": "backend/middleware/auth.js",
+      "source_location": "L3",
+      "id": "auth_requireauth",
+      "community": 37
+    },
+    {
+      "label": "setup.js",
+      "file_type": "code",
+      "source_file": "backend/tests/setup.js",
+      "source_location": "L1",
+      "id": "backend_tests_setup_js",
+      "community": 13
+    },
+    {
+      "label": "makeChain()",
+      "file_type": "code",
+      "source_file": "backend/tests/setup.js",
+      "source_location": "L21",
+      "id": "setup_makechain",
+      "community": 13
+    },
+    {
+      "label": "makeSupabaseMock()",
+      "file_type": "code",
+      "source_file": "backend/tests/setup.js",
+      "source_location": "L36",
+      "id": "setup_makesupabasemock",
+      "community": 13
+    },
+    {
+      "label": "auth.test.js",
+      "file_type": "code",
+      "source_file": "backend/tests/middleware/auth.test.js",
+      "source_location": "L1",
+      "id": "backend_tests_middleware_auth_test_js",
+      "community": 38
+    },
+    {
+      "label": "makeRes()",
+      "file_type": "code",
+      "source_file": "backend/tests/middleware/auth.test.js",
+      "source_location": "L11",
+      "id": "auth_test_makeres",
+      "community": 38
+    },
+    {
+      "label": "packages.test.js",
+      "file_type": "code",
+      "source_file": "backend/tests/routes/packages.test.js",
+      "source_location": "L1",
+      "id": "backend_tests_routes_packages_test_js",
+      "community": 50
+    },
+    {
+      "label": "cases.test.js",
+      "file_type": "code",
+      "source_file": "backend/tests/routes/cases.test.js",
+      "source_location": "L1",
+      "id": "backend_tests_routes_cases_test_js",
+      "community": 51
+    },
+    {
+      "label": "health.test.js",
+      "file_type": "code",
+      "source_file": "backend/tests/routes/health.test.js",
+      "source_location": "L1",
+      "id": "backend_tests_routes_health_test_js",
+      "community": 52
+    },
+    {
+      "label": "orders.test.js",
+      "file_type": "code",
+      "source_file": "backend/tests/routes/orders.test.js",
+      "source_location": "L1",
+      "id": "backend_tests_routes_orders_test_js",
+      "community": 53
+    },
+    {
+      "label": "addons.test.js",
+      "file_type": "code",
+      "source_file": "backend/tests/routes/addons.test.js",
+      "source_location": "L1",
+      "id": "backend_tests_routes_addons_test_js",
+      "community": 54
+    },
+    {
+      "label": "portal.test.js",
+      "file_type": "code",
+      "source_file": "backend/tests/routes/portal.test.js",
+      "source_location": "L1",
+      "id": "backend_tests_routes_portal_test_js",
+      "community": 55
+    },
+    {
+      "label": "crematoriums.test.js",
+      "file_type": "code",
+      "source_file": "backend/tests/routes/crematoriums.test.js",
+      "source_location": "L1",
+      "id": "backend_tests_routes_crematoriums_test_js",
+      "community": 56
+    },
+    {
+      "label": "seed.js",
+      "file_type": "code",
+      "source_file": "backend/scripts/seed.js",
+      "source_location": "L1",
+      "id": "backend_scripts_seed_js",
+      "community": 39
+    },
+    {
+      "label": "seed()",
+      "file_type": "code",
+      "source_file": "backend/scripts/seed.js",
+      "source_location": "L92",
+      "id": "seed_seed",
+      "community": 39
+    },
+    {
+      "label": "supabase.js",
+      "file_type": "code",
+      "source_file": "backend/lib/supabase.js",
+      "source_location": "L1",
+      "id": "backend_lib_supabase_js",
+      "community": 57
+    },
+    {
+      "label": "addons.js",
+      "file_type": "code",
+      "source_file": "backend/routes/addons.js",
+      "source_location": "L1",
+      "id": "backend_routes_addons_js",
+      "community": 58
+    },
+    {
+      "label": "orders.js",
+      "file_type": "code",
+      "source_file": "backend/routes/orders.js",
+      "source_location": "L1",
+      "id": "backend_routes_orders_js",
+      "community": 59
+    },
+    {
+      "label": "packages.js",
+      "file_type": "code",
+      "source_file": "backend/routes/packages.js",
+      "source_location": "L1",
+      "id": "backend_routes_packages_js",
+      "community": 60
+    },
+    {
+      "label": "cases.js",
+      "file_type": "code",
+      "source_file": "backend/routes/cases.js",
+      "source_location": "L1",
+      "id": "backend_routes_cases_js",
+      "community": 40
+    },
+    {
+      "label": "shapeRow()",
+      "file_type": "code",
+      "source_file": "backend/routes/cases.js",
+      "source_location": "L8",
+      "id": "cases_shaperow",
+      "community": 40
+    },
+    {
+      "label": "portal.js",
+      "file_type": "code",
+      "source_file": "backend/routes/portal.js",
+      "source_location": "L1",
+      "id": "backend_routes_portal_js",
+      "community": 41
+    },
+    {
+      "label": "shapeRow()",
+      "file_type": "code",
+      "source_file": "backend/routes/portal.js",
+      "source_location": "L8",
+      "id": "portal_shaperow",
+      "community": 41
+    },
+    {
+      "label": "crematoriums.js",
+      "file_type": "code",
+      "source_file": "backend/routes/crematoriums.js",
+      "source_location": "L1",
+      "id": "backend_routes_crematoriums_js",
+      "community": 42
+    },
+    {
+      "label": "shapeRow()",
+      "file_type": "code",
+      "source_file": "backend/routes/crematoriums.js",
+      "source_location": "L7",
+      "id": "crematoriums_shaperow",
+      "community": 42
+    },
+    {
+      "label": "React + Vite Template",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_react_vite_template",
+      "community": 1
+    },
+    {
+      "label": "Hot Module Replacement (HMR)",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": "line 3",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_hmr",
+      "community": 1
+    },
+    {
+      "label": "ESLint Rules",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": "line 3",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_eslint",
+      "community": 1
+    },
+    {
+      "label": "@vitejs/plugin-react (Babel/OXC)",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": "line 7",
+      "source_url": "https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react",
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_plugin_react_babel",
+      "community": 1
+    },
+    {
+      "label": "@vitejs/plugin-react-swc (SWC)",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": "line 8",
+      "source_url": "https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc",
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_plugin_react_swc",
+      "community": 1
+    },
+    {
+      "label": "Babel Transpiler",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": "line 7",
+      "source_url": "https://babeljs.io/",
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_babel",
+      "community": 1
+    },
+    {
+      "label": "OXC Transformer",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": "line 7",
+      "source_url": "https://oxc.rs",
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_oxc",
+      "community": 1
+    },
+    {
+      "label": "SWC Compiler",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": "line 8",
+      "source_url": "https://swc.rs/",
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_swc",
+      "community": 1
+    },
+    {
+      "label": "React Compiler",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": "line 10",
+      "source_url": "https://react.dev/learn/react-compiler/installation",
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_react_compiler",
+      "community": 1
+    },
+    {
+      "label": "React Compiler Disabled \u2014 Dev/Build Performance Rationale",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": "line 12",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_react_compiler_rationale",
+      "community": 1
+    },
+    {
+      "label": "TypeScript Integration",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": "line 16",
+      "source_url": "https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts",
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_typescript",
+      "community": 1
+    },
+    {
+      "label": "typescript-eslint",
+      "file_type": "document",
+      "source_file": "frontend/README.md",
+      "source_location": "line 16",
+      "source_url": "https://typescript-eslint.io",
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "readme_typescript_eslint",
+      "community": 1
+    },
+    {
+      "label": "React Logo SVG",
+      "file_type": "image",
+      "source_file": "frontend/src/assets/react.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "asset_react_svg",
+      "community": 1
+    },
+    {
+      "label": "Vite Logo SVG",
+      "file_type": "image",
+      "source_file": "frontend/public/vite.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "asset_vite_svg",
+      "community": 1
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/App.jsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "_src": "frontend_src_app_jsx",
+      "_tgt": "app_appinner",
+      "source": "frontend_src_app_jsx",
+      "target": "app_appinner",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/App.jsx",
+      "source_location": "L43",
+      "weight": 1.0,
+      "_src": "frontend_src_app_jsx",
+      "_tgt": "app_app",
+      "source": "frontend_src_app_jsx",
+      "target": "app_app",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/context/AuthContext.jsx",
+      "source_location": "L6",
+      "weight": 1.0,
+      "_src": "frontend_src_context_authcontext_jsx",
+      "_tgt": "authcontext_authprovider",
+      "source": "frontend_src_context_authcontext_jsx",
+      "target": "authcontext_authprovider",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/context/AuthContext.jsx",
+      "source_location": "L38",
+      "weight": 1.0,
+      "_src": "frontend_src_context_authcontext_jsx",
+      "_tgt": "authcontext_useauth",
+      "source": "frontend_src_context_authcontext_jsx",
+      "target": "authcontext_useauth",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ui/Button.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "frontend_src_components_ui_button_jsx",
+      "_tgt": "button_button",
+      "source": "frontend_src_components_ui_button_jsx",
+      "target": "button_button",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ui/Badge.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "frontend_src_components_ui_badge_jsx",
+      "_tgt": "badge_badge",
+      "source": "frontend_src_components_ui_badge_jsx",
+      "target": "badge_badge",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ui/StatusPill.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "_src": "frontend_src_components_ui_statuspill_jsx",
+      "_tgt": "statuspill_statuspill",
+      "source": "frontend_src_components_ui_statuspill_jsx",
+      "target": "statuspill_statuspill",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ui/StatCard.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "frontend_src_components_ui_statcard_jsx",
+      "_tgt": "statcard_statcard",
+      "source": "frontend_src_components_ui_statcard_jsx",
+      "target": "statcard_statcard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/ui/ProgressTrack.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "frontend_src_components_ui_progresstrack_jsx",
+      "_tgt": "progresstrack_progresstrack",
+      "source": "frontend_src_components_ui_progresstrack_jsx",
+      "target": "progresstrack_progresstrack",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/crematorium/OrderQueue.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_src": "frontend_src_components_crematorium_orderqueue_jsx",
+      "_tgt": "orderqueue_orderqueue",
+      "source": "frontend_src_components_crematorium_orderqueue_jsx",
+      "target": "orderqueue_orderqueue",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/crematorium/OrderCard.jsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "_src": "frontend_src_components_crematorium_ordercard_jsx",
+      "_tgt": "ordercard_ordercard",
+      "source": "frontend_src_components_crematorium_ordercard_jsx",
+      "target": "ordercard_ordercard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/crematorium/EarningsCard.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "frontend_src_components_crematorium_earningscard_jsx",
+      "_tgt": "earningscard_earningscard",
+      "source": "frontend_src_components_crematorium_earningscard_jsx",
+      "target": "earningscard_earningscard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/widget/OrderSummary.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "frontend_src_components_widget_ordersummary_jsx",
+      "_tgt": "ordersummary_ordersummary",
+      "source": "frontend_src_components_widget_ordersummary_jsx",
+      "target": "ordersummary_ordersummary",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/widget/AddonRow.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "frontend_src_components_widget_addonrow_jsx",
+      "_tgt": "addonrow_addonrow",
+      "source": "frontend_src_components_widget_addonrow_jsx",
+      "target": "addonrow_addonrow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/widget/SuccessScreen.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_src": "frontend_src_components_widget_successscreen_jsx",
+      "_tgt": "successscreen_successscreen",
+      "source": "frontend_src_components_widget_successscreen_jsx",
+      "target": "successscreen_successscreen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/widget/PackageCard.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_src": "frontend_src_components_widget_packagecard_jsx",
+      "_tgt": "packagecard_packagecard",
+      "source": "frontend_src_components_widget_packagecard_jsx",
+      "target": "packagecard_packagecard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/auth/LoginScreen.jsx",
+      "source_location": "L5",
+      "weight": 1.0,
+      "_src": "frontend_src_components_auth_loginscreen_jsx",
+      "_tgt": "loginscreen_loginscreen",
+      "source": "frontend_src_components_auth_loginscreen_jsx",
+      "target": "loginscreen_loginscreen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/layout/Sidebar.jsx",
+      "source_location": "L82",
+      "weight": 1.0,
+      "_src": "frontend_src_components_layout_sidebar_jsx",
+      "_tgt": "sidebar_sidebar",
+      "source": "frontend_src_components_layout_sidebar_jsx",
+      "target": "sidebar_sidebar",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/layout/Navbar.jsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "_src": "frontend_src_components_layout_navbar_jsx",
+      "_tgt": "navbar_navbar",
+      "source": "frontend_src_components_layout_navbar_jsx",
+      "target": "navbar_navbar",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/layout/PageHeader.jsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "frontend_src_components_layout_pageheader_jsx",
+      "_tgt": "pageheader_pageheader",
+      "source": "frontend_src_components_layout_pageheader_jsx",
+      "target": "pageheader_pageheader",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CasesPage.jsx",
+      "source_location": "L16",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casespage_jsx",
+      "_tgt": "casespage_casespage",
+      "source": "frontend_src_components_dashboard_casespage_jsx",
+      "target": "casespage_casespage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L22",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "_tgt": "casedetailpage_now",
+      "source": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "target": "casedetailpage_now",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L29",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "_tgt": "casedetailpage_custodynode",
+      "source": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "target": "casedetailpage_custodynode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L54",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "_tgt": "casedetailpage_custodymodal",
+      "source": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "target": "casedetailpage_custodymodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L136",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "_tgt": "casedetailpage_custodytimeline",
+      "source": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "target": "casedetailpage_custodytimeline",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L245",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "_tgt": "casedetailpage_authstatusrow",
+      "source": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "target": "casedetailpage_authstatusrow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L293",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "_tgt": "casedetailpage_authorizationcard",
+      "source": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "target": "casedetailpage_authorizationcard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L385",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "_tgt": "casedetailpage_inforow",
+      "source": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "target": "casedetailpage_inforow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L394",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "_tgt": "casedetailpage_notecard",
+      "source": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "target": "casedetailpage_notecard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L406",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "_tgt": "casedetailpage_docrow",
+      "source": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "target": "casedetailpage_docrow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L441",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "_tgt": "casedetailpage_scheduletransportcard",
+      "source": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "target": "casedetailpage_scheduletransportcard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L565",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "_tgt": "casedetailpage_casedetailpage",
+      "source": "frontend_src_components_dashboard_casedetailpage_jsx",
+      "target": "casedetailpage_casedetailpage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CaseDetailPage.jsx",
+      "source_location": "L57",
+      "weight": 1.0,
+      "_src": "casedetailpage_custodymodal",
+      "_tgt": "casedetailpage_now",
+      "source": "casedetailpage_now",
+      "target": "casedetailpage_custodymodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/RevenuePage.jsx",
+      "source_location": "L21",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_revenuepage_jsx",
+      "_tgt": "revenuepage_revenuepage",
+      "source": "frontend_src_components_dashboard_revenuepage_jsx",
+      "target": "revenuepage_revenuepage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/OperationalAlerts.jsx",
+      "source_location": "L30",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_operationalalerts_jsx",
+      "_tgt": "operationalalerts_alertrow",
+      "source": "frontend_src_components_dashboard_operationalalerts_jsx",
+      "target": "operationalalerts_alertrow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/OperationalAlerts.jsx",
+      "source_location": "L50",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_operationalalerts_jsx",
+      "_tgt": "operationalalerts_operationalalerts",
+      "source": "frontend_src_components_dashboard_operationalalerts_jsx",
+      "target": "operationalalerts_operationalalerts",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CasesTable.jsx",
+      "source_location": "L4",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_casestable_jsx",
+      "_tgt": "casestable_casestable",
+      "source": "frontend_src_components_dashboard_casestable_jsx",
+      "target": "casestable_casestable",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/RevenueChart.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_revenuechart_jsx",
+      "_tgt": "revenuechart_revenuechart",
+      "source": "frontend_src_components_dashboard_revenuechart_jsx",
+      "target": "revenuechart_revenuechart",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_settingspage_jsx",
+      "_tgt": "settingspage_sectionheader",
+      "source": "frontend_src_components_dashboard_settingspage_jsx",
+      "target": "settingspage_sectionheader",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L16",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_settingspage_jsx",
+      "_tgt": "settingspage_field",
+      "source": "frontend_src_components_dashboard_settingspage_jsx",
+      "target": "settingspage_field",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L31",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_settingspage_jsx",
+      "_tgt": "settingspage_toggle",
+      "source": "frontend_src_components_dashboard_settingspage_jsx",
+      "target": "settingspage_toggle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L49",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_settingspage_jsx",
+      "_tgt": "settingspage_profiletab",
+      "source": "frontend_src_components_dashboard_settingspage_jsx",
+      "target": "settingspage_profiletab",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L91",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_settingspage_jsx",
+      "_tgt": "settingspage_brandingtab",
+      "source": "frontend_src_components_dashboard_settingspage_jsx",
+      "target": "settingspage_brandingtab",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L141",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_settingspage_jsx",
+      "_tgt": "settingspage_notificationstab",
+      "source": "frontend_src_components_dashboard_settingspage_jsx",
+      "target": "settingspage_notificationstab",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L157",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_settingspage_jsx",
+      "_tgt": "settingspage_billingtab",
+      "source": "frontend_src_components_dashboard_settingspage_jsx",
+      "target": "settingspage_billingtab",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/SettingsPage.jsx",
+      "source_location": "L235",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_settingspage_jsx",
+      "_tgt": "settingspage_settingspage",
+      "source": "frontend_src_components_dashboard_settingspage_jsx",
+      "target": "settingspage_settingspage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CrematoriumsPage.jsx",
+      "source_location": "L9",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_crematoriumspage_jsx",
+      "_tgt": "crematoriumspage_inputfield",
+      "source": "frontend_src_components_dashboard_crematoriumspage_jsx",
+      "target": "crematoriumspage_inputfield",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CrematoriumsPage.jsx",
+      "source_location": "L38",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_crematoriumspage_jsx",
+      "_tgt": "crematoriumspage_editmodal",
+      "source": "frontend_src_components_dashboard_crematoriumspage_jsx",
+      "target": "crematoriumspage_editmodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CrematoriumsPage.jsx",
+      "source_location": "L132",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_crematoriumspage_jsx",
+      "_tgt": "crematoriumspage_deletemodal",
+      "source": "frontend_src_components_dashboard_crematoriumspage_jsx",
+      "target": "crematoriumspage_deletemodal",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CrematoriumsPage.jsx",
+      "source_location": "L178",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_crematoriumspage_jsx",
+      "_tgt": "crematoriumspage_crematoriumcard",
+      "source": "frontend_src_components_dashboard_crematoriumspage_jsx",
+      "target": "crematoriumspage_crematoriumcard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/CrematoriumsPage.jsx",
+      "source_location": "L232",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_crematoriumspage_jsx",
+      "_tgt": "crematoriumspage_crematoriumspage",
+      "source": "frontend_src_components_dashboard_crematoriumspage_jsx",
+      "target": "crematoriumspage_crematoriumspage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/StatsRow.jsx",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_statsrow_jsx",
+      "_tgt": "statsrow_statsrow",
+      "source": "frontend_src_components_dashboard_statsrow_jsx",
+      "target": "statsrow_statsrow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCrematoriumPage.jsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_newcrematoriumpage_jsx",
+      "_tgt": "newcrematoriumpage_stepindicator",
+      "source": "frontend_src_components_dashboard_newcrematoriumpage_jsx",
+      "target": "newcrematoriumpage_stepindicator",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCrematoriumPage.jsx",
+      "source_location": "L39",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_newcrematoriumpage_jsx",
+      "_tgt": "newcrematoriumpage_inputfield",
+      "source": "frontend_src_components_dashboard_newcrematoriumpage_jsx",
+      "target": "newcrematoriumpage_inputfield",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCrematoriumPage.jsx",
+      "source_location": "L68",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_newcrematoriumpage_jsx",
+      "_tgt": "newcrematoriumpage_confirmrow",
+      "source": "frontend_src_components_dashboard_newcrematoriumpage_jsx",
+      "target": "newcrematoriumpage_confirmrow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCrematoriumPage.jsx",
+      "source_location": "L77",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_newcrematoriumpage_jsx",
+      "_tgt": "newcrematoriumpage_newcrematoriumpage",
+      "source": "frontend_src_components_dashboard_newcrematoriumpage_jsx",
+      "target": "newcrematoriumpage_newcrematoriumpage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L48",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "_tgt": "familypageeditorpage_uploadtocloudinary",
+      "source": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "target": "familypageeditorpage_uploadtocloudinary",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L71",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "_tgt": "familypageeditorpage_editorsection",
+      "source": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "target": "familypageeditorpage_editorsection",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L82",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "_tgt": "familypageeditorpage_field",
+      "source": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "target": "familypageeditorpage_field",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L91",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "_tgt": "familypageeditorpage_textinput",
+      "source": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "target": "familypageeditorpage_textinput",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L103",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "_tgt": "familypageeditorpage_colorfield",
+      "source": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "target": "familypageeditorpage_colorfield",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L128",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "_tgt": "familypageeditorpage_toggle",
+      "source": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "target": "familypageeditorpage_toggle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L153",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "_tgt": "familypageeditorpage_logoupload",
+      "source": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "target": "familypageeditorpage_logoupload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L240",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "_tgt": "familypageeditorpage_familyportalpreview",
+      "source": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "target": "familypageeditorpage_familyportalpreview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/FamilyPageEditorPage.jsx",
+      "source_location": "L449",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "_tgt": "familypageeditorpage_familypageeditorpage",
+      "source": "frontend_src_components_dashboard_familypageeditorpage_jsx",
+      "target": "familypageeditorpage_familypageeditorpage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L24",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_newcasepage_jsx",
+      "_tgt": "newcasepage_usedata",
+      "source": "frontend_src_components_dashboard_newcasepage_jsx",
+      "target": "newcasepage_usedata",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L34",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_newcasepage_jsx",
+      "_tgt": "newcasepage_stepindicator",
+      "source": "frontend_src_components_dashboard_newcasepage_jsx",
+      "target": "newcasepage_stepindicator",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L66",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_newcasepage_jsx",
+      "_tgt": "newcasepage_inputfield",
+      "source": "frontend_src_components_dashboard_newcasepage_jsx",
+      "target": "newcasepage_inputfield",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L81",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_newcasepage_jsx",
+      "_tgt": "newcasepage_selectfield",
+      "source": "frontend_src_components_dashboard_newcasepage_jsx",
+      "target": "newcasepage_selectfield",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L97",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_newcasepage_jsx",
+      "_tgt": "newcasepage_documentslot",
+      "source": "frontend_src_components_dashboard_newcasepage_jsx",
+      "target": "newcasepage_documentslot",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L152",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_newcasepage_jsx",
+      "_tgt": "newcasepage_crematoriumcard",
+      "source": "frontend_src_components_dashboard_newcasepage_jsx",
+      "target": "newcasepage_crematoriumcard",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L190",
+      "weight": 1.0,
+      "_src": "frontend_src_components_dashboard_newcasepage_jsx",
+      "_tgt": "newcasepage_newcasepage",
+      "source": "frontend_src_components_dashboard_newcasepage_jsx",
+      "target": "newcasepage_newcasepage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/components/dashboard/NewCasePage.jsx",
+      "source_location": "L192",
+      "weight": 1.0,
+      "_src": "newcasepage_newcasepage",
+      "_tgt": "newcasepage_usedata",
+      "source": "newcasepage_usedata",
+      "target": "newcasepage_newcasepage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/hooks/useOrders.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "_src": "frontend_src_hooks_useorders_js",
+      "_tgt": "useorders_useorders",
+      "source": "frontend_src_hooks_useorders_js",
+      "target": "useorders_useorders",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L5",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_request",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_request",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L18",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_getauthheader",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_getauthheader",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L24",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_mutate",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_mutate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L30",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_fetchpackages",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_fetchpackages",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L33",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_fetchaddons",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_fetchaddons",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L36",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_fetchcases",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_fetchcases",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L37",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_fetchcase",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_fetchcase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L38",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_createcase",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_createcase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L40",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_updatecasestatus",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_updatecasestatus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L42",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_addcasenote",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_addcasenote",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L44",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_fetchcustody",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_fetchcustody",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L45",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_updatecustodystage",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_updatecustodystage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L48",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_addcasedocument",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_addcasedocument",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L52",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_fetchcrematoriums",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_fetchcrematoriums",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_createcrematorium",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_createcrematorium",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L55",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_updatecrematorium",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_updatecrematorium",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L57",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_deletecrematorium",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_deletecrematorium",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L61",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_fetchorders",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_fetchorders",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L62",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_advanceorder",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_advanceorder",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L66",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_fetchportalsettings",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_fetchportalsettings",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L67",
+      "weight": 1.0,
+      "_src": "frontend_src_lib_api_js",
+      "_tgt": "api_saveportalsettings",
+      "source": "frontend_src_lib_api_js",
+      "target": "api_saveportalsettings",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L26",
+      "weight": 1.0,
+      "_src": "api_mutate",
+      "_tgt": "api_request",
+      "source": "api_request",
+      "target": "api_mutate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L30",
+      "weight": 1.0,
+      "_src": "api_fetchpackages",
+      "_tgt": "api_request",
+      "source": "api_request",
+      "target": "api_fetchpackages",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L33",
+      "weight": 1.0,
+      "_src": "api_fetchaddons",
+      "_tgt": "api_request",
+      "source": "api_request",
+      "target": "api_fetchaddons",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L36",
+      "weight": 1.0,
+      "_src": "api_fetchcases",
+      "_tgt": "api_request",
+      "source": "api_request",
+      "target": "api_fetchcases",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L37",
+      "weight": 1.0,
+      "_src": "api_fetchcase",
+      "_tgt": "api_request",
+      "source": "api_request",
+      "target": "api_fetchcase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L44",
+      "weight": 1.0,
+      "_src": "api_fetchcustody",
+      "_tgt": "api_request",
+      "source": "api_request",
+      "target": "api_fetchcustody",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L52",
+      "weight": 1.0,
+      "_src": "api_fetchcrematoriums",
+      "_tgt": "api_request",
+      "source": "api_request",
+      "target": "api_fetchcrematoriums",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L61",
+      "weight": 1.0,
+      "_src": "api_fetchorders",
+      "_tgt": "api_request",
+      "source": "api_request",
+      "target": "api_fetchorders",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L66",
+      "weight": 1.0,
+      "_src": "api_fetchportalsettings",
+      "_tgt": "api_request",
+      "source": "api_request",
+      "target": "api_fetchportalsettings",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L25",
+      "weight": 1.0,
+      "_src": "api_mutate",
+      "_tgt": "api_getauthheader",
+      "source": "api_getauthheader",
+      "target": "api_mutate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L39",
+      "weight": 1.0,
+      "_src": "api_createcase",
+      "_tgt": "api_mutate",
+      "source": "api_mutate",
+      "target": "api_createcase",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L41",
+      "weight": 1.0,
+      "_src": "api_updatecasestatus",
+      "_tgt": "api_mutate",
+      "source": "api_mutate",
+      "target": "api_updatecasestatus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L43",
+      "weight": 1.0,
+      "_src": "api_addcasenote",
+      "_tgt": "api_mutate",
+      "source": "api_mutate",
+      "target": "api_addcasenote",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L46",
+      "weight": 1.0,
+      "_src": "api_updatecustodystage",
+      "_tgt": "api_mutate",
+      "source": "api_mutate",
+      "target": "api_updatecustodystage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L49",
+      "weight": 1.0,
+      "_src": "api_addcasedocument",
+      "_tgt": "api_mutate",
+      "source": "api_mutate",
+      "target": "api_addcasedocument",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L54",
+      "weight": 1.0,
+      "_src": "api_createcrematorium",
+      "_tgt": "api_mutate",
+      "source": "api_mutate",
+      "target": "api_createcrematorium",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L56",
+      "weight": 1.0,
+      "_src": "api_updatecrematorium",
+      "_tgt": "api_mutate",
+      "source": "api_mutate",
+      "target": "api_updatecrematorium",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L58",
+      "weight": 1.0,
+      "_src": "api_deletecrematorium",
+      "_tgt": "api_mutate",
+      "source": "api_mutate",
+      "target": "api_deletecrematorium",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L63",
+      "weight": 1.0,
+      "_src": "api_advanceorder",
+      "_tgt": "api_mutate",
+      "source": "api_mutate",
+      "target": "api_advanceorder",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/lib/api.js",
+      "source_location": "L68",
+      "weight": 1.0,
+      "_src": "api_saveportalsettings",
+      "_tgt": "api_mutate",
+      "source": "api_mutate",
+      "target": "api_saveportalsettings",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/CrematoriumPortalPage.jsx",
+      "source_location": "L8",
+      "weight": 1.0,
+      "_src": "frontend_src_pages_crematoriumportalpage_jsx",
+      "_tgt": "crematoriumportalpage_crematoriumportalpage",
+      "source": "frontend_src_pages_crematoriumportalpage_jsx",
+      "target": "crematoriumportalpage_crematoriumportalpage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/FuneralDashboardPage.jsx",
+      "source_location": "L22",
+      "weight": 1.0,
+      "_src": "frontend_src_pages_funeraldashboardpage_jsx",
+      "_tgt": "funeraldashboardpage_activesidebaritem",
+      "source": "frontend_src_pages_funeraldashboardpage_jsx",
+      "target": "funeraldashboardpage_activesidebaritem",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/FuneralDashboardPage.jsx",
+      "source_location": "L29",
+      "weight": 1.0,
+      "_src": "frontend_src_pages_funeraldashboardpage_jsx",
+      "_tgt": "funeraldashboardpage_loadingstate",
+      "source": "frontend_src_pages_funeraldashboardpage_jsx",
+      "target": "funeraldashboardpage_loadingstate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/FuneralDashboardPage.jsx",
+      "source_location": "L37",
+      "weight": 1.0,
+      "_src": "frontend_src_pages_funeraldashboardpage_jsx",
+      "_tgt": "funeraldashboardpage_errorstate",
+      "source": "frontend_src_pages_funeraldashboardpage_jsx",
+      "target": "funeraldashboardpage_errorstate",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/FuneralDashboardPage.jsx",
+      "source_location": "L45",
+      "weight": 1.0,
+      "_src": "frontend_src_pages_funeraldashboardpage_jsx",
+      "_tgt": "funeraldashboardpage_funeraldashboardpage",
+      "source": "frontend_src_pages_funeraldashboardpage_jsx",
+      "target": "funeraldashboardpage_funeraldashboardpage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/FuneralDashboardPage.jsx",
+      "source_location": "L101",
+      "weight": 1.0,
+      "_src": "funeraldashboardpage_funeraldashboardpage",
+      "_tgt": "funeraldashboardpage_activesidebaritem",
+      "source": "funeraldashboardpage_activesidebaritem",
+      "target": "funeraldashboardpage_funeraldashboardpage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "_src": "frontend_src_pages_familywidgetpage_jsx",
+      "_tgt": "familywidgetpage_stepindicator",
+      "source": "frontend_src_pages_familywidgetpage_jsx",
+      "target": "familywidgetpage_stepindicator",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L57",
+      "weight": 1.0,
+      "_src": "frontend_src_pages_familywidgetpage_jsx",
+      "_tgt": "familywidgetpage_steppackage",
+      "source": "frontend_src_pages_familywidgetpage_jsx",
+      "target": "familywidgetpage_steppackage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L92",
+      "weight": 1.0,
+      "_src": "frontend_src_pages_familywidgetpage_jsx",
+      "_tgt": "familywidgetpage_stepdetails",
+      "source": "frontend_src_pages_familywidgetpage_jsx",
+      "target": "familywidgetpage_stepdetails",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L207",
+      "weight": 1.0,
+      "_src": "frontend_src_pages_familywidgetpage_jsx",
+      "_tgt": "familywidgetpage_stepaddons",
+      "source": "frontend_src_pages_familywidgetpage_jsx",
+      "target": "familywidgetpage_stepaddons",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L245",
+      "weight": 1.0,
+      "_src": "frontend_src_pages_familywidgetpage_jsx",
+      "_tgt": "familywidgetpage_stepreview",
+      "source": "frontend_src_pages_familywidgetpage_jsx",
+      "target": "familywidgetpage_stepreview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "frontend/src/pages/FamilyWidgetPage.jsx",
+      "source_location": "L280",
+      "weight": 1.0,
+      "_src": "frontend_src_pages_familywidgetpage_jsx",
+      "_tgt": "familywidgetpage_familywidgetpage",
+      "source": "frontend_src_pages_familywidgetpage_jsx",
+      "target": "familywidgetpage_familywidgetpage",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/middleware/auth.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_src": "backend_middleware_auth_js",
+      "_tgt": "auth_requireauth",
+      "source": "backend_middleware_auth_js",
+      "target": "auth_requireauth",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/tests/setup.js",
+      "source_location": "L21",
+      "weight": 1.0,
+      "_src": "backend_tests_setup_js",
+      "_tgt": "setup_makechain",
+      "source": "backend_tests_setup_js",
+      "target": "setup_makechain",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/tests/setup.js",
+      "source_location": "L36",
+      "weight": 1.0,
+      "_src": "backend_tests_setup_js",
+      "_tgt": "setup_makesupabasemock",
+      "source": "backend_tests_setup_js",
+      "target": "setup_makesupabasemock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/tests/setup.js",
+      "source_location": "L37",
+      "weight": 1.0,
+      "_src": "setup_makesupabasemock",
+      "_tgt": "setup_makechain",
+      "source": "setup_makechain",
+      "target": "setup_makesupabasemock",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/tests/middleware/auth.test.js",
+      "source_location": "L11",
+      "weight": 1.0,
+      "_src": "backend_tests_middleware_auth_test_js",
+      "_tgt": "auth_test_makeres",
+      "source": "backend_tests_middleware_auth_test_js",
+      "target": "auth_test_makeres",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/scripts/seed.js",
+      "source_location": "L92",
+      "weight": 1.0,
+      "_src": "backend_scripts_seed_js",
+      "_tgt": "seed_seed",
+      "source": "backend_scripts_seed_js",
+      "target": "seed_seed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/routes/cases.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "_src": "backend_routes_cases_js",
+      "_tgt": "cases_shaperow",
+      "source": "backend_routes_cases_js",
+      "target": "cases_shaperow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/routes/portal.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "_src": "backend_routes_portal_js",
+      "_tgt": "portal_shaperow",
+      "source": "backend_routes_portal_js",
+      "target": "portal_shaperow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "backend/routes/crematoriums.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_src": "backend_routes_crematoriums_js",
+      "_tgt": "crematoriums_shaperow",
+      "source": "backend_routes_crematoriums_js",
+      "target": "crematoriums_shaperow",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 3",
+      "weight": 1.0,
+      "_src": "readme_react_vite_template",
+      "_tgt": "readme_hmr",
+      "source": "readme_react_vite_template",
+      "target": "readme_hmr"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 3",
+      "weight": 1.0,
+      "_src": "readme_react_vite_template",
+      "_tgt": "readme_eslint",
+      "source": "readme_react_vite_template",
+      "target": "readme_eslint"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 7",
+      "weight": 1.0,
+      "_src": "readme_react_vite_template",
+      "_tgt": "readme_plugin_react_babel",
+      "source": "readme_react_vite_template",
+      "target": "readme_plugin_react_babel"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 8",
+      "weight": 1.0,
+      "_src": "readme_react_vite_template",
+      "_tgt": "readme_plugin_react_swc",
+      "source": "readme_react_vite_template",
+      "target": "readme_plugin_react_swc"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 10",
+      "weight": 1.0,
+      "_src": "readme_react_vite_template",
+      "_tgt": "readme_react_compiler",
+      "source": "readme_react_vite_template",
+      "target": "readme_react_compiler"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 16",
+      "weight": 1.0,
+      "_src": "readme_react_vite_template",
+      "_tgt": "readme_typescript",
+      "source": "readme_react_vite_template",
+      "target": "readme_typescript"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "frontend/src/assets/react.svg",
+      "source_location": null,
+      "weight": 0.85,
+      "_src": "asset_react_svg",
+      "_tgt": "readme_react_vite_template",
+      "source": "readme_react_vite_template",
+      "target": "asset_react_svg"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "frontend/public/vite.svg",
+      "source_location": null,
+      "weight": 0.85,
+      "_src": "asset_vite_svg",
+      "_tgt": "readme_react_vite_template",
+      "source": "readme_react_vite_template",
+      "target": "asset_vite_svg"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 7",
+      "weight": 1.0,
+      "_src": "readme_plugin_react_babel",
+      "_tgt": "readme_hmr",
+      "source": "readme_hmr",
+      "target": "readme_plugin_react_babel"
+    },
+    {
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 8",
+      "weight": 1.0,
+      "_src": "readme_plugin_react_swc",
+      "_tgt": "readme_hmr",
+      "source": "readme_hmr",
+      "target": "readme_plugin_react_swc"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "frontend/README.md",
+      "source_location": "line 16",
+      "weight": 0.8,
+      "_src": "readme_typescript",
+      "_tgt": "readme_eslint",
+      "source": "readme_eslint",
+      "target": "readme_typescript"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 7",
+      "weight": 1.0,
+      "_src": "readme_plugin_react_babel",
+      "_tgt": "readme_babel",
+      "source": "readme_plugin_react_babel",
+      "target": "readme_babel"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 7",
+      "weight": 1.0,
+      "_src": "readme_plugin_react_babel",
+      "_tgt": "readme_oxc",
+      "source": "readme_plugin_react_babel",
+      "target": "readme_oxc"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 8",
+      "weight": 1.0,
+      "_src": "readme_plugin_react_swc",
+      "_tgt": "readme_swc",
+      "source": "readme_plugin_react_swc",
+      "target": "readme_swc"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.82,
+      "source_file": "frontend/README.md",
+      "source_location": "line 7",
+      "weight": 0.82,
+      "_src": "readme_babel",
+      "_tgt": "readme_swc",
+      "source": "readme_babel",
+      "target": "readme_swc"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "frontend/README.md",
+      "source_location": "line 7",
+      "weight": 0.8,
+      "_src": "readme_oxc",
+      "_tgt": "readme_babel",
+      "source": "readme_babel",
+      "target": "readme_oxc"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.78,
+      "source_file": "frontend/README.md",
+      "source_location": "line 7",
+      "weight": 0.78,
+      "_src": "readme_oxc",
+      "_tgt": "readme_swc",
+      "source": "readme_oxc",
+      "target": "readme_swc"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 12",
+      "weight": 1.0,
+      "_src": "readme_react_compiler_rationale",
+      "_tgt": "readme_react_compiler",
+      "source": "readme_react_compiler",
+      "target": "readme_react_compiler_rationale"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "frontend/README.md",
+      "source_location": "line 16",
+      "weight": 1.0,
+      "_src": "readme_typescript",
+      "_tgt": "readme_typescript_eslint",
+      "source": "readme_typescript",
+      "target": "readme_typescript_eslint"
+    },
+    {
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.72,
+      "source_file": "frontend/src/assets/react.svg",
+      "source_location": null,
+      "weight": 0.72,
+      "_src": "asset_react_svg",
+      "_tgt": "asset_vite_svg",
+      "source": "asset_react_svg",
+      "target": "asset_vite_svg"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "fast_refresh_plugin_options",
+      "label": "Fast Refresh Plugin Alternatives (Babel/OXC vs SWC)",
+      "nodes": [
+        "readme_plugin_react_babel",
+        "readme_plugin_react_swc",
+        "readme_hmr"
+      ],
+      "relation": "implement",
+      "confidence": "EXTRACTED",
+      "confidence_score": 0.95,
+      "source_file": "frontend/README.md"
+    },
+    {
+      "id": "js_transpilers",
+      "label": "JavaScript Transpiler Options",
+      "nodes": [
+        "readme_babel",
+        "readme_oxc",
+        "readme_swc"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.82,
+      "source_file": "frontend/README.md"
+    },
+    {
+      "id": "brand_logos",
+      "label": "React + Vite Brand Assets",
+      "nodes": [
+        "asset_react_svg",
+        "asset_vite_svg",
+        "readme_react_vite_template"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.78,
+      "source_file": "frontend/src/assets/react.svg"
+    }
+  ]
+}
