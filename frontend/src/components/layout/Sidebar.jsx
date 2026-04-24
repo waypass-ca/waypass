@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   Search, Home, Inbox, Archive, Building2, UserPen,
   CalendarPlus, MapPinPen, FileText, Landmark, Settings, ChevronDown,
-  ChevronsUpDown, ArrowLeftToLine, ArrowRightToLine,
+  ArrowLeftToLine, ArrowRightToLine,
 } from 'lucide-react'
 
 function NavItem({ id, label, icon: Icon, badge, isActive, onClick, collapsed }) {
@@ -63,7 +63,7 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
 
   return (
     <aside
-      className="bg-surface border-r border-line flex flex-col flex-shrink-0 min-h-screen transition-[width] duration-200"
+      className="bg-surface border-r border-line flex flex-col flex-shrink-0 h-screen transition-[width] duration-200"
       style={{ width: sidebarCollapsed ? '52px' : '220px' }}
     >
       {/* Org header */}
@@ -73,13 +73,12 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
             <span className="font-sans text-[9px] font-bold text-surface leading-none">EG</span>
           </div>
         ) : (
-          <button className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-ink/[0.04] transition-colors cursor-pointer border-0 bg-transparent outline-none text-left">
+          <div className="flex items-center gap-2.5 px-2 py-1.5">
             <div className="w-5 h-5 rounded bg-ink flex items-center justify-center flex-shrink-0">
               <span className="font-sans text-[9px] font-bold text-surface leading-none">EG</span>
             </div>
             <span className="font-sans text-[13px] font-semibold text-ink flex-1 truncate">Evergreen Medical</span>
-            <ChevronsUpDown size={12} className="text-muted flex-shrink-0" strokeWidth={2} />
-          </button>
+          </div>
         )}
       </div>
 
