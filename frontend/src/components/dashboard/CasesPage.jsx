@@ -370,8 +370,8 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
   )
 
   return (
-    <div className="px-6 py-4">
-      <div className="bg-white border border-border rounded-xl overflow-hidden">
+    <div>
+      <div className="bg-white  rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full" style={{ minWidth: 760 }}>
             <colgroup>
@@ -466,7 +466,7 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
 // ─── Grid view ────────────────────────────────────────────────────────────────
 function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarred, onViewCase }) {
   return (
-    <div className="px-6 py-5">
+    <div className="px-4 py-3">
       {rows.length === 0 && (
         <div className="py-16 text-center">
           <Folder size={32} className="mx-auto text-muted/40 mb-3" />
@@ -474,18 +474,18 @@ function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarr
           <p className="font-sans text-[12px] text-muted mt-1">Try a different folder or adjust your search.</p>
         </div>
       )}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
         {rows.map(c => {
           const s = STATUS[c.status] || STATUS.pending
           return (
             <div key={c.id}
               onClick={() => onViewCase(c.id)}
-              className={`group relative bg-white border rounded-xl overflow-hidden cursor-default transition
-                hover:shadow-[0_8px_24px_-12px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
+              className={`group relative bg-white border rounded-lg overflow-hidden cursor-default transition
+                hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
                 ${activeId === c.id ? 'border-charcoal/40 ring-2 ring-charcoal/10' : 'border-border'}
                 ${selected.has(c.id) ? 'ring-2 ring-blue-soft/60' : ''}`}>
-              <div className={`h-20 ${s.tint} relative border-b ${s.border} flex items-center justify-center`}>
-                <div className="absolute top-2 left-2">
+              <div className={`h-14 ${s.tint} relative border-b ${s.border} flex items-center justify-center`}>
+                <div className="absolute top-1.5 left-1.5">
                   <button onClick={e => { e.stopPropagation(); toggleSelect(c.id) }}
                       className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
                         ${selected.has(c.id) ? 'border-charcoal bg-charcoal' : 'border-border bg-white hover:border-slate'}`}>
@@ -495,31 +495,31 @@ function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarr
                 <button
                   onClick={e => { e.stopPropagation(); setActiveId(c.id === activeId ? null : c.id) }}
                   title="Preview"
-                  className={`absolute top-2 right-2 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100
+                  className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100
                     ${activeId === c.id ? 'bg-charcoal text-white opacity-100' : 'bg-white text-slate hover:bg-warm-white'}`}>
-                  <Eye size={13} />
+                  <Eye size={11} />
                 </button>
-                {isStarred(c.id) && <StarFilled size={14} className="absolute top-2.5 left-8 text-amber" />}
-                <div className="w-12 h-14 bg-white rounded-[4px] shadow-[0_2px_6px_rgba(28,28,30,0.08)] flex flex-col items-center justify-center gap-1">
-                  <div className={`w-6 h-[2px] ${s.dot} rounded-full`} />
-                  <span className="font-display text-[18px] text-charcoal leading-none">
+                {isStarred(c.id) && <StarFilled size={12} className="absolute top-2 left-7 text-amber" />}
+                <div className="w-9 h-10 bg-white rounded-[4px] shadow-[0_2px_6px_rgba(28,28,30,0.08)] flex flex-col items-center justify-center gap-0.5">
+                  <div className={`w-4 h-[2px] ${s.dot} rounded-full`} />
+                  <span className="font-display text-[14px] text-charcoal leading-none">
                     {(c.deceased || '').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('')}
                   </span>
                 </div>
               </div>
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2 mb-1">
+              <div className="p-3">
+                <div className="flex items-start justify-between gap-1.5 mb-1">
                   <div className="min-w-0">
-                    <div className="font-sans text-[13.5px] font-medium text-charcoal truncate">{c.deceased}</div>
-                    <div className="font-sans text-[11.5px] text-muted truncate">{c.family}</div>
+                    <div className="font-sans text-[12.5px] font-medium text-charcoal truncate">{c.deceased}</div>
+                    <div className="font-sans text-[11px] text-muted truncate">{c.family}</div>
                   </div>
                   <PackageChip pkg={c.package} />
                 </div>
-                <div className="flex items-center justify-between mt-3">
+                <div className="flex items-center justify-between mt-2">
                   <StatusBadge status={c.status} />
-                  <span className="font-sans text-[12px] font-medium text-charcoal tabular-nums">${c.amount.toLocaleString()}</span>
+                  <span className="font-sans text-[11.5px] font-medium text-charcoal tabular-nums">${c.amount.toLocaleString()}</span>
                 </div>
-                <div className="mt-3 pt-3 border-t border-border flex items-center justify-between font-sans text-[11px] text-muted">
+                <div className="mt-2 pt-2 border-t border-border flex items-center justify-between font-sans text-[10.5px] text-muted">
                   <span className="truncate pr-2">{c.crematorium || <span className="italic">Unassigned</span>}</span>
                   <span className="shrink-0">{c.date}</span>
                 </div>
@@ -579,8 +579,8 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
   )
 
   return (
-    <div className="px-6 py-4 h-full">
-      <div ref={wrapRef} className="bg-white border border-border rounded-xl overflow-hidden flex h-full">
+    <div className="h-full">
+      <div ref={wrapRef} className="bg-white  overflow-hidden flex h-full">
         {/* Col 1: Smart folders */}
         <div className="overflow-auto py-2 shrink-0" style={{ width: col1 }}>
           {folders.map(f => (
