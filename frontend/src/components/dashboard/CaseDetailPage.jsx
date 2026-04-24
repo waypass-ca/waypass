@@ -1,11 +1,14 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import {
+  ChevronDown, ArrowLeft, FileText, MessageSquare,
+  CheckCircle2, Upload, Printer, Lock, TriangleAlert,
+  CalendarPlus, StickyNote, Mail, Phone,
+} from 'lucide-react'
 import { addCaseNote, addCaseDocument, fetchCustody, updateCustodyStage } from '../../lib/api.js'
 import { crematoriums } from '../../data/mockData.js'
 import { supabase } from '../../lib/supabase.js'
 import { StatusPill } from '../ui/StatusPill'
-import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
-
 
 const CUSTODY_STAGES = [
   'Removal from Location',
@@ -19,6 +22,9 @@ const CUSTODY_STAGES = [
   'Delivered to Family',
 ]
 
+const CUSTODY_STATUS_MILESTONES = { 2: 'transit', 4: 'cremation', 8: 'complete' }
+const EMPTY_CUSTODY = Array.from({ length: 9 }, () => ({ completed: false, staff: null, timestamp: null }))
+
 function now() {
   return new Date().toLocaleString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
@@ -26,31 +32,85 @@ function now() {
   })
 }
 
-function CustodyNode({ completed, gap }) {
-  if (completed) {
-    return (
-      <div className="w-5 h-5 rounded-full bg-sage flex items-center justify-center flex-shrink-0">
-        <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
-    )
-  }
-  if (gap) {
-    return (
-      <div className="w-5 h-5 rounded-full bg-amber-light border-2 border-amber flex items-center justify-center flex-shrink-0">
-        <svg className="w-2.5 h-2.5 text-amber" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-        </svg>
-      </div>
-    )
-  }
+// ── Left sliver components ─────────────────────────────────────────────────
+
+function InfoField({ label, value }) {
   return (
-    <div className="w-5 h-5 rounded-full border-2 border-border bg-cream flex-shrink-0" />
+    <div className="py-1.5 border-b border-border last:border-0">
+      <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-0.5">{label}</p>
+      <p className="font-sans text-[13px] text-charcoal">{value || '—'}</p>
+    </div>
   )
 }
 
-// Modal shown when clicking a custody stage row
+function InfoSection({ title, children, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="border-b border-border">
+      <button
+        onClick={() => setOpen(p => !p)}
+        className="w-full flex items-center justify-between px-5 pt-3 pb-2 hover:bg-charcoal/[0.02] transition-colors cursor-pointer border-0 bg-transparent outline-none"
+      >
+        <span className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider">{title}</span>
+        <ChevronDown
+          size={12}
+          className={`text-muted transition-transform duration-150 ${open ? '' : '-rotate-90'}`}
+          strokeWidth={2}
+        />
+      </button>
+      {open && <div className="px-5 pb-2">{children}</div>}
+    </div>
+  )
+}
+
+// ── Activity feed components ───────────────────────────────────────────────
+
+function ActivityEvent({ event, isLast }) {
+  let iconEl, iconBg, title, detail, body = null
+
+  if (event.type === 'custody') {
+    iconEl = <CheckCircle2 size={13} className="text-sage" />
+    iconBg = 'bg-sage/15'
+    title = event.label
+    detail = `Logged by ${event.staff} · ${event.time}`
+  } else if (event.type === 'note') {
+    iconEl = <MessageSquare size={12} className="text-blue-soft" />
+    iconBg = 'bg-blue-light'
+    title = event.author
+    detail = `added a note · ${event.time}`
+    body = (
+      <div className="mt-2 bg-cream border border-border rounded-xl px-4 py-3">
+        <p className="font-sans text-sm text-slate leading-relaxed">{event.text}</p>
+      </div>
+    )
+  } else if (event.type === 'document') {
+    iconEl = <FileText size={12} className="text-amber" />
+    iconBg = 'bg-amber-light'
+    title = 'Document uploaded'
+    detail = event.name
+  }
+
+  return (
+    <div className="flex gap-3">
+      <div className="flex flex-col items-center">
+        <div className={`w-7 h-7 rounded-full ${iconBg} flex items-center justify-center flex-shrink-0`}>
+          {iconEl}
+        </div>
+        {!isLast && <div className="w-px flex-1 bg-border mt-1 min-h-[28px]" />}
+      </div>
+      <div className={`flex-1 min-w-0 ${isLast ? 'pb-2' : 'pb-5'}`}>
+        <div className="flex items-baseline gap-1.5 flex-wrap">
+          <span className="font-sans text-[13px] font-medium text-charcoal">{title}</span>
+          {detail && <span className="font-sans text-xs text-muted">{detail}</span>}
+        </div>
+        {body}
+      </div>
+    </div>
+  )
+}
+
+// ── Custody modal ──────────────────────────────────────────────────────────
+
 function CustodyModal({ stage, entry, onSave, onClose }) {
   const isCompleted = entry?.completed === true
   const [staff, setStaff] = useState(entry?.staff ?? '')
@@ -133,115 +193,8 @@ function CustodyModal({ stage, entry, onSave, onClose }) {
   )
 }
 
-function CustodyTimeline({ entries, onUpdate, authRequired }) {
-  const [modalIdx, setModalIdx] = useState(null)
-  const lastCompletedIdx = entries.reduce((acc, e, i) => e.completed ? i : acc, -1)
-  const nextIdx = lastCompletedIdx + 1
+// ── Auth & documents components ────────────────────────────────────────────
 
-  async function handleSave(i, completed, staff, timestamp) {
-    await onUpdate(i, { completed, staff, timestamp })
-    setModalIdx(null)
-  }
-
-  function canInteract(i) {
-    // Allow: the next pending stage, or the last completed stage (to revert)
-    return i === nextIdx || i === lastCompletedIdx
-  }
-
-  return (
-    <div className="bg-warm-white rounded-xl border border-border px-6 py-5 mb-5">
-      <div className="flex items-center justify-between mb-6">
-        <p className="font-sans text-xs text-muted uppercase tracking-wide">Chain of Custody</p>
-        <Button variant="secondary" onClick={() => window.print()}>
-          <svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-          </svg>
-          Print
-        </Button>
-      </div>
-
-      <div>
-        {CUSTODY_STAGES.map((stage, i) => {
-          const entry = entries[i] ?? {}
-          const isCompleted = entry.completed === true
-          const isGap = !isCompleted && i < lastCompletedIdx
-          const isLast = i === CUSTODY_STAGES.length - 1
-          const interactive = canInteract(i)
-
-          const isNext = i === nextIdx && !isCompleted
-
-          return (
-            <div key={i} className="flex gap-3.5">
-              <div className="flex flex-col items-center pr-3">
-                <CustodyNode completed={isCompleted} gap={isGap} />
-                {!isLast && (
-                  <div className={`w-px flex-1 my-1 min-h-[28px] ${isCompleted ? 'bg-sage' : 'bg-border'}`} />
-                )}
-              </div>
-
-              <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-5'}`}>
-                {isNext ? (
-                  i === 2 && authRequired ? (
-                    <div className="w-full bg-amber-light border border-amber/30 rounded-lg px-3 py-2.5 -mx-3">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-3.5 h-3.5 text-amber flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                        </svg>
-                        <span className="font-sans text-sm font-semibold text-amber">{stage}</span>
-                      </div>
-                      <p className="font-sans text-xs text-amber/70 mt-0.5">Complete authorization before logging transport</p>
-                    </div>
-                  ) : (
-                  <button
-                    onClick={() => setModalIdx(i)}
-                    className="w-full text-left bg-sage/10 border border-sage/30 rounded-lg px-3 py-2.5 -mx-3 hover:bg-sage/20 transition-colors cursor-pointer outline-none group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-sans text-sm font-semibold text-sage">{stage}</span>
-                    </div>
-                    <p className="font-sans text-xs text-sage/70 mt-0.5">Tap to record staff &amp; time</p>
-                  </button>
-                  )
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        onClick={() => interactive && setModalIdx(i)}
-                        disabled={!interactive}
-                        className={`font-sans text-sm font-medium text-left border-0 bg-transparent outline-none transition-colors ${
-                          interactive ? 'cursor-pointer hover:underline' : 'cursor-default'
-                        } ${isCompleted ? 'text-charcoal' : isGap ? 'text-amber' : 'text-muted'}`}
-                      >
-                        {stage}
-                      </button>
-                      {isGap && <Badge variant="amber">Gap detected</Badge>}
-                    </div>
-                    {isCompleted ? (
-                      <p className="font-sans text-xs text-muted mt-0.5">{entry.timestamp} · {entry.staff}</p>
-                    ) : isGap ? (
-                      <p className="font-sans text-xs text-amber mt-0.5">No log entry — gap in chain</p>
-                    ) : (
-                      <p className="font-sans text-xs text-muted mt-0.5">Pending</p>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {modalIdx !== null && (
-        <CustodyModal
-          stage={CUSTODY_STAGES[modalIdx]}
-          entry={entries[modalIdx]}
-          onSave={(completed, staff, timestamp) => handleSave(modalIdx, completed, staff, timestamp)}
-          onClose={() => setModalIdx(null)}
-        />
-      )}
-    </div>
-  )
-}
 function AuthStatusRow({ label, uploaded, onUpload }) {
   const inputRef = useRef(null)
   const [uploading, setUploading] = useState(false)
@@ -318,15 +271,8 @@ function AuthorizationCard({ dop, onUpload, authComplete, onAuthComplete }) {
     )
   }
 
-  async function handleAuthFormUpload(file) {
-    await onUpload(file)
-    setAuthFormUploaded(true)
-  }
-
-  async function handlePermitUpload(file) {
-    await onUpload(file)
-    setPermitUploaded(true)
-  }
+  async function handleAuthFormUpload(file) { await onUpload(file); setAuthFormUploaded(true) }
+  async function handlePermitUpload(file) { await onUpload(file); setPermitUploaded(true) }
 
   return (
     <div
@@ -335,20 +281,10 @@ function AuthorizationCard({ dop, onUpload, authComplete, onAuthComplete }) {
     >
       <p className="font-sans text-xs text-muted uppercase tracking-wide mb-1">Requires action</p>
       <h3 className="font-display text-xl text-charcoal mb-4">Authorization &amp; Permitting</h3>
-
       <div className="mb-1">
-        <AuthStatusRow
-          label="Signed cremation authorization form"
-          uploaded={authFormUploaded}
-          onUpload={handleAuthFormUpload}
-        />
-        <AuthStatusRow
-          label="Cremation permit"
-          uploaded={permitUploaded}
-          onUpload={handlePermitUpload}
-        />
+        <AuthStatusRow label="Signed cremation authorization form" uploaded={authFormUploaded} onUpload={handleAuthFormUpload} />
+        <AuthStatusRow label="Cremation permit" uploaded={permitUploaded} onUpload={handlePermitUpload} />
       </div>
-
       <label className="flex items-center gap-3 py-2.5 border-b border-border cursor-pointer mb-4">
         <input
           type="checkbox"
@@ -359,14 +295,12 @@ function AuthorizationCard({ dop, onUpload, authComplete, onAuthComplete }) {
         />
         <span className="font-sans text-sm text-charcoal">Medical examiner sign-off required</span>
       </label>
-
       <div className="bg-amber-light rounded-lg px-4 py-3 mb-5">
         <p className="font-sans text-xs text-amber font-semibold uppercase tracking-wide mb-1">Mandatory wait period</p>
         <p className="font-sans text-sm text-charcoal">
           Minimum 48 hours required. Earliest cremation: <strong>{earliestCremation}</strong>.
         </p>
       </div>
-
       <Button
         variant="primary"
         onClick={onAuthComplete}
@@ -379,41 +313,14 @@ function AuthorizationCard({ dop, onUpload, authComplete, onAuthComplete }) {
   )
 }
 
-// Status auto-advances when these custody stage indices are completed
-const CUSTODY_STATUS_MILESTONES = { 2: 'transit', 4: 'cremation', 8: 'complete' }
-
-function InfoRow({ label, value }) {
-  return (
-    <div className="flex justify-between py-2.5 border-b border-border last:border-0">
-      <span className="font-sans text-xs text-muted">{label}</span>
-      <span className="font-sans text-xs text-charcoal font-medium text-right max-w-[60%]">{value || '—'}</span>
-    </div>
-  )
-}
-
-function NoteCard({ note }) {
-  return (
-    <div className="bg-cream rounded-xl p-4">
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-sans text-xs font-semibold text-charcoal">{note.author}</span>
-        <span className="font-sans text-xs text-muted">{note.time}</span>
-      </div>
-      <p className="font-sans text-sm text-slate leading-relaxed">{note.text}</p>
-    </div>
-  )
-}
-
 function DocRow({ doc }) {
-  // Support both legacy string format and new {type, path, name} object format
   const name = typeof doc === 'string' ? doc : doc.name
   const path = typeof doc === 'string' ? null : doc.path
   const ext = name?.split('.').pop().toUpperCase() ?? 'FILE'
 
   async function handleDownload() {
     if (!path) return
-    const { data, error } = await supabase.storage
-      .from('case-documents')
-      .createSignedUrl(path, 60)
+    const { data, error } = await supabase.storage.from('case-documents').createSignedUrl(path, 60)
     if (error || !data?.signedUrl) return
     window.open(data.signedUrl, '_blank')
   }
@@ -458,6 +365,15 @@ function ScheduleTransportCard({ show }) {
   const selectedName = crematoriums.find(c => c.id === selectedCrematory)?.name ?? ''
   const canSend = selectedCrematory && pickupDate && pickupTime
 
+  function InfoRow({ label, value }) {
+    return (
+      <div className="flex justify-between py-2.5 border-b border-border last:border-0">
+        <span className="font-sans text-xs text-muted">{label}</span>
+        <span className="font-sans text-xs text-charcoal font-medium text-right max-w-[60%]">{value}</span>
+      </div>
+    )
+  }
+
   if (orderSent) {
     return (
       <div className="bg-warm-white rounded-xl border border-border p-6">
@@ -486,7 +402,6 @@ function ScheduleTransportCard({ show }) {
     <div className="bg-warm-white rounded-xl border border-border p-6">
       <p className="font-sans text-xs text-muted uppercase tracking-wide mb-1">Transport</p>
       <h2 className="font-display text-xl text-charcoal mb-5">Schedule Transport</h2>
-
       <div className="space-y-4">
         <div>
           <label className="font-sans text-xs text-muted block mb-1.5">Crematory</label>
@@ -502,7 +417,6 @@ function ScheduleTransportCard({ show }) {
           </select>
           <p className="font-sans text-xs text-muted mt-1.5">Order will include all authorization documents attached to this case.</p>
         </div>
-
         <div>
           <label className="font-sans text-xs text-muted block mb-1.5">Preferred pickup window</label>
           <div className="flex gap-2">
@@ -524,7 +438,6 @@ function ScheduleTransportCard({ show }) {
             </select>
           </div>
         </div>
-
         <div>
           <label className="font-sans text-xs text-muted block mb-1.5">Combustible container</label>
           <input
@@ -535,7 +448,6 @@ function ScheduleTransportCard({ show }) {
             className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
           />
         </div>
-
         <div>
           <label className="font-sans text-xs text-muted block mb-1.5">ID disc number</label>
           <input
@@ -547,20 +459,14 @@ function ScheduleTransportCard({ show }) {
           />
         </div>
       </div>
-
-      <Button
-        variant="primary"
-        onClick={handleSend}
-        disabled={!canSend}
-        className="w-full justify-center mt-5"
-      >
+      <Button variant="primary" onClick={handleSend} disabled={!canSend} className="w-full justify-center mt-5">
         Send Order to Crematory
       </Button>
     </div>
   )
 }
 
-const EMPTY_CUSTODY = Array.from({ length: 9 }, () => ({ completed: false, staff: null, timestamp: null }))
+// ── Main export ────────────────────────────────────────────────────────────
 
 export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
   const [notes, setNotes] = useState(caseData.notes ?? [])
@@ -571,19 +477,18 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
   const [authorizationComplete, setAuthorizationComplete] = useState(false)
   const [custody, setCustody] = useState(EMPTY_CUSTODY)
   const [authPending, setAuthPending] = useState(false)
-  const [activeTab, setActiveTab] = useState('details')
+  const [activeTab, setActiveTab] = useState('activity')
+  const [modalIdx, setModalIdx] = useState(null)
   const uploadInputRef = useRef(null)
 
   useEffect(() => {
     fetchCustody(caseData.id)
-      .then(data => {
-        setCustody(data)
-        setAuthPending(!data[2]?.completed)
-      })
-      .catch(() => {
-        setAuthPending(true)
-      })
+      .then(data => { setCustody(data); setAuthPending(!data[2]?.completed) })
+      .catch(() => { setAuthPending(true) })
   }, [caseData.id])
+
+  const lastCompletedIdx = custody.reduce((acc, e, i) => e.completed ? i : acc, -1)
+  const nextCustodyIdx = lastCompletedIdx + 1
 
   async function handleCustodyUpdate(stageIdx, payload) {
     const saved = await updateCustodyStage(caseData.id, stageIdx, payload)
@@ -595,21 +500,19 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
       setStatus(nextStatus)
       onStatusChange?.(caseData.id, nextStatus)
     }
+    setModalIdx(null)
   }
 
   async function handleUpload(file) {
     setUploading(true)
     const ext = file.name.split('.').pop()
     const path = `cases/${caseData.id}/${Date.now()}.${ext}`
-    const { error: storageError } = await supabase.storage
-      .from('case-documents')
-      .upload(path, file, { upsert: true })
+    const { error: storageError } = await supabase.storage.from('case-documents').upload(path, file, { upsert: true })
     if (storageError) { setUploading(false); return }
     try {
       const saved = await addCaseDocument(caseData.id, { path, name: file.name })
       setDocuments(prev => [...prev, saved])
     } catch {
-      // file is in storage but DB failed; still show it locally
       setDocuments(prev => [...prev, { path, name: file.name }])
     } finally {
       setUploading(false)
@@ -620,201 +523,265 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
     if (!newNote.trim()) return
     const text = newNote.trim()
     const time = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-    // Optimistic
     setNotes(prev => [...prev, { author: 'You', text, time }])
     setNewNote('')
     try {
       const saved = await addCaseNote(caseData.id, { author: 'You', text, time })
-      // Replace optimistic note with saved data
       setNotes(prev => [...prev.slice(0, -1), saved])
     } catch (err) {
       console.error('Failed to save note:', err.message)
     }
   }
 
-  const docsActionNeeded = authPending && !authorizationComplete
+  const activityFeed = useMemo(() => {
+    const events = []
+    custody.forEach((entry, i) => {
+      if (entry.completed) events.push({ type: 'custody', label: CUSTODY_STAGES[i], staff: entry.staff, time: entry.timestamp })
+    })
+    notes.forEach(n => events.push({ type: 'note', ...n }))
+    documents.forEach(d => events.push({ type: 'document', name: typeof d === 'string' ? d : d.name }))
+    return events
+  }, [custody, notes, documents])
 
-  const tabs = [
-    { id: 'details', label: 'Details & Notes' },
-    { id: 'custody', label: 'Chain of Custody', badge: authorizationComplete },
-    { id: 'documents', label: 'Documents', badge: docsActionNeeded },
-  ]
+  const initials = (caseData.deceased || '').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('')
+  const docsActionNeeded = authPending && !authorizationComplete
+  const authBlocksTransport = nextCustodyIdx === 2 && authPending && !authorizationComplete
 
   return (
-    <div>
-      {/* Back + header */}
-      <div className="mb-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-xs font-sans text-muted hover:text-charcoal transition-colors cursor-pointer border-0 bg-transparent outline-none mb-4"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Cases
-        </button>
+    <div className="flex-1 flex overflow-hidden">
 
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <span className="font-mono text-xs text-muted">{caseData.id}</span>
+      {/* ── Left sliver ── */}
+      <div className="w-[320px] flex-shrink-0 bg-white border-r border-border flex flex-col overflow-hidden">
+
+        {/* Back + identity */}
+        <div className="px-5 pt-5 pb-5 border-b border-border flex-shrink-0">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-xs font-sans text-muted hover:text-charcoal transition-colors cursor-pointer border-0 bg-transparent outline-none mb-5"
+          >
+            <ArrowLeft size={12} />
+            Cases
+          </button>
+          <div className=" flex flex-col items-center">
+            
+            <h2 className="font-display text-[32px] text-charcoal leading-snug mb-1 flex items-center">{caseData.deceased}</h2>
+            <div className="flex items-center gap-2 mb-1">
               <StatusPill status={status} />
             </div>
-            <h1 className="font-display text-4xl font-light text-charcoal">{caseData.deceased}</h1>
-            <p className="font-sans text-sm text-muted mt-1">{caseData.family} · Opened {caseData.date}</p>
+            <p className="font-mono text-[10px] text-muted mb-2">{caseData.id}</p>
+
+            
+            <div className="flex justify-around">
+              {[
+                { icon: CalendarPlus, label: 'Schedule', onClick: () => setActiveTab('activity') },
+                { icon: StickyNote,   label: 'Note',     onClick: () => setActiveTab('activity') },
+                { icon: Mail,         label: 'Email',    onClick: () => {} },
+                { icon: Phone,        label: 'Call',     onClick: () => {} },
+                { icon: Printer,      label: 'Print',    onClick: () => window.print() },
+              ].map(({ icon: Icon, label, onClick }) => (
+                <button
+                  key={label}
+                  onClick={onClick}
+                  className="flex flex-col items-center gap-1.5 mx-1.5  cursor-pointer border-0 bg-transparent outline-none group"
+                >
+                  <div className="w-9 h-9 rounded-full bg-white border border-border flex items-center justify-center group-hover:bg-border transition-colors">
+                    <Icon size={14} strokeWidth={1.6} className="text-slate group-hover:text-charcoal transition-colors" />
+                  </div>
+                  <span className="font-sans text-[9px] text-muted group-hover:text-charcoal transition-colors leading-none">{label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-2 mt-2">
-            <Button variant="secondary" onClick={() => window.print()}>
-              <svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-              Print
-            </Button>
-          </div>
+        </div>
+
+        {/* Scrollable info sections */}
+        <div className="flex-1 overflow-y-auto scrollbar-hidden">
+          <InfoSection title="Deceased Details">
+            <InfoField label="Date of Birth" value={caseData.dob} />
+            <InfoField label="Date of Passing" value={caseData.dop} />
+            <InfoField label="Location" value={caseData.location} />
+          </InfoSection>
+
+          <InfoSection title="Family Contact">
+            <InfoField label="Name" value={caseData.contactName} />
+            <InfoField label="Relationship" value={caseData.relationship} />
+            <InfoField label="Phone" value={caseData.contactPhone} />
+            <InfoField label="Email" value={caseData.contactEmail} />
+          </InfoSection>
+
+          <InfoSection title="Arrangements">
+            <InfoField label="Package" value={caseData.package} />
+            <InfoField label="Add-ons" value={caseData.addons?.join(', ') || 'None'} />
+            <InfoField label="Crematorium" value={caseData.crematorium} />
+            <div className="flex items-baseline justify-between py-3 mt-1">
+              <span className="font-sans text-[10px] text-muted uppercase tracking-wide">Total</span>
+              <span className="font-display text-xl text-charcoal">${caseData.amount?.toLocaleString()}</span>
+            </div>
+          </InfoSection>
         </div>
       </div>
 
-      {/* Tab bar */}
-      <div className="flex gap-1 border-b border-border mb-6">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`relative flex items-center gap-2 px-4 py-2.5 font-sans text-sm font-medium border-0 bg-transparent outline-none cursor-pointer transition-colors ${
-              activeTab === tab.id
-                ? 'text-charcoal border-b-2 border-charcoal -mb-px'
-                : 'text-muted hover:text-charcoal'
-            }`}
-          >
-            {tab.label}
-            {tab.badge && (
-              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-amber">
-                <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                </svg>
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* ── Main content ── */}
+      <div className="flex-1 flex flex-col min-w-0 bg-cream overflow-hidden">
 
-      {/* Tab: Details & Notes */}
-      {activeTab === 'details' && (
-        <div className="grid grid-cols-5 gap-5">
-          <div className="col-span-3">
-            <div className="bg-warm-white rounded-xl border border-border p-5">
-              <div className="p-3">
-                <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Deceased Details</h3>
-                <InfoRow label="Full Name" value={caseData.deceased} />
-                <InfoRow label="Date of Birth" value={caseData.dob} />
-                <InfoRow label="Date of Passing" value={caseData.dop} />
-                <InfoRow label="Location" value={caseData.location} />
-              </div>
-              <div className="p-3">
-                <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Family Contact</h3>
-                <InfoRow label="Name" value={caseData.contactName} />
-                <InfoRow label="Relationship" value={caseData.relationship} />
-                <InfoRow label="Phone" value={caseData.contactPhone} />
-                <InfoRow label="Email" value={caseData.contactEmail} />
-              </div>
-              <div className="p-3">
-                <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-3">Arrangement</h3>
-                <InfoRow label="Package" value={caseData.package} />
-                <InfoRow label="Add-ons" value={caseData.addons?.join(', ') || 'None'} />
-                <InfoRow label="Crematorium" value={caseData.crematorium} />
-                <div className="flex justify-between pt-3 mt-1">
-                  <span className="font-sans text-xs font-semibold text-charcoal">Total</span>
-                  <span className="font-display text-xl text-charcoal">${caseData.amount.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
+        {/* Tab bar */}
+        <div className="bg-warm-white/90 backdrop-blur border-b border-border shrink-0 px-8">
+          <div className="flex gap-0">
+            {[
+              { id: 'activity', label: 'Activity' },
+              { id: 'documents', label: 'Documents', badge: docsActionNeeded },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative flex items-center gap-2 px-5 py-3.5 font-sans text-sm font-medium border-0 bg-transparent outline-none cursor-pointer transition-colors ${activeTab === tab.id
+                    ? 'text-charcoal border-b-2 border-charcoal -mb-px'
+                    : 'text-muted hover:text-charcoal'
+                  }`}
+              >
+                {tab.label}
+                {tab.badge && <TriangleAlert size={13} className="text-amber flex-shrink-0" />}
+              </button>
+            ))}
           </div>
-          <div className="col-span-2">
-            <div className="bg-warm-white rounded-xl border border-border p-6">
-              <h2 className="font-display text-xl text-charcoal mb-4">Case Notes</h2>
-              {notes.length === 0 ? (
-                <p className="font-sans text-sm text-muted italic mb-4">No notes yet.</p>
-              ) : (
-                <div className="space-y-3 mb-5">
-                  {notes.map((n, i) => <NoteCard key={i} note={n} />)}
+        </div>
+
+        {/* Tab content */}
+        <div className="flex-1 overflow-y-auto">
+
+          {/* ── Activity tab ── */}
+          {activeTab === 'activity' && (
+            <div className="max-w-2xl mx-auto px-8 py-6">
+
+              {/* Next custody step card */}
+              {nextCustodyIdx < CUSTODY_STAGES.length && (
+                <div className="bg-warm-white border border-border rounded-xl p-4 mb-5">
+                  <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-2">Next custody step</p>
+                  {authBlocksTransport ? (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-light flex items-center justify-center flex-shrink-0">
+                        <Lock size={13} className="text-amber" />
+                      </div>
+                      <div>
+                        <p className="font-sans text-sm font-semibold text-amber">{CUSTODY_STAGES[nextCustodyIdx]}</p>
+                        <p className="font-sans text-xs text-muted mt-0.5">Complete authorization in the Documents tab first</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setModalIdx(nextCustodyIdx)}
+                      className="w-full flex items-center justify-between text-left cursor-pointer border-0 bg-transparent outline-none group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-sage/15 flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 size={14} className="text-sage" />
+                        </div>
+                        <div>
+                          <p className="font-sans text-sm font-semibold text-charcoal">{CUSTODY_STAGES[nextCustodyIdx]}</p>
+                          <p className="font-sans text-xs text-muted mt-0.5">Click to log staff and time</p>
+                        </div>
+                      </div>
+                      <span className="font-sans text-xs font-medium text-sage group-hover:underline">Log →</span>
+                    </button>
+                  )}
                 </div>
               )}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Add a note…"
+
+              {/* Note composer */}
+              <div className="bg-warm-white border border-border rounded-xl p-4 mb-7">
+                <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-2">Add note</p>
+                <textarea
+                  placeholder="Write a note…"
                   value={newNote}
                   onChange={e => setNewNote(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && addNote()}
-                  className="flex-1 border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+                  rows={3}
+                  onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) addNote() }}
+                  className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white resize-none mb-3"
                 />
-                <Button variant="primary" onClick={addNote}>Add</Button>
+                <div className="flex items-center justify-between">
+                  <span className="font-sans text-[11px] text-muted">⌘ + Enter to submit</span>
+                  <Button variant="primary" onClick={addNote} disabled={!newNote.trim()}>
+                    Add note
+                  </Button>
+                </div>
               </div>
+
+              {/* Activity feed */}
+              {activityFeed.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="font-sans text-sm text-muted">No activity recorded yet.</p>
+                  <p className="font-sans text-xs text-muted mt-1">Add a note or log the first custody step above.</p>
+                </div>
+              ) : (
+                <div>
+                  {[...activityFeed].reverse().map((event, i, arr) => (
+                    <ActivityEvent key={i} event={event} isLast={i === arr.length - 1} />
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tab: Chain of Custody */}
-      {activeTab === 'custody' && (
-        <div className="max-w-2xl space-y-5">
-          <CustodyTimeline entries={custody} onUpdate={handleCustodyUpdate} authRequired={!authorizationComplete} />
-          <ScheduleTransportCard show={authorizationComplete} />
-        </div>
-      )}
-
-      {/* Tab: Documents */}
-      {activeTab === 'documents' && (
-        <div className="max-w-2xl space-y-5">
-          {authPending && (
-            <AuthorizationCard
-              dop={caseData.dop}
-              onUpload={handleUpload}
-              authComplete={authorizationComplete}
-              onAuthComplete={() => setAuthorizationComplete(true)}
-            />
           )}
-          <div className="bg-warm-white rounded-xl border border-border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-xl text-charcoal">Documents</h2>
-              <input
-                ref={uploadInputRef}
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden"
-                onChange={e => { if (e.target.files[0]) handleUpload(e.target.files[0]); e.target.value = '' }}
-              />
-              <Button
-                variant="secondary"
-                onClick={() => uploadInputRef.current?.click()}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <svg className="w-3.5 h-3.5 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                ) : (
-                  <svg className="w-3.5 h-3.5 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                )}
-                {uploading ? 'Uploading…' : 'Upload'}
-              </Button>
-            </div>
 
-            {documents.length === 0 ? (
-              <div className="border-2 border-dashed border-border rounded-xl py-8 text-center">
-                <p className="font-sans text-sm text-muted">No documents uploaded yet.</p>
-                <p className="font-sans text-xs text-muted mt-1">Click Upload to add files.</p>
+          {/* ── Documents tab ── */}
+          {activeTab === 'documents' && (
+            <div className="max-w-2xl mx-auto px-8 py-6 space-y-5">
+              {authPending && (
+                <AuthorizationCard
+                  dop={caseData.dop}
+                  onUpload={handleUpload}
+                  authComplete={authorizationComplete}
+                  onAuthComplete={() => setAuthorizationComplete(true)}
+                />
+              )}
+
+              <div className="bg-warm-white rounded-xl border border-border p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="font-display text-xl text-charcoal">Documents</h2>
+                  <input
+                    ref={uploadInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={e => { if (e.target.files[0]) handleUpload(e.target.files[0]); e.target.value = '' }}
+                  />
+                  <Button variant="secondary" onClick={() => uploadInputRef.current?.click()} disabled={uploading}>
+                    {uploading ? (
+                      <svg className="w-3.5 h-3.5 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <Upload size={13} className="mr-1.5" />
+                    )}
+                    {uploading ? 'Uploading…' : 'Upload'}
+                  </Button>
+                </div>
+
+                {documents.length === 0 ? (
+                  <div className="border-2 border-dashed border-border rounded-xl py-10 text-center">
+                    <p className="font-sans text-sm text-muted">No documents uploaded yet.</p>
+                    <p className="font-sans text-xs text-muted mt-1">Click Upload to add files.</p>
+                  </div>
+                ) : (
+                  <div>{documents.map((doc, i) => <DocRow key={i} doc={doc} />)}</div>
+                )}
               </div>
-            ) : (
-              <div>
-                {documents.map((doc, i) => <DocRow key={i} doc={doc} />)}
-              </div>
-            )}
-          </div>
+
+              <ScheduleTransportCard show={authorizationComplete} />
+            </div>
+          )}
+
         </div>
+      </div>
+
+      {/* Custody modal */}
+      {modalIdx !== null && (
+        <CustodyModal
+          stage={CUSTODY_STAGES[modalIdx]}
+          entry={custody[modalIdx]}
+          onSave={(completed, staff, timestamp) => handleCustodyUpdate(modalIdx, { completed, staff, timestamp })}
+          onClose={() => setModalIdx(null)}
+        />
       )}
     </div>
   )

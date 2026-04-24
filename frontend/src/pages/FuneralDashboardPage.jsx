@@ -132,6 +132,12 @@ export function FuneralDashboardPage() {
 
       {view === 'cases' ? (
         <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} />
+      ) : view === 'case-detail' && selectedCase ? (
+        <CaseDetailPage
+          caseData={selectedCase}
+          onBack={() => navigate('cases')}
+          onStatusChange={handleCaseStatusChange}
+        />
       ) : (
       <main className="flex-1 px-8 py-7 bg-cream overflow-auto">
 
@@ -141,15 +147,6 @@ export function FuneralDashboardPage() {
             cases={cases}
             onViewCase={viewCase}
             onNewCase={() => setView('new-case')}
-          />
-        )}
-
-        {/* ── Case detail ── */}
-        {view === 'case-detail' && selectedCase && (
-          <CaseDetailPage
-            caseData={selectedCase}
-            onBack={() => navigate('cases')}
-            onStatusChange={handleCaseStatusChange}
           />
         )}
 
