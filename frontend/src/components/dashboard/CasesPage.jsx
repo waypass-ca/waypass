@@ -111,7 +111,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
       {/* Row 2: search + sort + filter + view */}
       <div className="px-6 pb-3 flex items-end justify-between gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[180px] max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -transecondary-y-1/2 text-muted" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search name, family, case ID…"
