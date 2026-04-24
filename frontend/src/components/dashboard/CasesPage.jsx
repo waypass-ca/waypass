@@ -115,11 +115,11 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search name, family, case ID…"
-            className="w-full pl-9 pr-4 h-9 rounded-lg border border-border bg-cream text-[13px] text-charcoal font-sans placeholder:text-muted outline-none focus:border-charcoal/60 transition" />
+            className="w-full pl-9 pr-4 h-9 rounded-lg border border-border bg-white text-[13px] text-charcoal font-sans placeholder:text-muted outline-none focus:border-charcoal/60 transition" />
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1 px-2 h-9 rounded-lg border border-border bg-cream">
+          <div className="flex items-center gap-1 px-2 h-9 rounded-lg border border-border bg-white">
             <span className="font-sans text-[11.5px] text-muted">Sort</span>
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
               className="font-sans text-[12.5px] text-charcoal bg-transparent outline-none cursor-pointer pr-1">
@@ -131,7 +131,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
 
           <div ref={filterRef} className="relative">
             <button onClick={() => setFilterOpen(o => !o)}
-              className={`relative h-9 w-9 rounded-lg border bg-cream hover:bg-warm-white flex items-center justify-center cursor-pointer
+              className={`relative h-9 w-9 rounded-lg border bg-white hover:bg-warm-white flex items-center justify-center cursor-pointer
           ${filterOpen || filtersActive ? 'border-charcoal text-charcoal' : 'border-border text-slate'}`}>
               <Filter size={15} />
               {filtersActive > 0 && (
