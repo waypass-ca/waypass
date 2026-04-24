@@ -70,7 +70,7 @@ function InfoRow({ label, value, sub }) {
 }
 
 // ─── Top bar ──────────────────────────────────────────────────────────────────
-function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSortBy,
+function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
   count, total, filters, setFilters, filtersActive, crematoriumOptions, onNewCase }) {
   const [filterOpen, setFilterOpen] = useState(false)
   const filterRef = useRef(null)
@@ -98,7 +98,7 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
           <div className="flex items-center gap-1.5 font-sans text-[11.5px] text-muted mb-1.5">
           </div>
           <div className="flex items-baseline gap-3">
-            <h1 className="font-display font-light text-[30px] leading-none text-charcoal">{folderLabel}</h1>
+            <h1 className="font-display font-light text-[30px] leading-none text-charcoal">Cases</h1>
             <span className="font-sans text-[12.5px] text-muted">{count} of {total}</span>
           </div>
         </div>
@@ -115,11 +115,11 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search name, family, case ID…"
-            className="w-full pl-9 pr-4 h-9 rounded-lg border border-border bg-warm-white text-[13px] text-charcoal font-sans placeholder:text-muted outline-none focus:border-charcoal/60 transition" />
+            className="w-full pl-9 pr-4 h-9 rounded-lg border border-border bg-cream text-[13px] text-charcoal font-sans placeholder:text-muted outline-none focus:border-charcoal/60 transition" />
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1 px-2 h-9 rounded-lg border border-border bg-warm-white">
+          <div className="flex items-center gap-1 px-2 h-9 rounded-lg border border-border bg-cream">
             <span className="font-sans text-[11.5px] text-muted">Sort</span>
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
               className="font-sans text-[12.5px] text-charcoal bg-transparent outline-none cursor-pointer pr-1">
@@ -131,7 +131,7 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
 
           <div ref={filterRef} className="relative">
             <button onClick={() => setFilterOpen(o => !o)}
-              className={`relative h-9 w-9 rounded-lg border bg-warm-white hover:bg-cream flex items-center justify-center cursor-pointer
+              className={`relative h-9 w-9 rounded-lg border bg-cream hover:bg-warm-white flex items-center justify-center cursor-pointer
           ${filterOpen || filtersActive ? 'border-charcoal text-charcoal' : 'border-border text-slate'}`}>
               <Filter size={15} />
               {filtersActive > 0 && (
@@ -148,7 +148,7 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
                     disabled={!filtersActive}>Clear all</button>
                 </div>
 
-                <div className="overflow-auto flex-1">
+                <div className="overflow-auto flex-1 bg-white">
                   {/* Status */}
                   <div className="px-4 pt-3 pb-2">
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Status</div>
@@ -163,7 +163,7 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
                         return (
                           <button key={id} onClick={() => toggleSet('statuses', id)}
                             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                              ${on ? 'border-charcoal bg-charcoal text-warm-white' : 'border-border bg-warm-white text-slate hover:border-slate'}`}>
+                              ${on ? 'border-charcoal bg-charcoal text-white' : 'border-border bg-white text-slate hover:border-slate'}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${on ? 'bg-warm-white/60' : dot}`} />
                             {label}
                           </button>
@@ -187,7 +187,7 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
                           <button key={id}
                             onClick={() => setFilters(f => ({ ...f, datePreset: f.datePreset === id ? '' : id }))}
                             className={`px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                              ${on ? 'border-charcoal bg-charcoal text-warm-white' : 'border-border bg-warm-white text-slate hover:border-slate'}`}>
+                              ${on ? 'border-charcoal bg-charcoal text-white' : 'border-border bg-white text-slate hover:border-slate'}`}>
                             {label}
                           </button>
                         )
@@ -204,7 +204,7 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
                         return (
                           <button key={p} onClick={() => toggleSet('packages', p)}
                             className={`px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                              ${on ? 'border-charcoal bg-charcoal text-warm-white' : 'border-border bg-warm-white text-slate hover:border-slate'}`}>
+                              ${on ? 'border-charcoal bg-charcoal text-white' : 'border-border bg-white text-slate hover:border-slate'}`}>
                             {p}
                           </button>
                         )
@@ -221,7 +221,7 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
                           const on = filters.crematoriums.has(crm)
                           return (
                             <label key={crm} className="flex items-center gap-2.5 py-1 px-1 rounded hover:bg-cream/60 cursor-pointer">
-                              <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${on ? 'border-charcoal bg-charcoal' : 'border-border bg-warm-white'}`}>
+                              <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${on ? 'border-charcoal bg-charcoal' : 'border-border bg-white'}`}>
                                 {on && <Check size={11} className="text-warm-white" />}
                               </span>
                               <input type="checkbox" checked={on} onChange={() => toggleSet('crematoriums', crm)} className="sr-only" />
@@ -241,7 +241,7 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
                       ['hasDocs',     'Has documents'],
                     ].map(([k, label]) => (
                       <label key={k} className="flex items-center gap-2.5 py-1.5 px-1 rounded hover:bg-cream/60 cursor-pointer">
-                        <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${filters[k] ? 'border-charcoal bg-charcoal' : 'border-border bg-warm-white'}`}>
+                        <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${filters[k] ? 'border-charcoal bg-charcoal' : 'border-border bg-white'}`}>
                           {filters[k] && <Check size={11} className="text-warm-white" />}
                         </span>
                         <input type="checkbox" checked={filters[k]} onChange={() => toggle(k)} className="sr-only" />
@@ -251,7 +251,7 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
                   </div>
                 </div>
 
-                <div className="px-4 py-2.5 border-t border-border bg-cream/30 flex items-center justify-between shrink-0">
+                <div className="px-4 py-2.5 border-t border-border bg-warm-white flex items-center justify-between shrink-0">
                   <span className="font-sans text-[11px] text-muted">{filtersActive === 0 ? 'No filters applied' : `${filtersActive} active`}</span>
                   <button onClick={() => setFilterOpen(false)} className="h-7 px-3 rounded-md bg-charcoal text-warm-white font-sans text-[11.5px] cursor-pointer">Done</button>
                 </div>
@@ -267,7 +267,7 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
             ].map(([k, icon, label]) => (
               <button key={k} onClick={() => setView(k)} title={label}
                 className={`px-2.5 rounded-md font-sans text-[12px] flex items-center gap-1.5 cursor-pointer transition
-            ${view === k ? 'bg-warm-white text-charcoal shadow-[0_1px_2px_rgba(0,0,0,0.05)]' : 'text-muted hover:text-slate'}`}>
+            ${view === k ? 'bg-white text-charcoal shadow-[0_1px_2px_rgba(0,0,0,0.05)]' : 'text-muted hover:text-slate'}`}>
                 {icon}
               </button>
             ))}
@@ -371,7 +371,7 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
 
   return (
     <div className="px-6 py-4">
-      <div className="bg-warm-white border border-border rounded-xl overflow-hidden">
+      <div className="bg-white border border-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full" style={{ minWidth: 760 }}>
             <colgroup>
@@ -384,10 +384,10 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
               <col style={{ width: 90 }} />
               <col style={{ width: 40 }} />
             </colgroup>
-            <thead className="bg-cream/60 border-b border-border">
+            <thead className="bg-white border-b border-border">
               <tr>
                 <th className="px-3 py-2.5">
-                  <button onClick={selectAll} className="w-4 h-4 rounded border border-border bg-warm-white flex items-center justify-center hover:border-slate cursor-pointer">
+                  <button onClick={selectAll} className="w-4 h-4 rounded border border-border bg-white flex items-center justify-center hover:border-slate cursor-pointer">
                     {allChecked && <Check size={11} className="text-charcoal" />}
                   </button>
                 </th>
@@ -418,8 +418,8 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
                   <td className="px-3 py-2.5 align-middle">
                     <button onClick={e => { e.stopPropagation(); toggleSelect(c.id) }}
                       className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
-                        ${selected.has(c.id) ? 'border-charcoal bg-charcoal' : 'border-border bg-warm-white hover:border-slate'}`}>
-                      {selected.has(c.id) && <Check size={11} className="text-warm-white" />}
+                        ${selected.has(c.id) ? 'border-charcoal bg-charcoal' : 'border-border bg-white hover:border-slate'}`}>
+                      {selected.has(c.id) && <Check size={11} className="text-white" />}
                     </button>
                   </td>
                   <td className="px-3 py-2.5 align-middle">
@@ -480,7 +480,7 @@ function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarr
           return (
             <div key={c.id}
               onClick={() => onViewCase(c.id)}
-              className={`group relative bg-warm-white border rounded-xl overflow-hidden cursor-default transition
+              className={`group relative bg-white border rounded-xl overflow-hidden cursor-default transition
                 hover:shadow-[0_8px_24px_-12px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
                 ${activeId === c.id ? 'border-charcoal/40 ring-2 ring-charcoal/10' : 'border-border'}
                 ${selected.has(c.id) ? 'ring-2 ring-blue-soft/60' : ''}`}>
@@ -488,19 +488,19 @@ function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarr
                 <div className="absolute top-2 left-2">
                   <button onClick={e => { e.stopPropagation(); toggleSelect(c.id) }}
                       className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
-                        ${selected.has(c.id) ? 'border-charcoal bg-charcoal' : 'border-border bg-warm-white hover:border-slate'}`}>
-                      {selected.has(c.id) && <Check size={11} className="text-warm-white" />}
+                        ${selected.has(c.id) ? 'border-charcoal bg-charcoal' : 'border-border bg-white hover:border-slate'}`}>
+                      {selected.has(c.id) && <Check size={11} className="text-white" />}
                     </button>
                 </div>
                 <button
                   onClick={e => { e.stopPropagation(); setActiveId(c.id === activeId ? null : c.id) }}
                   title="Preview"
                   className={`absolute top-2 right-2 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100
-                    ${activeId === c.id ? 'bg-charcoal text-warm-white opacity-100' : 'bg-warm-white/80 text-slate hover:bg-warm-white'}`}>
+                    ${activeId === c.id ? 'bg-charcoal text-white opacity-100' : 'bg-white text-slate hover:bg-warm-white'}`}>
                   <Eye size={13} />
                 </button>
                 {isStarred(c.id) && <StarFilled size={14} className="absolute top-2.5 left-8 text-amber" />}
-                <div className="w-12 h-14 bg-warm-white rounded-[4px] shadow-[0_2px_6px_rgba(28,28,30,0.08)] flex flex-col items-center justify-center gap-1">
+                <div className="w-12 h-14 bg-white rounded-[4px] shadow-[0_2px_6px_rgba(28,28,30,0.08)] flex flex-col items-center justify-center gap-1">
                   <div className={`w-6 h-[2px] ${s.dot} rounded-full`} />
                   <span className="font-display text-[18px] text-charcoal leading-none">
                     {(c.deceased || '').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('')}
@@ -580,13 +580,13 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
 
   return (
     <div className="px-6 py-4 h-full">
-      <div ref={wrapRef} className="bg-warm-white border border-border rounded-xl overflow-hidden flex h-full">
+      <div ref={wrapRef} className="bg-white border border-border rounded-xl overflow-hidden flex h-full">
         {/* Col 1: Smart folders */}
         <div className="overflow-auto py-2 shrink-0" style={{ width: col1 }}>
           {folders.map(f => (
             <button key={f.id} onClick={() => { setFolder(f.id); setActiveId(null) }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-left cursor-pointer transition-colors
-                ${folder === f.id ? 'bg-charcoal/5 font-medium' : 'hover:bg-cream/60'}`}>
+                ${folder === f.id ? 'bg-charcoal/5 font-medium' : 'hover:bg-charcoal/5'}`}>
               <span className={`shrink-0 ${f.tint || 'text-slate'}`}>{f.icon}</span>
               <span className="flex-1 font-sans text-[13px] text-charcoal truncate">{f.label}</span>
               <span className="font-sans text-[11px] text-muted tabular-nums shrink-0">{f.count}</span>
@@ -605,17 +605,17 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
               onDoubleClick={()=> onViewCase(r.id)}
               onClick={() => setActiveId(r.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 border-b border-border/60 text-left cursor-pointer transition-colors
-                ${activeId === r.id ? 'bg-charcoal text-warm-white' : 'hover:bg-cream/60'}`}>
+                ${activeId === r.id ? 'bg-cream/60' : 'hover:bg-cream/60'}`}>
               <div className="flex-1 min-w-0">
-                <div className={`font-sans text-[13px] truncate flex items-center gap-1.5 ${activeId === r.id ? 'text-warm-white' : 'text-charcoal'}`}>
+                <div className={`font-sans text-[13px] truncate flex items-center gap-1.5 text-charcoal}`}>
                   {r.deceased}
                   {isStarred(r.id) && <StarFilled size={10} className={activeId === r.id ? 'text-amber-light' : 'text-amber'} />}
                 </div>
-                <div className={`font-sans text-[11px] truncate ${activeId === r.id ? 'text-warm-white/60' : 'text-muted'}`}>
+                <div className={`font-sans text-[11px] truncate text-muted}`}>
                   {r.family} · {r.date}
                 </div>
               </div>
-              <ChevronRight size={12} className={activeId === r.id ? 'text-warm-white/60' : 'text-muted'} />
+              <ChevronRight size={12} className={'text-muted'} />
             </button>
           ))}
         </div>
@@ -640,7 +640,7 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
 // ─── Preview panel (side drawer) ──────────────────────────────────────────────
 function PreviewPanel({ c, close, onViewCase, isStarred }) {
   return (
-    <aside className="w-[360px] border-l border-border bg-warm-white overflow-auto shrink-0 flex flex-col">
+    <aside className="w-[360px] border-l border-border bg-white overflow-auto shrink-0 flex flex-col">
       <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0 bg-warm-white sticky top-0 z-10">
         <div className="font-sans text-[11px] uppercase tracking-[0.1em] text-muted">Case Details</div>
         <button onClick={close} className="w-7 h-7 rounded-md hover:bg-cream flex items-center justify-center text-muted cursor-pointer">
@@ -844,11 +844,7 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
     complete: cases.filter(c => c.status === 'complete').length,
   }), [cases, starredIds])
 
-  const folderLabel = {
-    all: 'Cases', starred: 'Starred', recent: 'Cases', unassigned: 'Unassigned',
-    'needs-attention': 'Needs Attention',
-    pending: 'Pending', transit: 'In Transit', cremation: 'At Cremation', complete: 'Complete',
-  }[folder] || 'Cases'
+  
 
   const toggleSelect = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
   const selectAll = () => setSelected(filtered.length === selected.size ? new Set() : new Set(filtered.map(c => c.id)))
@@ -858,9 +854,8 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
   , [cases])
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-cream text-charcoal">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white text-charcoal">
       <TopBar
-        folderLabel={folderLabel}
         search={search} setSearch={setSearch}
         view={viewMode} setView={setViewMode}
         sortBy={sortBy} setSortBy={setSortBy}
