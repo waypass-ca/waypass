@@ -91,7 +91,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
   const clearAll = () => setFilters({ packages: new Set(), statuses: new Set(), crematoriums: new Set(), datePreset: '', hasDocs: false, starredOnly: false })
 
   return (
-    <div className="border-b border-border bg-warm-white/80 backdrop-blur shrink-0">
+    <div className="border-b border-border bg-warm-white/80 backdrop-blur shrink-0 relative z-10">
       {/* Row 1: breadcrumb + title + new case */}
       <div className="px-6 pt-5 pb-3 flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -771,11 +771,13 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
   const filtered = useMemo(() => {
     let rows = cases
 
-    if (folder === 'starred') rows = rows.filter(c => starredIds.has(c.id))
-    else if (folder === 'recent') rows = rows.filter(c => c.status !== 'complete')
-    else if (folder === 'unassigned') rows = rows.filter(c => !c.crematorium)
-    else if (folder === 'needs-attention') rows = rows.filter(c => c.status === 'pending' && (c.documents || []).length === 0)
-    else if (['pending', 'transit', 'cremation', 'complete'].includes(folder)) rows = rows.filter(c => c.status === folder)
+    if (viewMode === 'columns') {
+      if (folder === 'starred') rows = rows.filter(c => starredIds.has(c.id))
+      else if (folder === 'recent') rows = rows.filter(c => c.status !== 'complete')
+      else if (folder === 'unassigned') rows = rows.filter(c => !c.crematorium)
+      else if (folder === 'needs-attention') rows = rows.filter(c => c.status === 'pending' && (c.documents || []).length === 0)
+      else if (['pending', 'transit', 'cremation', 'complete'].includes(folder)) rows = rows.filter(c => c.status === folder)
+    }
 
     if (filters.starredOnly)      rows = rows.filter(c => starredIds.has(c.id))
     if (filters.hasDocs)          rows = rows.filter(c => (c.documents || []).length > 0)
@@ -824,7 +826,7 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
     })
 
     return rows
-  }, [cases, folder, search, filters, sortBy, starredIds])
+  }, [cases, folder, viewMode, search, filters, sortBy, starredIds])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, totalPages)
