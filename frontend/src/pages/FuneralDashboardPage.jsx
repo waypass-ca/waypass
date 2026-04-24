@@ -107,21 +107,21 @@ export function FuneralDashboardPage() {
   const selectedCase = cases.find(c => c.id === selectedCaseId)
 
   if (loading) return (
-    <div className="flex h-[calc(100vh-54px)] overflow-hidden">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar activeItem="dashboard" onItemChange={() => {}} />
       <main className="flex-1 px-8 py-7 bg-canvas overflow-auto"><LoadingState /></main>
     </div>
   )
 
   if (error) return (
-    <div className="flex h-[calc(100vh-54px)] overflow-hidden">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar activeItem="dashboard" onItemChange={() => {}} />
       <main className="flex-1 px-8 py-7 bg-canvas overflow-auto"><ErrorState message={error} /></main>
     </div>
   )
 
   return (
-    <div className="flex h-[calc(100vh-54px)] overflow-hidden">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar
         activeItem={activeSidebarItem(view)}
         onItemChange={id => {

@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { LogOut } from 'lucide-react'
 import { PageHeader } from '../layout/PageHeader'
 import { Button } from '../ui/Button'
+import { useAuth } from '../../context/AuthContext.jsx'
 
 const TABS = ['Profile', 'Branding', 'Notifications', 'Billing']
 
@@ -47,6 +49,7 @@ function Toggle({ label, description, defaultChecked = false }) {
 }
 
 function ProfileTab() {
+  const { user, signOut } = useAuth()
   return (
     <div className="space-y-6">
       <div className="bg-surface rounded-xl border border-line p-6">
@@ -77,10 +80,17 @@ function ProfileTab() {
       <div className="bg-surface rounded-xl border border-line p-6">
         <SectionHeader title="Account" description="Manage your login credentials." />
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Account Email" value="admin@evergreenememorial.com" type="email" />
+          <Field label="Account Email" value={user?.email ?? 'admin@evergreenememorial.com'} type="email" />
           <Field label="Password" value="••••••••••" type="password" />
         </div>
-        <div className="mt-5 flex justify-end">
+        <div className="mt-5 flex items-center justify-between">
+          <button
+            onClick={signOut}
+            className="flex items-center gap-2 font-sans text-sm text-danger hover:text-danger/80 transition-colors cursor-pointer border-0 bg-transparent outline-none"
+          >
+            <LogOut size={14} strokeWidth={1.8} />
+            Sign out
+          </button>
           <Button variant="secondary">Change Password</Button>
         </div>
       </div>
