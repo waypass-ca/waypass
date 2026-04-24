@@ -18,9 +18,9 @@ const FALLBACK_SETTINGS = {
     deceasedDetails: true,
     coordinator: true,
     documents: false,
-    personalMessage: true,
+    personalMesprimary: true,
   },
-  personalMessage:
+  personalMesprimary:
     'Our deepest sympathies are with your family during this time. We are honoured to serve you and will be with you every step of the way.',
 }
 
@@ -70,8 +70,8 @@ async function uploadToCloudinary(file) {
 
 function EditorSection({ title, children }) {
   return (
-    <div className="bg-warm-white border border-border rounded-xl p-5">
-      <p className="font-sans font-semibold text-[10px] text-charcoal uppercase tracking-widest mb-4">
+    <div className="bg-surface border border-line rounded-xl p-5">
+      <p className="font-sans font-semibold text-[10px] text-ink uppercase tracking-widest mb-4">
         {title}
       </p>
       <div className="space-y-3">{children}</div>
@@ -95,7 +95,7 @@ function TextInput({ value, onChange, placeholder }) {
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-3 py-2 font-sans text-sm text-charcoal border border-border rounded-lg outline-none focus:border-charcoal transition-colors bg-warm-white"
+      className="w-full px-3 py-2 font-sans text-sm text-ink border border-line rounded-lg outline-none focus:border-ink transition-colors bg-surface"
     />
   )
 }
@@ -103,7 +103,7 @@ function TextInput({ value, onChange, placeholder }) {
 function ColorField({ label, value, onChange }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="relative w-9 h-9 flex-shrink-0 rounded-lg overflow-hidden border border-border cursor-pointer shadow-sm">
+      <div className="relative w-9 h-9 flex-shrink-0 rounded-lg overflow-hidden border border-line cursor-pointer shadow-sm">
         <div className="absolute inset-0" style={{ backgroundColor: value }} />
         <input
           type="color"
@@ -118,7 +118,7 @@ function ColorField({ label, value, onChange }) {
           type="text"
           value={value}
           onChange={e => onChange(e.target.value)}
-          className="w-full px-2.5 py-1.5 font-mono text-xs text-charcoal border border-border rounded-lg outline-none focus:border-charcoal transition-colors bg-cream"
+          className="w-full px-2.5 py-1.5 font-mono text-xs text-ink border border-line rounded-lg outline-none focus:border-ink transition-colors bg-canvas"
         />
       </div>
     </div>
@@ -129,7 +129,7 @@ function Toggle({ label, description, checked, onChange }) {
   return (
     <div className="flex items-start justify-between gap-3 py-0.5">
       <div>
-        <p className="font-sans text-sm text-charcoal leading-tight">{label}</p>
+        <p className="font-sans text-sm text-ink leading-tight">{label}</p>
         {description && (
           <p className="font-sans text-xs text-muted mt-0.5">{description}</p>
         )}
@@ -137,12 +137,12 @@ function Toggle({ label, description, checked, onChange }) {
       <button
         onClick={() => onChange(!checked)}
         className={`relative flex-shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors cursor-pointer border-0 outline-none ${
-          checked ? 'bg-sage' : 'bg-border'
+          checked ? 'bg-primary' : 'bg-line'
         }`}
       >
         <span
           className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-            checked ? 'translate-x-4' : 'translate-x-0'
+            checked ? 'transecondary-x-4' : 'transecondary-x-0'
           }`}
         />
       </button>
@@ -176,18 +176,18 @@ function LogoUpload({ logoUrl, onLogoUrl }) {
     <div className="space-y-2">
       {/* Preview + remove */}
       {logoUrl && (
-        <div className="flex items-center gap-3 p-3 bg-cream rounded-lg border border-border">
+        <div className="flex items-center gap-3 p-3 bg-canvas rounded-lg border border-line">
           <img
             src={logoUrl}
             alt="Logo preview"
             className="h-8 w-auto max-w-[100px] object-contain rounded"
           />
           <div className="flex-1 min-w-0">
-            <p className="font-sans text-xs text-slate truncate">{logoUrl.split('/').pop()}</p>
+            <p className="font-sans text-xs text-secondary truncate">{logoUrl.split('/').pop()}</p>
           </div>
           <button
             onClick={() => onLogoUrl('')}
-            className="text-muted hover:text-red-soft transition-colors cursor-pointer border-0 outline-none bg-transparent p-0.5"
+            className="text-muted hover:text-danger transition-colors cursor-pointer border-0 outline-none bg-transparent p-0.5"
             title="Remove logo"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -201,11 +201,11 @@ function LogoUpload({ logoUrl, onLogoUrl }) {
       <button
         onClick={() => fileRef.current?.click()}
         disabled={uploading}
-        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-dashed border-border rounded-lg font-sans text-sm text-slate hover:border-charcoal hover:text-charcoal transition-colors cursor-pointer bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 border border-dashed border-line rounded-lg font-sans text-sm text-secondary hover:border-ink hover:text-ink transition-colors cursor-pointer bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {uploading ? (
           <>
-            <svg className="w-4 h-4 animate-spin text-sage" fill="none" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 animate-spin text-primary" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={3} />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
             </svg>
@@ -228,7 +228,7 @@ function LogoUpload({ logoUrl, onLogoUrl }) {
         className="hidden"
       />
       {uploadError && (
-        <p className="font-sans text-xs text-red-soft">{uploadError}</p>
+        <p className="font-sans text-xs text-danger">{uploadError}</p>
       )}
       <p className="font-sans text-[10px] text-muted">PNG, SVG or JPEG · max 5 MB</p>
     </div>
@@ -242,7 +242,7 @@ function FamilyPortalPreview({ settings }) {
 
   return (
     <div
-      className="rounded-2xl overflow-hidden border border-border shadow-sm"
+      className="rounded-2xl overflow-hidden border border-line shadow-sm"
       style={{ backgroundColor: settings.backgroundColor }}
     >
       {/* Header */}
@@ -291,13 +291,13 @@ function FamilyPortalPreview({ settings }) {
         </div>
 
         {/* Personal message */}
-        {settings.sections.personalMessage && settings.personalMessage && (
+        {settings.sections.personalMesprimary && settings.personalMesprimary && (
           <div
             className="rounded-xl px-5 py-4 mb-5 border-l-4"
             style={{ backgroundColor: settings.cardColor, borderLeftColor: settings.accentColor }}
           >
             <p className="font-sans text-sm leading-relaxed" style={{ color: settings.textColor + 'CC' }}>
-              {settings.personalMessage}
+              {settings.personalMesprimary}
             </p>
           </div>
         )}
@@ -405,7 +405,7 @@ function FamilyPortalPreview({ settings }) {
                 className="w-full py-1.5 rounded-lg font-sans text-xs font-medium text-white"
                 style={{ backgroundColor: settings.primaryColor }}
               >
-                Send Message
+                Send Mesprimary
               </button>
             </div>
           )}
@@ -507,7 +507,7 @@ export function FamilyPageEditorPage() {
         rightSlot={
           <div className="flex items-center gap-3">
             {saveState === 'error' && saveError && (
-              <p className="font-sans text-xs text-red-soft">{saveError}</p>
+              <p className="font-sans text-xs text-danger">{saveError}</p>
             )}
             <Button
               variant="primary"
@@ -556,8 +556,8 @@ export function FamilyPageEditorPage() {
                     onClick={() => update('fontStyle', opt.value)}
                     className={`flex-1 py-2 rounded-lg border text-xs font-sans transition-all cursor-pointer outline-none ${
                       settings.fontStyle === opt.value
-                        ? 'border-charcoal bg-charcoal text-white'
-                        : 'border-border text-slate hover:border-charcoal'
+                        ? 'border-ink bg-ink text-white'
+                        : 'border-line text-secondary hover:border-ink'
                     }`}
                   >
                     {opt.label}
@@ -603,18 +603,18 @@ export function FamilyPageEditorPage() {
             <Toggle
               label="Personal message"
               description="A custom message at the top of the page"
-              checked={settings.sections.personalMessage}
-              onChange={v => updateSection('personalMessage', v)}
+              checked={settings.sections.personalMesprimary}
+              onChange={v => updateSection('personalMesprimary', v)}
             />
           </EditorSection>
 
-          {settings.sections.personalMessage && (
-            <EditorSection title="Personal Message">
+          {settings.sections.personalMesprimary && (
+            <EditorSection title="Personal Mesprimary">
               <textarea
-                value={settings.personalMessage}
-                onChange={e => update('personalMessage', e.target.value)}
+                value={settings.personalMesprimary}
+                onChange={e => update('personalMesprimary', e.target.value)}
                 rows={4}
-                className="w-full px-3 py-2.5 font-sans text-sm text-charcoal border border-border rounded-lg outline-none focus:border-charcoal transition-colors bg-warm-white resize-none leading-relaxed"
+                className="w-full px-3 py-2.5 font-sans text-sm text-ink border border-line rounded-lg outline-none focus:border-ink transition-colors bg-surface resize-none leading-relaxed"
               />
             </EditorSection>
           )}
@@ -624,7 +624,7 @@ export function FamilyPageEditorPage() {
         <div className="flex-1 min-w-0">
           <div className="sticky top-6">
             <div className="flex items-center gap-2 mb-3">
-              <span className="w-2 h-2 rounded-full bg-sage inline-block" />
+              <span className="w-2 h-2 rounded-full bg-primary inline-block" />
               <p className="font-sans text-xs text-muted">Live Preview — Family Portal</p>
             </div>
             <FamilyPortalPreview settings={settings} />

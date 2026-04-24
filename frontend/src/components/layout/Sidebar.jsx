@@ -14,17 +14,17 @@ function NavItem({ id, label, icon: Icon, badge, isActive, onClick, collapsed })
         w-full flex items-center rounded-md text-[13px] font-sans mb-px text-left transition-colors cursor-pointer border-0 outline-none
         ${collapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5'}
         ${isActive
-          ? 'bg-charcoal/[0.06] text-charcoal font-medium'
-          : 'text-slate hover:bg-charcoal/[0.04] font-normal'
+          ? 'bg-ink/[0.06] text-ink font-medium'
+          : 'text-secondary hover:bg-ink/[0.04] font-normal'
         }
       `}
     >
-      <Icon size={14} className={`flex-shrink-0 ${isActive ? 'text-charcoal' : 'text-muted'}`} strokeWidth={1.8} />
+      <Icon size={14} className={`flex-shrink-0 ${isActive ? 'text-ink' : 'text-muted'}`} strokeWidth={1.8} />
       {!collapsed && (
         <>
           <span className="flex-1 truncate">{label}</span>
           {badge && (
-            <span className="font-sans text-[10px] font-semibold text-muted bg-border rounded-full px-1.5 py-px leading-none">
+            <span className="font-sans text-[10px] font-semibold text-muted bg-line rounded-full px-1.5 py-px leading-none">
               {badge}
             </span>
           )}
@@ -35,7 +35,7 @@ function NavItem({ id, label, icon: Icon, badge, isActive, onClick, collapsed })
 }
 
 function SectionHeader({ label, collapsed: sectionCollapsed, onToggle, sidebarCollapsed }) {
-  if (sidebarCollapsed) return <div className="border-t border-border my-2" />
+  if (sidebarCollapsed) return <div className="border-t border-line my-2" />
   return (
     <button
       onClick={onToggle}
@@ -46,7 +46,7 @@ function SectionHeader({ label, collapsed: sectionCollapsed, onToggle, sidebarCo
         className={`text-muted transition-transform duration-150 ${sectionCollapsed ? '-rotate-90' : ''}`}
         strokeWidth={2}
       />
-      <span className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider group-hover:text-slate transition-colors">
+      <span className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider group-hover:text-secondary transition-colors">
         {label}
       </span>
     </button>
@@ -63,21 +63,21 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
 
   return (
     <aside
-      className="bg-warm-white border-r border-border flex flex-col flex-shrink-0 min-h-screen transition-[width] duration-200"
+      className="bg-surface border-r border-line flex flex-col flex-shrink-0 min-h-screen transition-[width] duration-200"
       style={{ width: sidebarCollapsed ? '52px' : '220px' }}
     >
       {/* Org header */}
-      <div className={`py-4 border-b border-border ${sidebarCollapsed ? 'px-2' : 'px-3'}`}>
+      <div className={`py-4 border-b border-line ${sidebarCollapsed ? 'px-2' : 'px-3'}`}>
         {sidebarCollapsed ? (
-          <div className="w-7 h-7 rounded bg-charcoal flex items-center justify-center mx-auto">
-            <span className="font-sans text-[9px] font-bold text-warm-white leading-none">EG</span>
+          <div className="w-7 h-7 rounded bg-ink flex items-center justify-center mx-auto">
+            <span className="font-sans text-[9px] font-bold text-surface leading-none">EG</span>
           </div>
         ) : (
-          <button className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-charcoal/[0.04] transition-colors cursor-pointer border-0 bg-transparent outline-none text-left">
-            <div className="w-5 h-5 rounded bg-charcoal flex items-center justify-center flex-shrink-0">
-              <span className="font-sans text-[9px] font-bold text-warm-white leading-none">EG</span>
+          <button className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-ink/[0.04] transition-colors cursor-pointer border-0 bg-transparent outline-none text-left">
+            <div className="w-5 h-5 rounded bg-ink flex items-center justify-center flex-shrink-0">
+              <span className="font-sans text-[9px] font-bold text-surface leading-none">EG</span>
             </div>
-            <span className="font-sans text-[13px] font-semibold text-charcoal flex-1 truncate">Evergreen Medical</span>
+            <span className="font-sans text-[13px] font-semibold text-ink flex-1 truncate">Evergreen Medical</span>
             <ChevronsUpDown size={12} className="text-muted flex-shrink-0" strokeWidth={2} />
           </button>
         )}
@@ -106,17 +106,17 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
           </>
         )}
 
-        <div className="border-t border-border my-3" />
+        <div className="border-t border-line my-3" />
 
         <NavItem id="documents"  label="Documents"  icon={FileText}   isActive={activeItem === 'documents'}  onClick={onItemChange} collapsed={sidebarCollapsed} />
         <NavItem id="financials" label="Financials" icon={Landmark}   isActive={activeItem === 'financials'} onClick={onItemChange} collapsed={sidebarCollapsed} />
         <NavItem id="settings"   label="Settings"   icon={Settings}   isActive={activeItem === 'settings'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
 
-        <div className="border-t border-border my-3" />
+        <div className="border-t border-line my-3" />
 
         <button
           onClick={() => setSidebarCollapsed(p => !p)}
-          className={`w-full flex items-center rounded-md text-[13px] font-sans mb-px text-left transition-colors cursor-pointer border-0 outline-none text-muted hover:bg-charcoal/[0.04] hover:text-charcoal ${sidebarCollapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5'}`}
+          className={`w-full flex items-center rounded-md text-[13px] font-sans mb-px text-left transition-colors cursor-pointer border-0 outline-none text-muted hover:bg-ink/[0.04] hover:text-ink ${sidebarCollapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5'}`}
         >
           {sidebarCollapsed
             ? <ArrowRightToLine size={14} strokeWidth={1.8} />

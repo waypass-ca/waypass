@@ -26,7 +26,7 @@ function AppInner() {
   ]
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-screen bg-canvas">
       <Navbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
