@@ -6,16 +6,16 @@
 ───────────────────────────────────────────────────────────────────────────── */
 @theme {
   /* Neutral */
-  --color-canvas:         #5A78B8;   /* page / outer background          */
-  --color-surface:        #FDFAF7;   /* cards, panels, sidebars          */
+  --color-canvas:         #EEF1F7;   /* page / outer background          */
+  --color-surface:        #F7F9FD;   /* cards, panels, sidebars          */
   --color-ink:            #1C1C1E;   /* primary text & strong UI         */
   --color-secondary:      #4A4A52;   /* secondary / body text            */
   --color-muted:          #9A9AA4;   /* placeholder & tertiary text      */
-  --color-line:           #E8E3DC;   /* borders & dividers               */
+  --color-line:           #DCE3F0;   /* borders & dividers               */
 
   /* Brand */
-  --color-primary:        #6B8F71;   /* primary action & success         */
-  --color-primary-light:  #EEF3EE;   /* tinted primary background        */
+  --color-primary:        #4A72B8;   /* primary action & success         */
+  --color-primary-light:  #EBF0FA;   /* tinted primary background        */
 
   /* Warning */
   --color-warning:        #C4965A;   /* warnings & attention             */
