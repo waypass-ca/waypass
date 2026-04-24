@@ -280,7 +280,7 @@ function TopBar({ folderLabel, search, setSearch, view, setView, sortBy, setSort
 
 // ─── Folder tabs (horizontal) ─────────────────────────────────────────────────
 const FOLDERS = [
-  { id: 'all', label: 'All Cases', icon: <Home size={13} />, tint: null },
+  { id: 'all', label: 'Cases', icon: <Home size={13} />, tint: null },
   { id: 'recent', label: 'Active', icon: <Clock size={13} />, tint: null },
   { id: 'starred', label: 'Starred', icon: <StarFilled size={13} />, tint: 'text-amber' },
   { id: 'needs-attention', label: 'Needs Attention', icon: <AlertTriangle size={13} />, tint: 'text-red-soft' },
@@ -312,11 +312,49 @@ function SelectionBar({ count, clear }) {
 }
 
 // ─── Status footer ────────────────────────────────────────────────────────────
-function StatusFooter({ count, selected }) {
+function StatusFooter({ count, selected, pageSize, setPageSize, page, totalPages, onPrev, onNext, showPagination }) {
+  const start = count === 0 ? 0 : (page - 1) * pageSize + 1
+  const end = Math.min(page * pageSize, count)
   return (
-    <div className="px-6 h-8 border-t border-border bg-warm-white flex items-center justify-between font-sans text-[11px] text-muted shrink-0">
-      <div>{count} {count === 1 ? 'case' : 'cases'}{selected > 0 ? ` · ${selected} selected` : ''}</div>
-      <div className="flex items-center gap-1.5">
+    <div className="px-4 h-9 border-t border-border bg-warm-white flex items-center justify-between gap-4 font-sans text-[11px] text-muted shrink-0">
+      {/* Left: case count */}
+      <div className="shrink-0">
+        {count} {count === 1 ? 'case' : 'cases'}
+        {selected > 0 ? ` · ${selected} selected` : ''}
+      </div>
+
+      {/* Centre: page size + navigation (list/grid only) */}
+      {showPagination && (
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <span>Show</span>
+            <select
+              value={pageSize}
+              onChange={e => setPageSize(Number(e.target.value))}
+              className="font-sans text-[11px] text-charcoal bg-warm-white border border-border rounded px-1.5 py-0.5 outline-none cursor-pointer focus:border-charcoal/50 transition">
+              {[10, 20, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <span>per page</span>
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button onClick={onPrev} disabled={page === 1}
+                className="w-5 h-5 flex items-center justify-center rounded hover:bg-cream disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors">
+                <ChevronRight size={12} className="rotate-180" />
+              </button>
+              <span className="tabular-nums">{start}–{end} of {count}</span>
+              <button onClick={onNext} disabled={page === totalPages}
+                className="w-5 h-5 flex items-center justify-center rounded hover:bg-cream disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors">
+                <ChevronRight size={12} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Right: connection status */}
+      <div className="flex items-center gap-1.5 shrink-0">
         <span className="w-1.5 h-1.5 rounded-full bg-sage" /> Connected
       </div>
     </div>
@@ -715,10 +753,15 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
     try { return localStorage.getItem('cases-view-mode') || 'list' } catch { return 'list' }
   })
   const [sortBy, setSortBy] = useState('date')
+  const [pageSize, setPageSize] = useState(20)
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
     try { localStorage.setItem('cases-view-mode', viewMode) } catch { }
   }, [viewMode])
+
+  // Reset to page 1 whenever the result set changes
+  useEffect(() => { setPage(1) }, [folder, search, filters, sortBy])
 
   const isStarred = (id) => starredIds.has(id)
 
@@ -783,6 +826,10 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
     return rows
   }, [cases, folder, search, filters, sortBy, starredIds])
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const currentPage = Math.min(page, totalPages)
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
   const active = activeId ? cases.find(c => c.id === activeId) : null
 
   const folderCounts = useMemo(() => ({
@@ -798,7 +845,7 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
   }), [cases, starredIds])
 
   const folderLabel = {
-    all: 'All Cases', starred: 'Starred', recent: 'Cases', unassigned: 'Unassigned',
+    all: 'Cases', starred: 'Starred', recent: 'Cases', unassigned: 'Unassigned',
     'needs-attention': 'Needs Attention',
     pending: 'Pending', transit: 'In Transit', cremation: 'At Cremation', complete: 'Complete',
   }[folder] || 'Cases'
@@ -830,7 +877,7 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
         <div className="flex-1 overflow-auto min-h-0">
           {viewMode === 'list' && (
             <ListView
-              rows={filtered} selected={selected}
+              rows={paginated} selected={selected}
               toggleSelect={toggleSelect} selectAll={selectAll}
               activeId={activeId} setActiveId={setActiveId}
               isStarred={isStarred}
@@ -839,7 +886,7 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
           )}
           {viewMode === 'grid' && (
             <GridView
-              rows={filtered} selected={selected}
+              rows={paginated} selected={selected}
               toggleSelect={toggleSelect}
               activeId={activeId} setActiveId={setActiveId}
               isStarred={isStarred}
@@ -848,7 +895,7 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
           )}
           {viewMode === 'columns' && (
             <ColumnsView
-              rows={filtered} activeId={activeId} setActiveId={setActiveId}
+              rows={paginated} activeId={activeId} setActiveId={setActiveId}
               folder={folder} setFolder={setFolder}
               counts={folderCounts} cases={cases}
               isStarred={isStarred}
@@ -862,7 +909,14 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
         )}
       </div>
 
-      <StatusFooter count={filtered.length} selected={selected.size} />
+      <StatusFooter
+        count={filtered.length} selected={selected.size}
+        pageSize={pageSize} setPageSize={v => { setPageSize(v); setPage(1) }}
+        page={currentPage} totalPages={totalPages}
+        onPrev={() => setPage(p => Math.max(1, p - 1))}
+        onNext={() => setPage(p => Math.min(totalPages, p + 1))}
+        showPagination={viewMode !== 'columns'}
+      />
     </div>
   )
 }
