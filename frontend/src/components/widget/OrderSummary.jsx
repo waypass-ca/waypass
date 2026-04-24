@@ -3,7 +3,7 @@ export function OrderSummary({ selectedPackage, selectedAddons = [] }) {
   const total = (selectedPackage?.price ?? 0) + addonsTotal
 
   return (
-    <div className="bg-charcoal rounded-xl p-6 text-warm-white">
+    <div className="bg-ink rounded-xl p-6 text-surface">
       <h3 className="font-display text-xl mb-5">Order Summary</h3>
 
       {/* Line items */}

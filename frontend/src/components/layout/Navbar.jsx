@@ -8,12 +8,12 @@ const TABS = [
 
 export function Navbar({ activeTab, onTabChange, user, onSignOut }) {
   return (
-    <nav className="bg-charcoal h-[54px] flex items-center px-6 sticky top-0 z-50">
+    <nav className="bg-ink h-[54px] flex items-center px-6 sticky top-0 z-50">
       {/* Logo */}
       <div className="flex-1 flex items-center">
-        <span className="font-display text-xl text-warm-white tracking-wide">
+        <span className="font-display text-xl text-surface tracking-wide">
           Passage
-          <em className="text-amber not-italic">.</em>
+          <em className="text-warning not-italic">.</em>
         </span>
       </div>
 
@@ -26,14 +26,14 @@ export function Navbar({ activeTab, onTabChange, user, onSignOut }) {
             className={`
               flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-sm font-sans font-medium transition-all cursor-pointer border-0 outline-none
               ${activeTab === i
-                ? 'bg-white/12 text-warm-white'
-                : 'text-muted hover:text-warm-white hover:bg-white/6'
+                ? 'bg-white/12 text-surface'
+                : 'text-muted hover:text-surface hover:bg-white/6'
               }
             `}
           >
             {tab.label}
             {tab.badge && (
-              <span className="bg-amber text-warm-white text-[10px] font-medium rounded-full w-4 h-4 flex items-center justify-center leading-none">
+              <span className="bg-warning text-surface text-[10px] font-medium rounded-full w-4 h-4 flex items-center justify-center leading-none">
                 {tab.badge}
               </span>
             )}
@@ -48,7 +48,7 @@ export function Navbar({ activeTab, onTabChange, user, onSignOut }) {
             <span className="text-xs text-muted font-sans">{user.email}</span>
             <button
               onClick={onSignOut}
-              className="text-xs text-muted hover:text-warm-white font-sans transition-colors cursor-pointer border-0 bg-transparent outline-none"
+              className="text-xs text-muted hover:text-surface font-sans transition-colors cursor-pointer border-0 bg-transparent outline-none"
             >
               Sign out
             </button>

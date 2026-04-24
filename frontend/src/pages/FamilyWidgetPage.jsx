@@ -21,7 +21,7 @@ function StepIndicator({ currentStep }) {
               <div
                 className={`
                   w-7 h-7 rounded-full flex items-center justify-center text-xs font-sans font-medium transition-all
-                  ${isDone ? 'bg-sage text-white' : isActive ? 'bg-charcoal text-white' : 'bg-border text-muted'}
+                  ${isDone ? 'bg-primary text-white' : isActive ? 'bg-ink text-white' : 'bg-line text-muted'}
                 `}
               >
                 {isDone ? (
@@ -34,7 +34,7 @@ function StepIndicator({ currentStep }) {
               </div>
               <span
                 className={`text-xs font-sans mt-1.5 whitespace-nowrap ${
-                  isActive ? 'text-charcoal font-medium' : isDone ? 'text-sage' : 'text-muted'
+                  isActive ? 'text-ink font-medium' : isDone ? 'text-primary' : 'text-muted'
                 }`}
               >
                 {label}
@@ -43,7 +43,7 @@ function StepIndicator({ currentStep }) {
             {/* Connector */}
             {i < STEPS.length - 1 && (
               <div
-                className={`w-16 h-0.5 mx-1 mb-5 transition-all ${i < currentStep ? 'bg-sage' : 'bg-border'}`}
+                className={`w-16 h-0.5 mx-1 mb-5 transition-all ${i < currentStep ? 'bg-primary' : 'bg-line'}`}
               />
             )}
           </div>
@@ -58,7 +58,7 @@ function StepPackage({ packages, selected, onSelect, onNext }) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="font-display text-2xl text-charcoal">Choose Your Package</h2>
+        <h2 className="font-display text-2xl text-ink">Choose Your Package</h2>
         <p className="font-sans text-sm text-muted mt-1">
           All packages include licensed professional care and dignified transport.
         </p>
@@ -93,15 +93,15 @@ function StepDetails({ onBack, onNext }) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="font-display text-2xl text-charcoal">Your Information</h2>
+        <h2 className="font-display text-2xl text-ink">Your Information</h2>
         <p className="font-sans text-sm text-muted mt-1">
           Please provide the details below so we can begin the arrangement process.
         </p>
       </div>
 
       {/* About Your Loved One */}
-      <div className="bg-warm-white rounded-xl p-6 border border-border mb-4">
-        <h3 className="font-sans text-sm font-semibold text-charcoal mb-4 uppercase tracking-wide">
+      <div className="bg-surface rounded-xl p-6 border border-line mb-4">
+        <h3 className="font-sans text-sm font-semibold text-ink mb-4 uppercase tracking-wide">
           About Your Loved One
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -110,7 +110,7 @@ function StepDetails({ onBack, onNext }) {
             <input
               type="text"
               placeholder="First name"
-              className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+              className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
             />
           </div>
           <div>
@@ -118,26 +118,26 @@ function StepDetails({ onBack, onNext }) {
             <input
               type="text"
               placeholder="Last name"
-              className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+              className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
             />
           </div>
           <div>
             <label className="block text-xs font-sans text-muted mb-1.5">Date of Birth</label>
             <input
               type="date"
-              className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+              className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
             />
           </div>
           <div>
             <label className="block text-xs font-sans text-muted mb-1.5">Date of Passing</label>
             <input
               type="date"
-              className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+              className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
             />
           </div>
           <div className="col-span-2">
             <label className="block text-xs font-sans text-muted mb-1.5">Current Location</label>
-            <select className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white">
+            <select className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white">
               <option value="">Select location type</option>
               <option>Hospital</option>
               <option>Residence / Home</option>
@@ -150,8 +150,8 @@ function StepDetails({ onBack, onNext }) {
       </div>
 
       {/* Contact Information */}
-      <div className="bg-warm-white rounded-xl p-6 border border-border mb-8">
-        <h3 className="font-sans text-sm font-semibold text-charcoal mb-4 uppercase tracking-wide">
+      <div className="bg-surface rounded-xl p-6 border border-line mb-8">
+        <h3 className="font-sans text-sm font-semibold text-ink mb-4 uppercase tracking-wide">
           Your Contact Information
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -160,12 +160,12 @@ function StepDetails({ onBack, onNext }) {
             <input
               type="text"
               placeholder="Your full name"
-              className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+              className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
             />
           </div>
           <div>
             <label className="block text-xs font-sans text-muted mb-1.5">Relationship</label>
-            <select className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white">
+            <select className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white">
               <option value="">Select relationship</option>
               <option>Spouse / Partner</option>
               <option>Child</option>
@@ -181,7 +181,7 @@ function StepDetails({ onBack, onNext }) {
             <input
               type="tel"
               placeholder="(415) 555-0100"
-              className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+              className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
             />
           </div>
           <div className="col-span-2">
@@ -189,7 +189,7 @@ function StepDetails({ onBack, onNext }) {
             <input
               type="email"
               placeholder="your@email.com"
-              className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+              className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
             />
           </div>
         </div>
@@ -208,7 +208,7 @@ function StepAddons({ addons, selectedAddons, onToggle, selectedPackage, onBack,
   return (
     <div>
       <div className="mb-6">
-        <h2 className="font-display text-2xl text-charcoal">Customize Your Arrangement</h2>
+        <h2 className="font-display text-2xl text-ink">Customize Your Arrangement</h2>
         <p className="font-sans text-sm text-muted mt-1">
           Optional additions to personalise the service for your family.
         </p>
@@ -246,7 +246,7 @@ function StepReview({ selectedPackage, selectedAddons, onBack, onConfirm }) {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="font-display text-2xl text-charcoal">Review & Confirm</h2>
+        <h2 className="font-display text-2xl text-ink">Review & Confirm</h2>
         <p className="font-sans text-sm text-muted mt-1">
           Please review your arrangement before confirming.
         </p>
@@ -257,11 +257,11 @@ function StepReview({ selectedPackage, selectedAddons, onBack, onConfirm }) {
       </div>
 
       {/* Payment timing banner */}
-      <div className="bg-amber-light border border-amber/20 rounded-xl p-4 mb-8 flex gap-3">
-        <span className="text-amber text-base mt-0.5">ℹ</span>
+      <div className="bg-warning-light border border-warning/20 rounded-xl p-4 mb-8 flex gap-3">
+        <span className="text-warning text-base mt-0.5">ℹ</span>
         <div>
-          <p className="font-sans text-sm font-medium text-amber">Regarding Payment</p>
-          <p className="font-sans text-xs text-amber/80 mt-0.5 leading-relaxed">
+          <p className="font-sans text-sm font-medium text-warning">Regarding Payment</p>
+          <p className="font-sans text-xs text-warning/80 mt-0.5 leading-relaxed">
             Payment is not collected at this time. A member of our care team will contact you within 2 hours
             to complete arrangements and provide a secure payment link.
           </p>
@@ -270,7 +270,7 @@ function StepReview({ selectedPackage, selectedAddons, onBack, onConfirm }) {
 
       <div className="flex justify-between">
         <Button variant="secondary" onClick={onBack}>← Back</Button>
-        <Button variant="sage" onClick={onConfirm}>Confirm Arrangements →</Button>
+        <Button variant="primary" onClick={onConfirm}>Confirm Arrangements →</Button>
       </div>
     </div>
   )
@@ -312,16 +312,16 @@ export function FamilyWidgetPage() {
       <div className="text-center mb-3">
         <span className="font-sans text-xs text-muted">
           Evergreen Memorial · Powered by{' '}
-          <span className="font-medium text-charcoal">Passage</span>
+          <span className="font-medium text-ink">Passage</span>
         </span>
       </div>
 
       {/* Title */}
       <div className="text-center mb-8">
-        <h1 className="font-display text-[38px] font-light text-charcoal leading-tight">
+        <h1 className="font-display text-[38px] font-light text-ink leading-tight">
           Cremation Services
         </h1>
-        <p className="font-sans text-sm text-slate mt-2 max-w-md mx-auto leading-relaxed">
+        <p className="font-sans text-sm text-secondary mt-2 max-w-md mx-auto leading-relaxed">
           Transparent pricing, compassionate care. We guide your family through every step
           with dignity and clarity.
         </p>

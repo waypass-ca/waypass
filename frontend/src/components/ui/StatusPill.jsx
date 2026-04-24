@@ -1,8 +1,8 @@
 const STATUS_CONFIG = {
-  pending: { dot: 'bg-amber', label: 'Pending', text: 'text-amber' },
-  transit: { dot: 'bg-blue-soft', label: 'In Transit', text: 'text-blue-soft' },
-  cremation: { dot: 'bg-red-soft', label: 'Cremation', text: 'text-red-soft' },
-  complete: { dot: 'bg-sage', label: 'Complete', text: 'text-sage' },
+  pending: { dot: 'bg-warning', label: 'Pending', text: 'text-warning' },
+  transit: { dot: 'bg-info', label: 'In Transit', text: 'text-info' },
+  cremation: { dot: 'bg-danger', label: 'Cremation', text: 'text-danger' },
+  complete: { dot: 'bg-primary', label: 'Complete', text: 'text-primary' },
 }
 
 export function StatusPill({ status }) {

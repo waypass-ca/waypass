@@ -11,10 +11,10 @@ function getGreeting() {
 }
 
 const STATUS_COLORS = {
-  pending:   'text-amber',
-  transit:   'text-blue-soft',
-  cremation: 'text-red-soft',
-  complete:  'text-sage',
+  pending:   'text-warning',
+  transit:   'text-info',
+  cremation: 'text-danger',
+  complete:  'text-primary',
 }
 
 function RecentCaseCard({ caseData, onClick }) {
@@ -22,12 +22,12 @@ function RecentCaseCard({ caseData, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-[148px] flex-shrink-0 bg-warm-white border border-border rounded-xl p-4 text-left hover:border-charcoal/20 hover:shadow-sm transition-all cursor-pointer outline-none group"
+      className="w-[148px] flex-shrink-0 bg-surface border border-line rounded-xl p-4 text-left hover:border-ink/20 hover:shadow-sm transition-all cursor-pointer outline-none group"
     >
       <div className="mb-3">
         <FolderOpen size={22} className={`${iconColor} opacity-80`} strokeWidth={1.5} />
       </div>
-      <p className="font-sans text-[13px] font-semibold text-charcoal leading-tight truncate mb-1">
+      <p className="font-sans text-[13px] font-semibold text-ink leading-tight truncate mb-1">
         {caseData.deceased}
       </p>
       <p className="font-sans text-[11px] text-muted truncate mb-2">{caseData.family}</p>
@@ -46,17 +46,17 @@ const MOCK_ALERTS = [
 
 function AlertRow({ caseId, deceasedName, reason, severity }) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-border last:border-0">
+    <div className="flex items-center justify-between py-3 border-b border-line last:border-0">
       <div className="flex items-center gap-3">
-        <div className={`w-1.5 h-6 rounded-full flex-shrink-0 ${severity === 'critical' ? 'bg-red-soft' : 'bg-amber'}`} />
+        <div className={`w-1.5 h-6 rounded-full flex-shrink-0 ${severity === 'critical' ? 'bg-danger' : 'bg-warning'}`} />
         <div>
-          <p className="font-sans text-sm font-medium text-charcoal">{deceasedName}</p>
+          <p className="font-sans text-sm font-medium text-ink">{deceasedName}</p>
           <p className="font-sans text-[11px] text-muted mt-0.5">{caseId}</p>
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <p className="font-sans text-sm text-slate">{reason}</p>
-        <Badge variant={severity === 'critical' ? 'red' : 'amber'}>
+        <p className="font-sans text-sm text-secondary">{reason}</p>
+        <Badge variant={severity === 'critical' ? 'red' : 'warning'}>
           {severity === 'critical' ? 'Critical' : 'Warning'}
         </Badge>
       </div>
@@ -87,7 +87,7 @@ export function HomeDashboard({ cases, onViewCase, onNewCase }) {
     <div className="max-w-4xl mx-auto">
       {/* Greeting */}
       <div className="text-center pt-10 pb-12">
-        <h1 className="font-display text-5xl font-light text-charcoal tracking-tight">
+        <h1 className="font-display text-5xl font-light text-ink tracking-tight">
           {getGreeting()}
         </h1>
         <p className="font-sans text-sm text-muted mt-3">
@@ -107,7 +107,7 @@ export function HomeDashboard({ cases, onViewCase, onNewCase }) {
           </div>
           <button
             onClick={onNewCase}
-            className="flex items-center gap-1.5 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans hover:bg-blue-soft hover:text-blue-light bg-blue-light text-blue-soft transition-colors"
+            className="flex items-center gap-1.5 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans hover:bg-info hover:text-info-tint bg-info-tint text-info transition-colors"
           >
             <Plus size={13} strokeWidth={2} />
             New case
@@ -128,10 +128,10 @@ export function HomeDashboard({ cases, onViewCase, onNewCase }) {
             <span className="font-sans text-[11px] font-semibold text-muted uppercase tracking-widest">Alerts</span>
           </div>
           {alerts.length > 0 && (
-            <Badge variant={hasCritical ? 'red' : 'amber'}>{alerts.length} flagged</Badge>
+            <Badge variant={hasCritical ? 'red' : 'warning'}>{alerts.length} flagged</Badge>
           )}
         </div>
-        <div className="bg-warm-white border border-border rounded-xl px-5 py-1">
+        <div className="bg-surface border border-line rounded-xl px-5 py-1">
           {alerts.length === 0 ? (
             <div className="py-8 text-center">
               <p className="font-sans text-sm text-muted">No flagged cases — all clear.</p>
@@ -154,9 +154,9 @@ export function HomeDashboard({ cases, onViewCase, onNewCase }) {
             { label: 'Cases YTD',             value: '31',     sub: '↑ 34% vs last year' },
             { label: 'Pending Authorization', value: '2',      sub: 'Auth form or permit missing' },
           ].map(stat => (
-            <div key={stat.label} className="bg-warm-white border border-border rounded-xl px-4 py-4">
+            <div key={stat.label} className="bg-surface border border-line rounded-xl px-4 py-4">
               <p className="font-sans text-[11px] text-muted uppercase tracking-wide mb-2">{stat.label}</p>
-              <p className="font-display text-3xl font-light text-charcoal leading-none">{stat.value}</p>
+              <p className="font-display text-3xl font-light text-ink leading-none">{stat.value}</p>
               <p className="font-sans text-[11px] text-muted mt-2">{stat.sub}</p>
             </div>
           ))}
@@ -165,15 +165,15 @@ export function HomeDashboard({ cases, onViewCase, onNewCase }) {
         {/* Charts row */}
         <div className="grid grid-cols-2 gap-3">
           {/* Bar chart */}
-          <div className="bg-warm-white border border-border rounded-xl p-5">
+          <div className="bg-surface border border-line rounded-xl p-5">
             <p className="font-sans text-[11px] text-muted uppercase tracking-wide mb-1">Monthly Revenue</p>
-            <p className="font-display text-xl text-charcoal mb-6">2024 Overview</p>
+            <p className="font-display text-xl text-ink mb-6">2024 Overview</p>
             <div className="flex items-end gap-4" style={{ height: '100px' }}>
               {BAR_DATA.map(bar => (
                 <div key={bar.month} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
                   <span className="font-sans text-[10px] text-muted">{bar.value}</span>
                   <div
-                    className="w-full rounded-t-md bg-sage opacity-70 hover:opacity-100 transition-opacity"
+                    className="w-full rounded-t-md bg-primary opacity-70 hover:opacity-100 transition-opacity"
                     style={{ height: `${bar.pct}%` }}
                   />
                   <span className="font-sans text-[10px] text-muted">{bar.month}</span>
@@ -183,14 +183,14 @@ export function HomeDashboard({ cases, onViewCase, onNewCase }) {
           </div>
 
           {/* Revenue recaptured */}
-          <div className="bg-warm-white border border-border rounded-xl p-5">
+          <div className="bg-surface border border-line rounded-xl p-5">
             <p className="font-sans text-[11px] text-muted uppercase tracking-wide mb-1">Revenue Recaptured</p>
-            <p className="font-display text-4xl font-light text-charcoal mt-1">$18,575</p>
+            <p className="font-display text-4xl font-light text-ink mt-1">$18,575</p>
             <div className="flex items-center gap-2 mt-1">
-              <span className="font-sans text-sm text-sage font-medium">↑ 34%</span>
+              <span className="font-sans text-sm text-primary font-medium">↑ 34%</span>
               <span className="font-sans text-xs text-muted">vs outsourcing to third party</span>
             </div>
-            <div className="mt-5 pt-4 border-t border-border space-y-2.5">
+            <div className="mt-5 pt-4 border-t border-line space-y-2.5">
               {[
                 { label: 'Cases handled in-house', value: '31 YTD' },
                 { label: 'Avg. margin per case',   value: '$599' },
@@ -198,7 +198,7 @@ export function HomeDashboard({ cases, onViewCase, onNewCase }) {
               ].map(r => (
                 <div key={r.label} className="flex justify-between">
                   <span className="font-sans text-xs text-muted">{r.label}</span>
-                  <span className="font-sans text-xs font-medium text-charcoal">{r.value}</span>
+                  <span className="font-sans text-xs font-medium text-ink">{r.value}</span>
                 </div>
               ))}
             </div>

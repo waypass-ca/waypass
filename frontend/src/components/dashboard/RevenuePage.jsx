@@ -47,10 +47,10 @@ export function RevenuePage() {
           { label: 'Avg Case Value', value: `$${avgCaseValue.toLocaleString()}`, sub: '↑ $112 vs prior period' },
           { label: 'Revenue Recaptured', value: '$18,575', sub: '↑ 34% vs outsourcing' },
         ].map(m => (
-          <div key={m.label} className="bg-warm-white rounded-xl border border-border p-5">
+          <div key={m.label} className="bg-surface rounded-xl border border-line p-5">
             <p className="font-sans text-xs text-muted uppercase tracking-wide">{m.label}</p>
-            <p className="font-display text-3xl text-charcoal mt-2 leading-none">{m.value}</p>
-            <p className="font-sans text-xs text-sage mt-2">{m.sub}</p>
+            <p className="font-display text-3xl text-ink mt-2 leading-none">{m.value}</p>
+            <p className="font-sans text-xs text-primary mt-2">{m.sub}</p>
           </div>
         ))}
       </div>
@@ -58,8 +58,8 @@ export function RevenuePage() {
       {/* Bar chart + breakdown */}
       <div className="grid grid-cols-5 gap-5 mb-5">
         {/* Bar chart */}
-        <div className="col-span-3 bg-warm-white rounded-xl border border-border p-6">
-          <h2 className="font-display text-xl text-charcoal mb-1">Monthly Revenue</h2>
+        <div className="col-span-3 bg-surface rounded-xl border border-line p-6">
+          <h2 className="font-display text-xl text-ink mb-1">Monthly Revenue</h2>
           <p className="font-sans text-xs text-muted mb-6">October 2023 – March 2024</p>
 
           <div className="flex items-end gap-4" style={{ height: '160px' }}>
@@ -69,11 +69,11 @@ export function RevenuePage() {
               return (
                 <div key={d.month} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
                   <div className="text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="font-sans text-xs font-medium text-charcoal">${(d.revenue / 1000).toFixed(1)}k</p>
+                    <p className="font-sans text-xs font-medium text-ink">${(d.revenue / 1000).toFixed(1)}k</p>
                     <p className="font-sans text-[10px] text-muted">{d.cases} cases</p>
                   </div>
                   <div
-                    className={`w-full rounded-t-md transition-opacity ${isCurrent ? 'bg-sage' : 'bg-sage opacity-50 hover:opacity-75'}`}
+                    className={`w-full rounded-t-md transition-opacity ${isCurrent ? 'bg-primary' : 'bg-primary opacity-50 hover:opacity-75'}`}
                     style={{ height: `${pct}%` }}
                   />
                   <span className="font-sans text-xs text-muted">{d.month}</span>
@@ -84,20 +84,20 @@ export function RevenuePage() {
         </div>
 
         {/* Package breakdown */}
-        <div className="col-span-2 bg-warm-white rounded-xl border border-border p-6">
-          <h2 className="font-display text-xl text-charcoal mb-1">By Package</h2>
+        <div className="col-span-2 bg-surface rounded-xl border border-line p-6">
+          <h2 className="font-display text-xl text-ink mb-1">By Package</h2>
           <p className="font-sans text-xs text-muted mb-6">Revenue distribution</p>
 
           <div className="space-y-5">
             {PACKAGE_BREAKDOWN.map(pkg => (
               <div key={pkg.name}>
                 <div className="flex justify-between mb-1.5">
-                  <span className="font-sans text-sm font-medium text-charcoal">{pkg.name}</span>
-                  <span className="font-sans text-sm text-slate">${pkg.total.toLocaleString()}</span>
+                  <span className="font-sans text-sm font-medium text-ink">{pkg.name}</span>
+                  <span className="font-sans text-sm text-secondary">${pkg.total.toLocaleString()}</span>
                 </div>
-                <div className="w-full bg-cream rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-canvas rounded-full h-2 overflow-hidden">
                   <div
-                    className="h-full bg-sage rounded-full"
+                    className="h-full bg-primary rounded-full"
                     style={{ width: `${pkg.pct}%` }}
                   />
                 </div>
@@ -112,13 +112,13 @@ export function RevenuePage() {
       </div>
 
       {/* Monthly detail table */}
-      <div className="bg-warm-white rounded-xl border border-border overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
-          <h2 className="font-display text-xl text-charcoal">Monthly Detail</h2>
+      <div className="bg-surface rounded-xl border border-line overflow-hidden">
+        <div className="px-6 py-4 border-b border-line">
+          <h2 className="font-display text-xl text-ink">Monthly Detail</h2>
         </div>
         <table className="w-full">
           <thead>
-            <tr className="bg-cream border-b border-border">
+            <tr className="bg-canvas border-b border-line">
               {['Month', 'Cases', 'Revenue', 'Avg Case Value', 'vs Prior Month'].map(col => (
                 <th key={col} className="text-left px-6 py-3 text-xs font-sans font-medium text-muted uppercase tracking-wide">{col}</th>
               ))}
@@ -130,19 +130,19 @@ export function RevenuePage() {
               const change = prior ? Math.round(((d.revenue - prior) / prior) * 100) : null
               const isCurrent = d.month === 'Mar'
               return (
-                <tr key={d.month} className={`border-t border-border ${isCurrent ? 'bg-sage-light/40' : 'hover:bg-cream/50'} transition-colors`}>
+                <tr key={d.month} className={`border-t border-line ${isCurrent ? 'bg-primary-light/40' : 'hover:bg-canvas/50'} transition-colors`}>
                   <td className="px-6 py-3">
-                    <span className={`font-sans text-sm ${isCurrent ? 'font-semibold text-sage' : 'text-charcoal'}`}>
+                    <span className={`font-sans text-sm ${isCurrent ? 'font-semibold text-primary' : 'text-ink'}`}>
                       {d.month} 2024
                     </span>
-                    {isCurrent && <span className="ml-2 text-[10px] font-sans text-sage bg-sage-light px-1.5 py-0.5 rounded-full">Current</span>}
+                    {isCurrent && <span className="ml-2 text-[10px] font-sans text-primary bg-primary-light px-1.5 py-0.5 rounded-full">Current</span>}
                   </td>
-                  <td className="px-6 py-3"><span className="font-sans text-sm text-slate">{d.cases}</span></td>
-                  <td className="px-6 py-3"><span className="font-sans text-sm font-medium text-charcoal">${d.revenue.toLocaleString()}</span></td>
-                  <td className="px-6 py-3"><span className="font-sans text-sm text-slate">${Math.round(d.revenue / d.cases).toLocaleString()}</span></td>
+                  <td className="px-6 py-3"><span className="font-sans text-sm text-secondary">{d.cases}</span></td>
+                  <td className="px-6 py-3"><span className="font-sans text-sm font-medium text-ink">${d.revenue.toLocaleString()}</span></td>
+                  <td className="px-6 py-3"><span className="font-sans text-sm text-secondary">${Math.round(d.revenue / d.cases).toLocaleString()}</span></td>
                   <td className="px-6 py-3">
                     {change !== null ? (
-                      <span className={`font-sans text-xs font-medium ${change >= 0 ? 'text-sage' : 'text-red-soft'}`}>
+                      <span className={`font-sans text-xs font-medium ${change >= 0 ? 'text-primary' : 'text-danger'}`}>
                         {change >= 0 ? '↑' : '↓'} {Math.abs(change)}%
                       </span>
                     ) : (

@@ -12,16 +12,16 @@ const StarFilled = ({ size = 14, className = '' }) => (
 
 // ─── Status / package config ──────────────────────────────────────────────────
 const STATUS = {
-  pending: { label: 'Pending', dot: 'bg-amber', text: 'text-amber', tint: 'bg-amber-light', border: 'border-amber/30' },
-  transit: { label: 'In Transit', dot: 'bg-blue-soft', text: 'text-blue-soft', tint: 'bg-blue-light', border: 'border-blue-soft/30' },
-  cremation: { label: 'Cremation', dot: 'bg-red-soft', text: 'text-red-soft', tint: 'bg-red-light', border: 'border-red-soft/30' },
-  complete: { label: 'Complete', dot: 'bg-sage', text: 'text-sage', tint: 'bg-sage-light', border: 'border-sage/30' },
+  pending: { label: 'Pending', dot: 'bg-warning', text: 'text-warning', tint: 'bg-warning-light', border: 'border-warning/30' },
+  transit: { label: 'In Transit', dot: 'bg-info', text: 'text-info', tint: 'bg-info-tint', border: 'border-info/30' },
+  cremation: { label: 'Cremation', dot: 'bg-danger', text: 'text-danger', tint: 'bg-danger-tint', border: 'border-danger/30' },
+  complete: { label: 'Complete', dot: 'bg-primary', text: 'text-primary', tint: 'bg-primary-light', border: 'border-primary/30' },
 }
 
 const PKG_TINT = {
-  Essential: { ring: 'ring-muted/20', bg: 'bg-cream', dot: 'bg-muted' },
-  Comfort: { ring: 'ring-amber/20', bg: 'bg-amber-light', dot: 'bg-amber' },
-  Tribute: { ring: 'ring-sage/20', bg: 'bg-sage-light', dot: 'bg-sage' },
+  Essential: { ring: 'ring-muted/20', bg: 'bg-canvas', dot: 'bg-muted' },
+  Comfort: { ring: 'ring-warning/20', bg: 'bg-warning-light', dot: 'bg-warning' },
+  Tribute: { ring: 'ring-primary/20', bg: 'bg-primary-light', dot: 'bg-primary' },
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ const StatusDot = ({ cls }) => <span className={`w-2 h-2 rounded-full ${cls} inl
 function PackageChip({ pkg }) {
   const t = PKG_TINT[pkg] || PKG_TINT.Essential
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ring-1 ${t.ring} ${t.bg} font-sans text-[11px] text-slate shrink-0`}>
+    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ring-1 ${t.ring} ${t.bg} font-sans text-[11px] text-secondary shrink-0`}>
       <span className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />
       {pkg}
     </span>
@@ -63,7 +63,7 @@ function InfoRow({ label, value, sub }) {
   return (
     <div>
       <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-1">{label}</div>
-      <div className="font-sans text-[13px] text-charcoal">{value}</div>
+      <div className="font-sans text-[13px] text-ink">{value}</div>
       {sub && <div className="font-sans text-[11px] text-muted mt-0.5">{sub}</div>}
     </div>
   )
@@ -91,19 +91,19 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
   const clearAll = () => setFilters({ packages: new Set(), statuses: new Set(), crematoriums: new Set(), datePreset: '', hasDocs: false, starredOnly: false })
 
   return (
-    <div className="border-b border-border bg-warm-white/80 backdrop-blur shrink-0">
+    <div className="border-b border-line bg-surface/80 backdrop-blur shrink-0 relative z-10">
       {/* Row 1: breadcrumb + title + new case */}
       <div className="px-6 pt-5 pb-3 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 font-sans text-[11.5px] text-muted mb-1.5">
           </div>
           <div className="flex items-baseline gap-3">
-            <h1 className="font-display font-light text-[30px] leading-none text-charcoal">Cases</h1>
+            <h1 className="font-display font-light text-[30px] leading-none text-ink">Cases</h1>
             <span className="font-sans text-[12.5px] text-muted">{count} of {total}</span>
           </div>
         </div>
         <button onClick={onNewCase}
-          className="h-9 px-3.5 rounded-lg bg-charcoal hover:bg-charcoal/90 text-warm-white font-sans text-[12.5px] font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 mt-1">
+          className="h-9 px-3.5 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 mt-1">
           <Plus size={14} /> New Case
         </button>
       </div>
@@ -115,14 +115,14 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
           <input
             value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search name, family, case ID…"
-            className="w-full pl-9 pr-4 h-9 rounded-lg border border-border bg-white text-[13px] text-charcoal font-sans placeholder:text-muted outline-none focus:border-charcoal/60 transition" />
+            className="w-full pl-9 pr-4 h-9 rounded-lg border border-line bg-white text-[13px] text-ink font-sans placeholder:text-muted outline-none focus:border-ink/60 transition" />
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1 px-2 h-9 rounded-lg border border-border bg-white">
+          <div className="flex items-center gap-1 px-2 h-9 rounded-lg border border-line bg-white">
             <span className="font-sans text-[11.5px] text-muted">Sort</span>
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-              className="font-sans text-[12.5px] text-charcoal bg-transparent outline-none cursor-pointer pr-1">
+              className="font-sans text-[12.5px] text-ink bg-transparent outline-none cursor-pointer pr-1">
               <option value="date">Date opened</option>
               <option value="name">Name</option>
               <option value="amount">Amount</option>
@@ -131,20 +131,20 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
 
           <div ref={filterRef} className="relative">
             <button onClick={() => setFilterOpen(o => !o)}
-              className={`relative h-9 w-9 rounded-lg border bg-white hover:bg-warm-white flex items-center justify-center cursor-pointer
-          ${filterOpen || filtersActive ? 'border-charcoal text-charcoal' : 'border-border text-slate'}`}>
+              className={`relative h-9 w-9 rounded-lg border bg-white hover:bg-surface flex items-center justify-center cursor-pointer
+          ${filterOpen || filtersActive ? 'border-ink text-ink' : 'border-line text-secondary'}`}>
               <Filter size={15} />
               {filtersActive > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-charcoal text-warm-white font-sans text-[9px] font-medium flex items-center justify-center">{filtersActive}</span>
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-ink text-surface font-sans text-[9px] font-medium flex items-center justify-center">{filtersActive}</span>
               )}
             </button>
 
             {filterOpen && (
-              <div className="absolute right-0 top-[calc(100%+6px)] w-80 bg-warm-white border border-border rounded-xl shadow-[0_12px_32px_-8px_rgba(28,28,30,0.18)] z-[60] overflow-hidden max-h-[70vh] flex flex-col">
-                <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-border shrink-0">
-                  <div className="font-sans text-[12px] font-medium text-charcoal">Filters</div>
+              <div className="absolute right-0 top-[calc(100%+6px)] w-80 bg-surface border border-line rounded-xl shadow-[0_12px_32px_-8px_rgba(28,28,30,0.18)] z-[60] overflow-hidden max-h-[70vh] flex flex-col">
+                <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-line shrink-0">
+                  <div className="font-sans text-[12px] font-medium text-ink">Filters</div>
                   <button onClick={clearAll}
-                    className={`font-sans text-[11px] ${filtersActive ? 'text-red-soft hover:underline cursor-pointer' : 'text-muted cursor-default'}`}
+                    className={`font-sans text-[11px] ${filtersActive ? 'text-danger hover:underline cursor-pointer' : 'text-muted cursor-default'}`}
                     disabled={!filtersActive}>Clear all</button>
                 </div>
 
@@ -154,17 +154,17 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Status</div>
                     <div className="flex flex-wrap gap-1.5">
                       {[
-                        { id: 'pending',   label: 'Pending',      dot: 'bg-amber'    },
-                        { id: 'transit',   label: 'In Transit',   dot: 'bg-blue-soft' },
-                        { id: 'cremation', label: 'At Cremation', dot: 'bg-red-soft'  },
-                        { id: 'complete',  label: 'Complete',     dot: 'bg-sage'      },
+                        { id: 'pending',   label: 'Pending',      dot: 'bg-warning'    },
+                        { id: 'transit',   label: 'In Transit',   dot: 'bg-info' },
+                        { id: 'cremation', label: 'At Cremation', dot: 'bg-danger'  },
+                        { id: 'complete',  label: 'Complete',     dot: 'bg-primary'      },
                       ].map(({ id, label, dot }) => {
                         const on = filters.statuses.has(id)
                         return (
                           <button key={id} onClick={() => toggleSet('statuses', id)}
                             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                              ${on ? 'border-charcoal bg-charcoal text-white' : 'border-border bg-white text-slate hover:border-slate'}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${on ? 'bg-warm-white/60' : dot}`} />
+                              ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${on ? 'bg-surface/60' : dot}`} />
                             {label}
                           </button>
                         )
@@ -173,7 +173,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                   </div>
 
                   {/* Date opened */}
-                  <div className="px-4 pb-3 border-t border-border/60 pt-3">
+                  <div className="px-4 pb-3 border-t border-line/60 pt-3">
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Date Opened</div>
                     <div className="flex flex-wrap gap-1.5">
                       {[
@@ -187,7 +187,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                           <button key={id}
                             onClick={() => setFilters(f => ({ ...f, datePreset: f.datePreset === id ? '' : id }))}
                             className={`px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                              ${on ? 'border-charcoal bg-charcoal text-white' : 'border-border bg-white text-slate hover:border-slate'}`}>
+                              ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
                             {label}
                           </button>
                         )
@@ -196,7 +196,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                   </div>
 
                   {/* Package */}
-                  <div className="px-4 pb-3 border-t border-border/60 pt-3">
+                  <div className="px-4 pb-3 border-t border-line/60 pt-3">
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Package</div>
                     <div className="flex flex-wrap gap-1.5">
                       {['Essential', 'Comfort', 'Tribute'].map(p => {
@@ -204,7 +204,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                         return (
                           <button key={p} onClick={() => toggleSet('packages', p)}
                             className={`px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                              ${on ? 'border-charcoal bg-charcoal text-white' : 'border-border bg-white text-slate hover:border-slate'}`}>
+                              ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
                             {p}
                           </button>
                         )
@@ -214,18 +214,18 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
 
                   {/* Crematorium */}
                   {crematoriumOptions.length > 0 && (
-                    <div className="px-4 pb-3 border-t border-border/60 pt-3">
+                    <div className="px-4 pb-3 border-t border-line/60 pt-3">
                       <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Crematorium</div>
                       <div className="flex flex-col gap-1">
                         {crematoriumOptions.map(crm => {
                           const on = filters.crematoriums.has(crm)
                           return (
-                            <label key={crm} className="flex items-center gap-2.5 py-1 px-1 rounded hover:bg-cream/60 cursor-pointer">
-                              <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${on ? 'border-charcoal bg-charcoal' : 'border-border bg-white'}`}>
-                                {on && <Check size={11} className="text-warm-white" />}
+                            <label key={crm} className="flex items-center gap-2.5 py-1 px-1 rounded hover:bg-canvas/60 cursor-pointer">
+                              <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${on ? 'border-ink bg-ink' : 'border-line bg-white'}`}>
+                                {on && <Check size={11} className="text-surface" />}
                               </span>
                               <input type="checkbox" checked={on} onChange={() => toggleSet('crematoriums', crm)} className="sr-only" />
-                              <span className="font-sans text-[12px] text-charcoal truncate">{crm}</span>
+                              <span className="font-sans text-[12px] text-ink truncate">{crm}</span>
                             </label>
                           )
                         })}
@@ -234,32 +234,32 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                   )}
 
                   {/* Other conditions */}
-                  <div className="px-4 pb-3 border-t border-border/60 pt-3">
+                  <div className="px-4 pb-3 border-t border-line/60 pt-3">
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-1">Other</div>
                     {[
                       ['starredOnly', 'Starred only'],
                       ['hasDocs',     'Has documents'],
                     ].map(([k, label]) => (
-                      <label key={k} className="flex items-center gap-2.5 py-1.5 px-1 rounded hover:bg-cream/60 cursor-pointer">
-                        <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${filters[k] ? 'border-charcoal bg-charcoal' : 'border-border bg-white'}`}>
-                          {filters[k] && <Check size={11} className="text-warm-white" />}
+                      <label key={k} className="flex items-center gap-2.5 py-1.5 px-1 rounded hover:bg-canvas/60 cursor-pointer">
+                        <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition ${filters[k] ? 'border-ink bg-ink' : 'border-line bg-white'}`}>
+                          {filters[k] && <Check size={11} className="text-surface" />}
                         </span>
                         <input type="checkbox" checked={filters[k]} onChange={() => toggle(k)} className="sr-only" />
-                        <span className="font-sans text-[12.5px] text-charcoal">{label}</span>
+                        <span className="font-sans text-[12.5px] text-ink">{label}</span>
                       </label>
                     ))}
                   </div>
                 </div>
 
-                <div className="px-4 py-2.5 border-t border-border bg-warm-white flex items-center justify-between shrink-0">
+                <div className="px-4 py-2.5 border-t border-line bg-surface flex items-center justify-between shrink-0">
                   <span className="font-sans text-[11px] text-muted">{filtersActive === 0 ? 'No filters applied' : `${filtersActive} active`}</span>
-                  <button onClick={() => setFilterOpen(false)} className="h-7 px-3 rounded-md bg-charcoal text-warm-white font-sans text-[11.5px] cursor-pointer">Done</button>
+                  <button onClick={() => setFilterOpen(false)} className="h-7 px-3 rounded-md bg-ink text-surface font-sans text-[11.5px] cursor-pointer">Done</button>
                 </div>
               </div>
             )}
           </div>
 
-          <div className="flex bg-cream border border-border rounded-lg p-0.5 h-9">
+          <div className="flex bg-canvas border border-line rounded-lg p-0.5 h-9">
             {[
               ['list', <List size={15} />, 'List'],
               ['grid', <Grid2x2 size={14} />, 'Grid'],
@@ -267,7 +267,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
             ].map(([k, icon, label]) => (
               <button key={k} onClick={() => setView(k)} title={label}
                 className={`px-2.5 rounded-md font-sans text-[12px] flex items-center gap-1.5 cursor-pointer transition
-            ${view === k ? 'bg-white text-charcoal shadow-[0_1px_2px_rgba(0,0,0,0.05)]' : 'text-muted hover:text-slate'}`}>
+            ${view === k ? 'bg-white text-ink shadow-[0_1px_2px_rgba(0,0,0,0.05)]' : 'text-muted hover:text-secondary'}`}>
                 {icon}
               </button>
             ))}
@@ -282,29 +282,29 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
 const FOLDERS = [
   { id: 'all', label: 'Cases', icon: <Home size={13} />, tint: null },
   { id: 'recent', label: 'Active', icon: <Clock size={13} />, tint: null },
-  { id: 'starred', label: 'Starred', icon: <StarFilled size={13} />, tint: 'text-amber' },
-  { id: 'needs-attention', label: 'Needs Attention', icon: <AlertTriangle size={13} />, tint: 'text-red-soft' },
+  { id: 'starred', label: 'Starred', icon: <StarFilled size={13} />, tint: 'text-warning' },
+  { id: 'needs-attention', label: 'Needs Attention', icon: <AlertTriangle size={13} />, tint: 'text-danger' },
   { id: 'unassigned', label: 'Unassigned', icon: <Users size={13} />, tint: null },
-  { id: 'pending', label: 'Pending', icon: <StatusDot cls="bg-amber" />, tint: null },
-  { id: 'transit', label: 'In Transit', icon: <StatusDot cls="bg-blue-soft" />, tint: null },
-  { id: 'cremation', label: 'At Cremation', icon: <StatusDot cls="bg-red-soft" />, tint: null },
-  { id: 'complete', label: 'Complete', icon: <StatusDot cls="bg-sage" />, tint: null },
+  { id: 'pending', label: 'Pending', icon: <StatusDot cls="bg-warning" />, tint: null },
+  { id: 'transit', label: 'In Transit', icon: <StatusDot cls="bg-info" />, tint: null },
+  { id: 'cremation', label: 'At Cremation', icon: <StatusDot cls="bg-danger" />, tint: null },
+  { id: 'complete', label: 'Complete', icon: <StatusDot cls="bg-primary" />, tint: null },
 ]
 
 
 // ─── Selection bar ────────────────────────────────────────────────────────────
 function SelectionBar({ count, clear }) {
   return (
-    <div className="px-6 py-2 bg-charcoal text-warm-white flex items-center justify-between gap-2 shrink-0">
+    <div className="px-6 py-2 bg-ink text-surface flex items-center justify-between gap-2 shrink-0">
       <div className="flex items-center gap-3">
-        <button onClick={clear} className="w-5 h-5 rounded border border-warm-white/30 flex items-center justify-center hover:bg-warm-white/10 cursor-pointer">
+        <button onClick={clear} className="w-5 h-5 rounded border border-surface/30 flex items-center justify-center hover:bg-surface/10 cursor-pointer">
           <X size={12} />
         </button>
         <span className="font-sans text-[12.5px]">{count} selected</span>
       </div>
       <div className="flex items-center gap-1">
         {['Assign', 'Export', 'Archive'].map(a => (
-          <button key={a} className="h-7 px-2.5 rounded-md font-sans text-[11.5px] text-warm-white/85 hover:bg-warm-white/10 cursor-pointer">{a}</button>
+          <button key={a} className="h-7 px-2.5 rounded-md font-sans text-[11.5px] text-surface/85 hover:bg-surface/10 cursor-pointer">{a}</button>
         ))}
       </div>
     </div>
@@ -316,7 +316,7 @@ function StatusFooter({ count, selected, pageSize, setPageSize, page, totalPages
   const start = count === 0 ? 0 : (page - 1) * pageSize + 1
   const end = Math.min(page * pageSize, count)
   return (
-    <div className="px-4 h-9 border-t border-border bg-warm-white flex items-center justify-between gap-4 font-sans text-[11px] text-muted shrink-0">
+    <div className="px-4 h-9 border-t border-line bg-surface flex items-center justify-between gap-4 font-sans text-[11px] text-muted shrink-0">
       {/* Left: case count */}
       <div className="shrink-0">
         {count} {count === 1 ? 'case' : 'cases'}
@@ -331,7 +331,7 @@ function StatusFooter({ count, selected, pageSize, setPageSize, page, totalPages
             <select
               value={pageSize}
               onChange={e => setPageSize(Number(e.target.value))}
-              className="font-sans text-[11px] text-charcoal bg-warm-white border border-border rounded px-1.5 py-0.5 outline-none cursor-pointer focus:border-charcoal/50 transition">
+              className="font-sans text-[11px] text-ink bg-surface border border-line rounded px-1.5 py-0.5 outline-none cursor-pointer focus:border-ink/50 transition">
               {[10, 20, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
             <span>per page</span>
@@ -340,12 +340,12 @@ function StatusFooter({ count, selected, pageSize, setPageSize, page, totalPages
           {totalPages > 1 && (
             <div className="flex items-center gap-1.5">
               <button onClick={onPrev} disabled={page === 1}
-                className="w-5 h-5 flex items-center justify-center rounded hover:bg-cream disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors">
+                className="w-5 h-5 flex items-center justify-center rounded hover:bg-canvas disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors">
                 <ChevronRight size={12} className="rotate-180" />
               </button>
               <span className="tabular-nums">{start}–{end} of {count}</span>
               <button onClick={onNext} disabled={page === totalPages}
-                className="w-5 h-5 flex items-center justify-center rounded hover:bg-cream disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors">
+                className="w-5 h-5 flex items-center justify-center rounded hover:bg-canvas disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors">
                 <ChevronRight size={12} />
               </button>
             </div>
@@ -355,7 +355,7 @@ function StatusFooter({ count, selected, pageSize, setPageSize, page, totalPages
 
       {/* Right: connection status */}
       <div className="flex items-center gap-1.5 shrink-0">
-        <span className="w-1.5 h-1.5 rounded-full bg-sage" /> Connected
+        <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Connected
       </div>
     </div>
   )
@@ -384,11 +384,11 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
               <col style={{ width: 90 }} />
               <col style={{ width: 40 }} />
             </colgroup>
-            <thead className="bg-white border-b border-border">
+            <thead className="bg-white border-b border-line">
               <tr>
                 <th className="px-3 py-2.5">
-                  <button onClick={selectAll} className="w-4 h-4 rounded border border-border bg-white flex items-center justify-center hover:border-slate cursor-pointer">
-                    {allChecked && <Check size={11} className="text-charcoal" />}
+                  <button onClick={selectAll} className="w-4 h-4 rounded border border-line bg-white flex items-center justify-center hover:border-secondary cursor-pointer">
+                    {allChecked && <Check size={11} className="text-ink" />}
                   </button>
                 </th>
                 <Th>Name</Th>
@@ -405,35 +405,35 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
                 <tr>
                   <td colSpan={8} className="px-6 py-16 text-center">
                     <Folder size={32} className="mx-auto text-muted/40 mb-3" />
-                    <p className="font-display text-[17px] text-slate">No cases here</p>
+                    <p className="font-display text-[17px] text-secondary">No cases here</p>
                     <p className="font-sans text-[12px] text-muted mt-1">Try a different folder or adjust your search.</p>
                   </td>
                 </tr>
               ) : rows.map(c => (
                 <tr key={c.id}
                   onClick={() => onViewCase(c.id)}
-                  className={`border-b border-border last:border-b-0 cursor-default group transition-colors
-                    ${activeId === c.id ? 'bg-cream/80' : 'hover:bg-cream/40'}
-                    ${selected.has(c.id) ? 'bg-blue-light/40' : ''}`}>
+                  className={`border-b border-line last:border-b-0 cursor-default group transition-colors
+                    ${activeId === c.id ? 'bg-canvas/80' : 'hover:bg-canvas/40'}
+                    ${selected.has(c.id) ? 'bg-info-tint/40' : ''}`}>
                   <td className="px-3 py-2.5 align-middle">
                     <button onClick={e => { e.stopPropagation(); toggleSelect(c.id) }}
                       className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
-                        ${selected.has(c.id) ? 'border-charcoal bg-charcoal' : 'border-border bg-white hover:border-slate'}`}>
+                        ${selected.has(c.id) ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}>
                       {selected.has(c.id) && <Check size={11} className="text-white" />}
                     </button>
                   </td>
                   <td className="px-3 py-2.5 align-middle">
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="font-sans text-[13.5px] font-medium text-charcoal truncate">{c.deceased}</span>
-                        {isStarred(c.id) && <StarFilled size={11} className="text-amber shrink-0" />}
+                        <span className="font-sans text-[13.5px] font-medium text-ink truncate">{c.deceased}</span>
+                        {isStarred(c.id) && <StarFilled size={11} className="text-warning shrink-0" />}
                       </div>
                       <div className="font-sans text-[11.5px] text-muted truncate">{c.family}</div>
                     </div>
                   </td>
                   <td className="px-3 py-2.5 align-middle"><PackageChip pkg={c.package} /></td>
                   <td className="px-3 py-2.5 align-middle">
-                    <span className="font-sans text-[12px] text-slate truncate block max-w-[200px]">
+                    <span className="font-sans text-[12px] text-secondary truncate block max-w-[200px]">
                       {c.crematorium || <span className="italic text-muted">— Unassigned</span>}
                     </span>
                   </td>
@@ -442,14 +442,14 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
                     <span className="font-sans text-[11.5px] text-muted whitespace-nowrap">{c.date}</span>
                   </td>
                   <td className="px-3 py-2.5 align-middle text-right pr-4">
-                    <span className="font-sans text-[12.5px] font-medium text-charcoal tabular-nums whitespace-nowrap">${c.amount.toLocaleString()}</span>
+                    <span className="font-sans text-[12.5px] font-medium text-ink tabular-nums whitespace-nowrap">${c.amount.toLocaleString()}</span>
                   </td>
                   <td className="px-2 py-2.5 align-middle">
                     <button
                       onClick={e => { e.stopPropagation(); setActiveId(c.id === activeId ? null : c.id) }}
                       title="Preview"
                       className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100
-                        ${activeId === c.id ? 'bg-charcoal text-warm-white opacity-100' : 'hover:bg-cream text-muted'}`}>
+                        ${activeId === c.id ? 'bg-ink text-surface opacity-100' : 'hover:bg-canvas text-muted'}`}>
                       <Eye size={14} />
                     </button>
                   </td>
@@ -470,7 +470,7 @@ function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarr
       {rows.length === 0 && (
         <div className="py-16 text-center">
           <Folder size={32} className="mx-auto text-muted/40 mb-3" />
-          <p className="font-display text-[17px] text-slate">No cases here</p>
+          <p className="font-display text-[17px] text-secondary">No cases here</p>
           <p className="font-sans text-[12px] text-muted mt-1">Try a different folder or adjust your search.</p>
         </div>
       )}
@@ -481,14 +481,14 @@ function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarr
             <div key={c.id}
               onClick={() => onViewCase(c.id)}
               className={`group relative bg-white border rounded-lg overflow-hidden cursor-default transition
-                hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
-                ${activeId === c.id ? 'border-charcoal/40 ring-2 ring-charcoal/10' : 'border-border'}
-                ${selected.has(c.id) ? 'ring-2 ring-blue-soft/60' : ''}`}>
+                hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-transecondary-y-0.5
+                ${activeId === c.id ? 'border-ink/40 ring-2 ring-ink/10' : 'border-line'}
+                ${selected.has(c.id) ? 'ring-2 ring-info/60' : ''}`}>
               <div className={`h-14 ${s.tint} relative border-b ${s.border} flex items-center justify-center`}>
                 <div className="absolute top-1.5 left-1.5">
                   <button onClick={e => { e.stopPropagation(); toggleSelect(c.id) }}
                       className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
-                        ${selected.has(c.id) ? 'border-charcoal bg-charcoal' : 'border-border bg-white hover:border-slate'}`}>
+                        ${selected.has(c.id) ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}>
                       {selected.has(c.id) && <Check size={11} className="text-white" />}
                     </button>
                 </div>
@@ -496,13 +496,13 @@ function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarr
                   onClick={e => { e.stopPropagation(); setActiveId(c.id === activeId ? null : c.id) }}
                   title="Preview"
                   className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100
-                    ${activeId === c.id ? 'bg-charcoal text-white opacity-100' : 'bg-white text-slate hover:bg-warm-white'}`}>
+                    ${activeId === c.id ? 'bg-ink text-white opacity-100' : 'bg-white text-secondary hover:bg-surface'}`}>
                   <Eye size={11} />
                 </button>
-                {isStarred(c.id) && <StarFilled size={12} className="absolute top-2 left-7 text-amber" />}
+                {isStarred(c.id) && <StarFilled size={12} className="absolute top-2 left-7 text-warning" />}
                 <div className="w-9 h-10 bg-white rounded-[4px] shadow-[0_2px_6px_rgba(28,28,30,0.08)] flex flex-col items-center justify-center gap-0.5">
                   <div className={`w-4 h-[2px] ${s.dot} rounded-full`} />
-                  <span className="font-display text-[14px] text-charcoal leading-none">
+                  <span className="font-display text-[14px] text-ink leading-none">
                     {(c.deceased || '').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('')}
                   </span>
                 </div>
@@ -510,16 +510,16 @@ function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarr
               <div className="p-3">
                 <div className="flex items-start justify-between gap-1.5 mb-1">
                   <div className="min-w-0">
-                    <div className="font-sans text-[12.5px] font-medium text-charcoal truncate">{c.deceased}</div>
+                    <div className="font-sans text-[12.5px] font-medium text-ink truncate">{c.deceased}</div>
                     <div className="font-sans text-[11px] text-muted truncate">{c.family}</div>
                   </div>
                   <PackageChip pkg={c.package} />
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <StatusBadge status={c.status} />
-                  <span className="font-sans text-[11.5px] font-medium text-charcoal tabular-nums">${c.amount.toLocaleString()}</span>
+                  <span className="font-sans text-[11.5px] font-medium text-ink tabular-nums">${c.amount.toLocaleString()}</span>
                 </div>
-                <div className="mt-2 pt-2 border-t border-border flex items-center justify-between font-sans text-[10.5px] text-muted">
+                <div className="mt-2 pt-2 border-t border-line flex items-center justify-between font-sans text-[10.5px] text-muted">
                   <span className="truncate pr-2">{c.crematorium || <span className="italic">Unassigned</span>}</span>
                   <span className="shrink-0">{c.date}</span>
                 </div>
@@ -572,9 +572,9 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
 
   const Handle = ({ onMouseDown }) => (
     <div onMouseDown={onMouseDown}
-      className="group relative w-px bg-border shrink-0 cursor-col-resize hover:bg-charcoal/30 transition-colors">
+      className="group relative w-px bg-line shrink-0 cursor-col-resize hover:bg-ink/30 transition-colors">
       <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
-      <div className="absolute top-1/2 -translate-y-1/2 -left-[3px] w-[7px] h-10 rounded-full opacity-0 group-hover:opacity-100 bg-charcoal/20 transition-opacity" />
+      <div className="absolute top-1/2 -transecondary-y-1/2 -left-[3px] w-[7px] h-10 rounded-full opacity-0 group-hover:opacity-100 bg-ink/20 transition-opacity" />
     </div>
   )
 
@@ -586,9 +586,9 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
           {folders.map(f => (
             <button key={f.id} onClick={() => { setFolder(f.id); setActiveId(null) }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-left cursor-pointer transition-colors
-                ${folder === f.id ? 'bg-charcoal/5 font-medium' : 'hover:bg-charcoal/5'}`}>
-              <span className={`shrink-0 ${f.tint || 'text-slate'}`}>{f.icon}</span>
-              <span className="flex-1 font-sans text-[13px] text-charcoal truncate">{f.label}</span>
+                ${folder === f.id ? 'bg-ink/5 font-medium' : 'hover:bg-ink/5'}`}>
+              <span className={`shrink-0 ${f.tint || 'text-secondary'}`}>{f.icon}</span>
+              <span className="flex-1 font-sans text-[13px] text-ink truncate">{f.label}</span>
               <span className="font-sans text-[11px] text-muted tabular-nums shrink-0">{f.count}</span>
               <ChevronRight size={12} className="text-muted shrink-0" />
             </button>
@@ -604,12 +604,12 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
             <button key={r.id} 
               onDoubleClick={()=> onViewCase(r.id)}
               onClick={() => setActiveId(r.id)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 border-b border-border/60 text-left cursor-pointer transition-colors
-                ${activeId === r.id ? 'bg-cream/60' : 'hover:bg-cream/60'}`}>
+              className={`w-full flex items-center gap-3 px-4 py-2.5 border-b border-line/60 text-left cursor-pointer transition-colors
+                ${activeId === r.id ? 'bg-canvas/60' : 'hover:bg-canvas/60'}`}>
               <div className="flex-1 min-w-0">
-                <div className={`font-sans text-[13px] truncate flex items-center gap-1.5 text-charcoal}`}>
+                <div className={`font-sans text-[13px] truncate flex items-center gap-1.5 text-ink}`}>
                   {r.deceased}
-                  {isStarred(r.id) && <StarFilled size={10} className={activeId === r.id ? 'text-amber-light' : 'text-amber'} />}
+                  {isStarred(r.id) && <StarFilled size={10} className={activeId === r.id ? 'text-warning-light' : 'text-warning'} />}
                 </div>
                 <div className={`font-sans text-[11px] truncate text-muted}`}>
                   {r.family} · {r.date}
@@ -627,7 +627,7 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
           {c ? <CasePreviewBody c={c} isStarred={isStarred} /> : (
             <div className="h-full flex flex-col items-center justify-center px-8 text-center">
               <File size={32} className="text-muted/40 mb-3" />
-              <div className="font-display text-[18px] text-slate">Select a case</div>
+              <div className="font-display text-[18px] text-secondary">Select a case</div>
               <div className="font-sans text-[12px] text-muted mt-1">Choose a case to see details here.</div>
             </div>
           )}
@@ -640,10 +640,10 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
 // ─── Preview panel (side drawer) ──────────────────────────────────────────────
 function PreviewPanel({ c, close, onViewCase, isStarred }) {
   return (
-    <aside className="w-[360px] border-l border-border bg-white overflow-auto shrink-0 flex flex-col">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0 bg-warm-white sticky top-0 z-10">
+    <aside className="w-[360px] border-l border-line bg-white overflow-auto shrink-0 flex flex-col">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-line shrink-0 bg-surface sticky top-0 z-10">
         <div className="font-sans text-[11px] uppercase tracking-[0.1em] text-muted">Case Details</div>
-        <button onClick={close} className="w-7 h-7 rounded-md hover:bg-cream flex items-center justify-center text-muted cursor-pointer">
+        <button onClick={close} className="w-7 h-7 rounded-md hover:bg-canvas flex items-center justify-center text-muted cursor-pointer">
           <X size={15} />
         </button>
       </div>
@@ -664,12 +664,12 @@ function CasePreviewBody({ c, onViewCase, isStarred }) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="font-mono text-[10.5px] text-muted mb-1.5">{c.id}</div>
-            <h2 className="font-display text-[26px] text-charcoal leading-tight">{c.deceased}</h2>
-            <div className="font-sans text-[12.5px] text-slate mt-0.5">
+            <h2 className="font-display text-[26px] text-ink leading-tight">{c.deceased}</h2>
+            <div className="font-sans text-[12.5px] text-secondary mt-0.5">
               {c.family}{age != null ? ` · Age ${age}` : ''}
             </div>
           </div>
-          {isStarred && isStarred(c.id) && <StarFilled size={16} className="text-amber shrink-0 mt-1" />}
+          {isStarred && isStarred(c.id) && <StarFilled size={16} className="text-warning shrink-0 mt-1" />}
         </div>
         <div className="mt-4 flex items-center gap-2 flex-wrap">
           <StatusBadge status={c.status} />
@@ -693,9 +693,9 @@ function CasePreviewBody({ c, onViewCase, isStarred }) {
             const name = typeof doc === 'string' ? doc : (doc?.name || doc?.path || 'Document')
             const ext = name.split('.').pop()?.toUpperCase() || 'FILE'
             return (
-              <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-md border border-border bg-cream/40 hover:bg-cream cursor-pointer transition-colors">
-                <FileText size={14} className="text-slate shrink-0" />
-                <span className="font-sans text-[12px] text-slate flex-1 truncate">{name}</span>
+              <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-md border border-line bg-canvas/40 hover:bg-canvas cursor-pointer transition-colors">
+                <FileText size={14} className="text-secondary shrink-0" />
+                <span className="font-sans text-[12px] text-secondary flex-1 truncate">{name}</span>
                 <span className="font-sans text-[10.5px] text-muted shrink-0">{ext}</span>
               </div>
             )
@@ -709,13 +709,13 @@ function CasePreviewBody({ c, onViewCase, isStarred }) {
           <div className="space-y-3">
             {notes.map((note, i) => (
               <div key={i} className="flex gap-2.5">
-                <div className="w-6 h-6 rounded-full bg-sage-light flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="font-sans text-[10px] text-sage font-medium">
+                <div className="w-6 h-6 rounded-full bg-primary-light flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="font-sans text-[10px] text-primary font-medium">
                     {note.author.split(' ').map(p => p[0]).join('').slice(0, 2)}
                   </span>
                 </div>
                 <div className="flex-1">
-                  <div className="font-sans text-[12px] text-charcoal leading-snug">{note.text}</div>
+                  <div className="font-sans text-[12px] text-ink leading-snug">{note.text}</div>
                   <div className="font-sans text-[10.5px] text-muted mt-0.5">{note.author} · {note.time}</div>
                 </div>
               </div>
@@ -725,13 +725,13 @@ function CasePreviewBody({ c, onViewCase, isStarred }) {
       </div>
 
       {onViewCase && (
-        <div className="sticky bottom-0 px-6 py-3 bg-warm-white border-t border-border flex gap-2">
+        <div className="sticky bottom-0 px-6 py-3 bg-surface border-t border-line flex gap-2">
           <button onClick={() => onViewCase(c.id)}
-            className="flex-1 h-9 rounded-lg bg-charcoal hover:bg-charcoal/90 text-warm-white font-sans text-[12.5px] font-medium cursor-pointer transition-colors">
+            className="flex-1 h-9 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer transition-colors">
             Open case
           </button>
           {c.contactPhone && (
-            <button className="h-9 px-3 rounded-lg border border-border hover:bg-cream font-sans text-[12.5px] text-slate cursor-pointer flex items-center gap-1.5 transition-colors">
+            <button className="h-9 px-3 rounded-lg border border-line hover:bg-canvas font-sans text-[12.5px] text-secondary cursor-pointer flex items-center gap-1.5 transition-colors">
               <Phone size={13} /> Call
             </button>
           )}
@@ -771,11 +771,13 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
   const filtered = useMemo(() => {
     let rows = cases
 
-    if (folder === 'starred') rows = rows.filter(c => starredIds.has(c.id))
-    else if (folder === 'recent') rows = rows.filter(c => c.status !== 'complete')
-    else if (folder === 'unassigned') rows = rows.filter(c => !c.crematorium)
-    else if (folder === 'needs-attention') rows = rows.filter(c => c.status === 'pending' && (c.documents || []).length === 0)
-    else if (['pending', 'transit', 'cremation', 'complete'].includes(folder)) rows = rows.filter(c => c.status === folder)
+    if (viewMode === 'columns') {
+      if (folder === 'starred') rows = rows.filter(c => starredIds.has(c.id))
+      else if (folder === 'recent') rows = rows.filter(c => c.status !== 'complete')
+      else if (folder === 'unassigned') rows = rows.filter(c => !c.crematorium)
+      else if (folder === 'needs-attention') rows = rows.filter(c => c.status === 'pending' && (c.documents || []).length === 0)
+      else if (['pending', 'transit', 'cremation', 'complete'].includes(folder)) rows = rows.filter(c => c.status === folder)
+    }
 
     if (filters.starredOnly)      rows = rows.filter(c => starredIds.has(c.id))
     if (filters.hasDocs)          rows = rows.filter(c => (c.documents || []).length > 0)
@@ -824,7 +826,7 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
     })
 
     return rows
-  }, [cases, folder, search, filters, sortBy, starredIds])
+  }, [cases, folder, viewMode, search, filters, sortBy, starredIds])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -854,7 +856,7 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
   , [cases])
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white text-charcoal">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white text-ink">
       <TopBar
         search={search} setSearch={setSearch}
         view={viewMode} setView={setViewMode}

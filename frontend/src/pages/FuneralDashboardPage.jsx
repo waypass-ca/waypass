@@ -42,10 +42,10 @@ function activeSidebarItem(view) {
 function BlankPage({ title, description, icon }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-      <div className="w-12 h-12 rounded-xl bg-cream border border-border flex items-center justify-center mb-4">
+      <div className="w-12 h-12 rounded-xl bg-canvas border border-line flex items-center justify-center mb-4">
         {icon}
       </div>
-      <p className="font-display text-2xl text-charcoal mb-2">{title}</p>
+      <p className="font-display text-2xl text-ink mb-2">{title}</p>
       <p className="font-sans text-sm text-muted max-w-xs">{description}</p>
     </div>
   )
@@ -62,7 +62,7 @@ function LoadingState() {
 function ErrorState({ message }) {
   return (
     <div className="p-8 text-center">
-      <p className="font-sans text-sm text-red-soft">Failed to load: {message}</p>
+      <p className="font-sans text-sm text-danger">Failed to load: {message}</p>
     </div>
   )
 }
@@ -109,14 +109,14 @@ export function FuneralDashboardPage() {
   if (loading) return (
     <div className="flex h-[calc(100vh-54px)] overflow-hidden">
       <Sidebar activeItem="dashboard" onItemChange={() => {}} />
-      <main className="flex-1 px-8 py-7 bg-cream overflow-auto"><LoadingState /></main>
+      <main className="flex-1 px-8 py-7 bg-canvas overflow-auto"><LoadingState /></main>
     </div>
   )
 
   if (error) return (
     <div className="flex h-[calc(100vh-54px)] overflow-hidden">
       <Sidebar activeItem="dashboard" onItemChange={() => {}} />
-      <main className="flex-1 px-8 py-7 bg-cream overflow-auto"><ErrorState message={error} /></main>
+      <main className="flex-1 px-8 py-7 bg-canvas overflow-auto"><ErrorState message={error} /></main>
     </div>
   )
 
@@ -132,8 +132,14 @@ export function FuneralDashboardPage() {
 
       {view === 'cases' ? (
         <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} />
+      ) : view === 'case-detail' && selectedCase ? (
+        <CaseDetailPage
+          caseData={selectedCase}
+          onBack={() => navigate('cases')}
+          onStatusChange={handleCaseStatusChange}
+        />
       ) : (
-      <main className="flex-1 px-8 py-7 bg-cream overflow-auto">
+      <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
 
         {/* ── Dashboard ── */}
         {view === 'dashboard' && (
@@ -141,15 +147,6 @@ export function FuneralDashboardPage() {
             cases={cases}
             onViewCase={viewCase}
             onNewCase={() => setView('new-case')}
-          />
-        )}
-
-        {/* ── Case detail ── */}
-        {view === 'case-detail' && selectedCase && (
-          <CaseDetailPage
-            caseData={selectedCase}
-            onBack={() => navigate('cases')}
-            onStatusChange={handleCaseStatusChange}
           />
         )}
 
@@ -184,14 +181,14 @@ export function FuneralDashboardPage() {
         {view === 'documents' && (
           <>
             <PageHeader title="Documents" subtitle="All case documents in one place" date="March 10, 2024" />
-            <div className="bg-warm-white rounded-xl border border-border p-16 text-center">
-              <div className="w-12 h-12 rounded-xl bg-cream flex items-center justify-center mx-auto mb-4">
+            <div className="bg-surface rounded-xl border border-line p-16 text-center">
+              <div className="w-12 h-12 rounded-xl bg-canvas flex items-center justify-center mx-auto mb-4">
                 <svg className="w-6 h-6 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6M9 16h6M7 3H5a2 2 0 00-2 2v16a2 2 0 002 2h14a2 2 0 002-2V8l-5-5H7z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 3v5h5" />
                 </svg>
               </div>
-              <p className="font-display text-xl text-charcoal">Document Library</p>
+              <p className="font-display text-xl text-ink">Document Library</p>
               <p className="font-sans text-sm text-muted mt-2 max-w-xs mx-auto">
                 All documents across active cases will appear here. Upload documents from within individual case files.
               </p>

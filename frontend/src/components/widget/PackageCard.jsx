@@ -5,17 +5,17 @@ export function PackageCard({ pkg, selected, onSelect }) {
     <div
       onClick={onSelect}
       className={`
-        relative bg-warm-white rounded-xl p-6 cursor-pointer border-2 transition-all
+        relative bg-surface rounded-xl p-6 cursor-pointer border-2 transition-all
         ${selected
-          ? 'border-charcoal shadow-lg shadow-charcoal/10'
-          : 'border-border shadow-sm hover:shadow-md hover:border-slate/30'
+          ? 'border-ink shadow-lg shadow-ink/10'
+          : 'border-line shadow-sm hover:shadow-md hover:border-secondary/30'
         }
       `}
     >
       {/* Popular badge */}
       {pkg.popular && (
         <div className="absolute top-4 right-4">
-          <Badge variant="amber">Popular</Badge>
+          <Badge variant="warning">Popular</Badge>
         </div>
       )}
 
@@ -24,14 +24,14 @@ export function PackageCard({ pkg, selected, onSelect }) {
 
       {/* Price */}
       <div className="flex items-baseline gap-1 mb-4">
-        <span className="font-display text-4xl font-light text-charcoal">${pkg.price.toLocaleString()}</span>
+        <span className="font-display text-4xl font-light text-ink">${pkg.price.toLocaleString()}</span>
         <span className="text-sm text-muted font-sans">/service</span>
       </div>
 
       {/* Features */}
       <ul className="space-y-2 mb-6">
         {pkg.features.map((feature, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm font-sans text-slate">
+          <li key={i} className="flex items-start gap-2 text-sm font-sans text-secondary">
             <span className="text-muted mt-px">—</span>
             <span>{feature}</span>
           </li>
@@ -43,8 +43,8 @@ export function PackageCard({ pkg, selected, onSelect }) {
         className={`
           w-full py-2 rounded-lg text-center text-sm font-sans font-medium transition-all
           ${selected
-            ? 'bg-charcoal text-warm-white'
-            : 'border border-border text-muted'
+            ? 'bg-ink text-surface'
+            : 'border border-line text-muted'
           }
         `}
       >

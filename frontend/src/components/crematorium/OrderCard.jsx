@@ -3,7 +3,7 @@ import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 
 const CTA_MAP = {
-  0: { label: 'Accept Order', variant: 'sage' },
+  0: { label: 'Accept Order', variant: 'primary' },
   1: { label: 'Begin Cremation', variant: 'primary' },
   2: { label: 'Mark Complete', variant: 'primary' },
   3: { label: 'Complete', variant: 'secondary' },
@@ -14,41 +14,41 @@ export function OrderCard({ order, onAdvance }) {
   const isComplete = order.status === 3
 
   return (
-    <div className="bg-warm-white rounded-xl p-6 border border-border mb-4">
+    <div className="bg-surface rounded-xl p-6 border border-line mb-4">
       {/* Top row */}
       <div className="flex items-start justify-between mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="font-mono text-xs text-muted">{order.id}</span>
-            <Badge variant={order.tag === 'family' ? 'blue' : 'amber'}>
+            <Badge variant={order.tag === 'family' ? 'blue' : 'warning'}>
               {order.tag === 'family' ? 'Family Viewing' : 'Direct Order'}
             </Badge>
           </div>
-          <h3 className="font-display text-2xl text-charcoal">{order.name}</h3>
+          <h3 className="font-display text-2xl text-ink">{order.name}</h3>
         </div>
         <div className="text-right">
-          <p className="font-display text-2xl text-charcoal">${order.amount.toLocaleString()}</p>
+          <p className="font-display text-2xl text-ink">${order.amount.toLocaleString()}</p>
           <p className="font-sans text-xs text-muted mt-0.5">Fulfillment fee</p>
         </div>
       </div>
 
       {/* Meta row */}
-      <div className="grid grid-cols-4 gap-4 py-4 border-t border-b border-border mb-5">
+      <div className="grid grid-cols-4 gap-4 py-4 border-t border-b border-line mb-5">
         <div>
           <p className="font-sans text-xs text-muted uppercase tracking-wide">Funeral Home</p>
-          <p className="font-sans text-sm text-charcoal font-medium mt-1">{order.funeral_home}</p>
+          <p className="font-sans text-sm text-ink font-medium mt-1">{order.funeral_home}</p>
         </div>
         <div>
           <p className="font-sans text-xs text-muted uppercase tracking-wide">Package</p>
-          <p className="font-sans text-sm text-charcoal font-medium mt-1">{order.package}</p>
+          <p className="font-sans text-sm text-ink font-medium mt-1">{order.package}</p>
         </div>
         <div>
           <p className="font-sans text-xs text-muted uppercase tracking-wide">Received</p>
-          <p className="font-sans text-sm text-charcoal font-medium mt-1">{order.received}</p>
+          <p className="font-sans text-sm text-ink font-medium mt-1">{order.received}</p>
         </div>
         <div>
           <p className="font-sans text-xs text-muted uppercase tracking-wide">Scheduled</p>
-          <p className="font-sans text-sm text-charcoal font-medium mt-1">{order.scheduled}</p>
+          <p className="font-sans text-sm text-ink font-medium mt-1">{order.scheduled}</p>
         </div>
       </div>
 
@@ -61,11 +61,11 @@ export function OrderCard({ order, onAdvance }) {
       <div className="flex items-center justify-between pt-1">
         <div className="flex gap-2">
           <Button variant="secondary">View Documents</Button>
-          <Button variant="secondary">Message Funeral Home</Button>
+          <Button variant="secondary">Mesprimary Funeral Home</Button>
         </div>
 
         {isComplete ? (
-          <Badge variant="sage">Complete</Badge>
+          <Badge variant="primary">Complete</Badge>
         ) : (
           <Button
             variant={cta.variant}
