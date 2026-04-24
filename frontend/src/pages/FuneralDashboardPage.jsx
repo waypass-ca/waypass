@@ -107,21 +107,21 @@ export function FuneralDashboardPage() {
   const selectedCase = cases.find(c => c.id === selectedCaseId)
 
   if (loading) return (
-    <div className="flex min-h-screen">
+    <div className="flex h-[calc(100vh-54px)] overflow-hidden">
       <Sidebar activeItem="dashboard" onItemChange={() => {}} />
       <main className="flex-1 px-8 py-7 bg-cream overflow-auto"><LoadingState /></main>
     </div>
   )
 
   if (error) return (
-    <div className="flex min-h-screen">
+    <div className="flex h-[calc(100vh-54px)] overflow-hidden">
       <Sidebar activeItem="dashboard" onItemChange={() => {}} />
       <main className="flex-1 px-8 py-7 bg-cream overflow-auto"><ErrorState message={error} /></main>
     </div>
   )
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-[calc(100vh-54px)] overflow-hidden">
       <Sidebar
         activeItem={activeSidebarItem(view)}
         onItemChange={id => {
@@ -130,20 +130,14 @@ export function FuneralDashboardPage() {
         }}
       />
 
+      {view === 'cases' ? (
+        <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} />
+      ) : (
       <main className="flex-1 px-8 py-7 bg-cream overflow-auto">
 
         {/* ── Dashboard ── */}
         {view === 'dashboard' && (
           <HomeDashboard
-            cases={cases}
-            onViewCase={viewCase}
-            onNewCase={() => setView('new-case')}
-          />
-        )}
-
-        {/* ── Cases list ── */}
-        {view === 'cases' && (
-          <CasesPage
             cases={cases}
             onViewCase={viewCase}
             onNewCase={() => setView('new-case')}
@@ -242,6 +236,7 @@ export function FuneralDashboardPage() {
         {view === 'settings' && <SettingsPage />}
 
       </main>
+      )}
     </div>
   )
 }
