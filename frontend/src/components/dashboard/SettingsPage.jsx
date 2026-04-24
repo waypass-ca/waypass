@@ -7,7 +7,7 @@ const TABS = ['Profile', 'Branding', 'Notifications', 'Billing']
 function SectionHeader({ title, description }) {
   return (
     <div className="mb-5">
-      <h2 className="font-sans text-sm font-semibold text-charcoal">{title}</h2>
+      <h2 className="font-sans text-sm font-semibold text-ink">{title}</h2>
       {description && <p className="font-sans text-xs text-muted mt-0.5">{description}</p>}
     </div>
   )
@@ -21,7 +21,7 @@ function Field({ label, value, placeholder, type = 'text', hint }) {
         type={type}
         defaultValue={value}
         placeholder={placeholder}
-        className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+        className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
       />
       {hint && <p className="font-sans text-[11px] text-muted mt-1">{hint}</p>}
     </div>
@@ -31,14 +31,14 @@ function Field({ label, value, placeholder, type = 'text', hint }) {
 function Toggle({ label, description, defaultChecked = false }) {
   const [on, setOn] = useState(defaultChecked)
   return (
-    <div className="flex items-start justify-between py-4 border-b border-border last:border-0">
+    <div className="flex items-start justify-between py-4 border-b border-line last:border-0">
       <div>
-        <p className="font-sans text-sm font-medium text-charcoal">{label}</p>
+        <p className="font-sans text-sm font-medium text-ink">{label}</p>
         {description && <p className="font-sans text-xs text-muted mt-0.5">{description}</p>}
       </div>
       <button
         onClick={() => setOn(v => !v)}
-        className={`w-10 h-5 rounded-full transition-all cursor-pointer flex-shrink-0 ml-6 relative border-0 outline-none ${on ? 'bg-sage' : 'bg-border'}`}
+        className={`w-10 h-5 rounded-full transition-all cursor-pointer flex-shrink-0 ml-6 relative border-0 outline-none ${on ? 'bg-primary' : 'bg-line'}`}
       >
         <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${on ? 'left-5' : 'left-0.5'}`} />
       </button>
@@ -49,7 +49,7 @@ function Toggle({ label, description, defaultChecked = false }) {
 function ProfileTab() {
   return (
     <div className="space-y-6">
-      <div className="bg-warm-white rounded-xl border border-border p-6">
+      <div className="bg-surface rounded-xl border border-line p-6">
         <SectionHeader title="Funeral Home Details" description="This information appears on all family-facing materials." />
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
@@ -74,7 +74,7 @@ function ProfileTab() {
         </div>
       </div>
 
-      <div className="bg-warm-white rounded-xl border border-border p-6">
+      <div className="bg-surface rounded-xl border border-line p-6">
         <SectionHeader title="Account" description="Manage your login credentials." />
         <div className="grid grid-cols-2 gap-4">
           <Field label="Account Email" value="admin@evergreenememorial.com" type="email" />
@@ -91,14 +91,14 @@ function ProfileTab() {
 function BrandingTab() {
   return (
     <div className="space-y-6">
-      <div className="bg-warm-white rounded-xl border border-border p-6">
+      <div className="bg-surface rounded-xl border border-line p-6">
         <SectionHeader title="Widget Branding" description="Customise how the family booking widget appears to your families." />
 
         {/* Logo upload */}
         <div className="mb-5">
           <label className="block text-xs font-sans text-muted mb-2">Funeral Home Logo</label>
-          <div className="border-2 border-dashed border-border rounded-xl py-8 text-center hover:border-slate/40 transition-colors cursor-pointer">
-            <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center mx-auto mb-3">
+          <div className="border-2 border-dashed border-line rounded-xl py-8 text-center hover:border-secondary/40 transition-colors cursor-pointer">
+            <div className="w-10 h-10 rounded-xl bg-canvas flex items-center justify-center mx-auto mb-3">
               <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
@@ -113,24 +113,24 @@ function BrandingTab() {
           <div>
             <label className="block text-xs font-sans text-muted mb-1.5">Accent Color</label>
             <div className="flex items-center gap-3">
-              <input type="color" defaultValue="#6B8F71" className="w-10 h-10 rounded-lg border border-border cursor-pointer bg-white" />
-              <input type="text" defaultValue="#6B8F71" className="flex-1 border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal bg-white" />
+              <input type="color" defaultValue="#6B8F71" className="w-10 h-10 rounded-lg border border-line cursor-pointer bg-white" />
+              <input type="text" defaultValue="#6B8F71" className="flex-1 border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink bg-white" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Widget preview */}
-      <div className="bg-warm-white rounded-xl border border-border p-6">
+      <div className="bg-surface rounded-xl border border-line p-6">
         <SectionHeader title="Widget Preview" />
-        <div className="bg-cream rounded-xl p-6 text-center">
+        <div className="bg-canvas rounded-xl p-6 text-center">
           <p className="font-sans text-xs text-muted mb-1">Evergreen Memorial · Powered by Passage</p>
-          <p className="font-display text-2xl font-light text-charcoal">Cremation Services</p>
-          <p className="font-sans text-xs text-slate mt-1 max-w-xs mx-auto">
+          <p className="font-display text-2xl font-light text-ink">Cremation Services</p>
+          <p className="font-sans text-xs text-secondary mt-1 max-w-xs mx-auto">
             Transparent pricing, compassionate care. We guide your family through every step.
           </p>
           <div className="mt-4 inline-flex gap-2">
-            <div className="bg-white rounded-lg border-2 border-charcoal px-4 py-2 text-xs font-sans font-medium text-charcoal">Comfort — $1,395</div>
+            <div className="bg-white rounded-lg border-2 border-ink px-4 py-2 text-xs font-sans font-medium text-ink">Comfort — $1,395</div>
           </div>
         </div>
       </div>
@@ -140,7 +140,7 @@ function BrandingTab() {
 
 function NotificationsTab() {
   return (
-    <div className="bg-warm-white rounded-xl border border-border p-6">
+    <div className="bg-surface rounded-xl border border-line p-6">
       <SectionHeader title="Email Notifications" description="Choose which events trigger an email to your inbox." />
       <div>
         <Toggle label="New case submitted" description="When a family completes the booking widget" defaultChecked />
@@ -158,7 +158,7 @@ function BillingTab() {
   return (
     <div className="space-y-5">
       {/* Current plan */}
-      <div className="bg-charcoal rounded-xl p-6 text-warm-white">
+      <div className="bg-ink rounded-xl p-6 text-surface">
         <div className="flex items-start justify-between">
           <div>
             <p className="font-sans text-xs text-white/50 uppercase tracking-wide">Current Plan</p>
@@ -177,15 +177,15 @@ function BillingTab() {
       </div>
 
       {/* Payment method */}
-      <div className="bg-warm-white rounded-xl border border-border p-6">
+      <div className="bg-surface rounded-xl border border-line p-6">
         <SectionHeader title="Payment Method" />
-        <div className="flex items-center justify-between py-3 border border-border rounded-xl px-5">
+        <div className="flex items-center justify-between py-3 border border-line rounded-xl px-5">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-6 bg-blue-soft rounded flex items-center justify-center">
+            <div className="w-9 h-6 bg-info rounded flex items-center justify-center">
               <span className="text-white text-[10px] font-bold">VISA</span>
             </div>
             <div>
-              <p className="font-sans text-sm font-medium text-charcoal">•••• •••• •••• 4242</p>
+              <p className="font-sans text-sm font-medium text-ink">•••• •••• •••• 4242</p>
               <p className="font-sans text-xs text-muted">Expires 09/2026</p>
             </div>
           </div>
@@ -194,13 +194,13 @@ function BillingTab() {
       </div>
 
       {/* Billing history */}
-      <div className="bg-warm-white rounded-xl border border-border overflow-hidden">
-        <div className="px-6 py-4 border-b border-border">
-          <h2 className="font-display text-xl text-charcoal">Billing History</h2>
+      <div className="bg-surface rounded-xl border border-line overflow-hidden">
+        <div className="px-6 py-4 border-b border-line">
+          <h2 className="font-display text-xl text-ink">Billing History</h2>
         </div>
         <table className="w-full">
           <thead>
-            <tr className="bg-cream border-b border-border">
+            <tr className="bg-canvas border-b border-line">
               {['Date', 'Description', 'Amount', 'Receipt'].map(col => (
                 <th key={col} className="text-left px-6 py-3 text-xs font-sans font-medium text-muted uppercase tracking-wide">{col}</th>
               ))}
@@ -212,12 +212,12 @@ function BillingTab() {
               { date: 'Feb 1, 2024', desc: 'Professional Plan — February 2024', amount: '$199.00' },
               { date: 'Jan 1, 2024', desc: 'Professional Plan — January 2024', amount: '$199.00' },
             ].map((row, i) => (
-              <tr key={i} className="border-t border-border hover:bg-cream/50 transition-colors">
+              <tr key={i} className="border-t border-line hover:bg-canvas/50 transition-colors">
                 <td className="px-6 py-3"><span className="font-sans text-xs text-muted">{row.date}</span></td>
-                <td className="px-6 py-3"><span className="font-sans text-sm text-charcoal">{row.desc}</span></td>
-                <td className="px-6 py-3"><span className="font-sans text-sm font-medium text-charcoal">{row.amount}</span></td>
+                <td className="px-6 py-3"><span className="font-sans text-sm text-ink">{row.desc}</span></td>
+                <td className="px-6 py-3"><span className="font-sans text-sm font-medium text-ink">{row.amount}</span></td>
                 <td className="px-6 py-3">
-                  <button className="font-sans text-xs font-medium text-sage hover:text-sage/80 transition-colors cursor-pointer border-0 bg-transparent outline-none">
+                  <button className="font-sans text-xs font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer border-0 bg-transparent outline-none">
                     Download
                   </button>
                 </td>
@@ -241,14 +241,14 @@ export function SettingsPage() {
       <PageHeader title="Settings" subtitle="Manage your funeral home account"  />
 
       {/* Tab bar */}
-      <div className="flex gap-1 bg-warm-white border border-border rounded-xl p-1 mb-6 w-fit">
+      <div className="flex gap-1 bg-surface border border-line rounded-xl p-1 mb-6 w-fit">
         {TABS.map((tab, i) => (
           <button
             key={tab}
             onClick={() => setActiveTab(i)}
             className={`
               px-4 py-2 rounded-lg text-sm font-sans font-medium transition-all cursor-pointer border-0 outline-none
-              ${activeTab === i ? 'bg-charcoal text-warm-white' : 'text-slate hover:text-charcoal'}
+              ${activeTab === i ? 'bg-ink text-surface' : 'text-secondary hover:text-ink'}
             `}
           >
             {tab}

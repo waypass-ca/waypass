@@ -18,7 +18,7 @@ export function CrematoriumPortalPage() {
 
   if (initialOrders === null && !error) {
     return (
-      <div className="px-8 py-7 bg-cream min-h-screen flex items-center justify-center">
+      <div className="px-8 py-7 bg-canvas min-h-screen flex items-center justify-center">
         <p className="font-sans text-sm text-muted">Loading…</p>
       </div>
     )
@@ -26,14 +26,14 @@ export function CrematoriumPortalPage() {
 
   if (error) {
     return (
-      <div className="px-8 py-7 bg-cream min-h-screen">
-        <p className="font-sans text-sm text-red-soft">Failed to load orders: {error}</p>
+      <div className="px-8 py-7 bg-canvas min-h-screen">
+        <p className="font-sans text-sm text-danger">Failed to load orders: {error}</p>
       </div>
     )
   }
 
   return (
-    <div className="px-8 py-7 bg-cream min-h-screen">
+    <div className="px-8 py-7 bg-canvas min-h-screen">
       <PageHeader
         title="Crematorium Portal"
         subtitle="Evergreen Cremation Services · San Francisco, CA"
@@ -43,7 +43,7 @@ export function CrematoriumPortalPage() {
       <EarningsCard />
 
       <div className="mb-4">
-        <h2 className="font-display text-xl text-charcoal">Order Queue</h2>
+        <h2 className="font-display text-xl text-ink">Order Queue</h2>
         <p className="font-sans text-sm text-muted mt-0.5">{orders.length} active orders · click action buttons to advance status</p>
       </div>
 

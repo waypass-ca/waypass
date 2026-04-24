@@ -29,17 +29,17 @@ const MOCK_ALERTS = [
 
 function AlertRow({ caseId, deceasedName, reason, severity }) {
   return (
-    <div className="flex items-center justify-between py-3.5 border-b border-border last:border-0">
+    <div className="flex items-center justify-between py-3.5 border-b border-line last:border-0">
       <div className="flex items-center gap-4">
-        <div className={`w-1.5 h-8 rounded-full flex-shrink-0 ${severity === 'critical' ? 'bg-red-soft' : 'bg-amber'}`} />
+        <div className={`w-1.5 h-8 rounded-full flex-shrink-0 ${severity === 'critical' ? 'bg-danger' : 'bg-warning'}`} />
         <div>
-          <p className="font-sans text-sm font-medium text-charcoal">{deceasedName}</p>
+          <p className="font-sans text-sm font-medium text-ink">{deceasedName}</p>
           <p className="font-sans text-xs text-muted mt-0.5">{caseId}</p>
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <p className="font-sans text-sm text-slate">{reason}</p>
-        <Badge variant={severity === 'critical' ? 'red' : 'amber'}>
+        <p className="font-sans text-sm text-secondary">{reason}</p>
+        <Badge variant={severity === 'critical' ? 'red' : 'warning'}>
           {severity === 'critical' ? 'Critical' : 'Warning'}
         </Badge>
       </div>
@@ -49,14 +49,14 @@ function AlertRow({ caseId, deceasedName, reason, severity }) {
 
 export function OperationalAlerts({ alerts = MOCK_ALERTS }) {
   return (
-    <div className="bg-warm-white rounded-xl border border-border mb-6">
+    <div className="bg-surface rounded-xl border border-line mb-6">
       <div className="flex items-center justify-between px-5 pt-5 pb-3">
         <div>
-          <p className="font-display text-lg text-charcoal">Operational Alerts</p>
+          <p className="font-display text-lg text-ink">Operational Alerts</p>
           <p className="font-sans text-xs text-muted mt-0.5">Cases requiring immediate attention</p>
         </div>
         {alerts.length > 0 && (
-          <Badge variant={alerts.some(a => a.severity === 'critical') ? 'red' : 'amber'}>
+          <Badge variant={alerts.some(a => a.severity === 'critical') ? 'red' : 'warning'}>
             {alerts.length} flagged
           </Badge>
         )}
@@ -65,8 +65,8 @@ export function OperationalAlerts({ alerts = MOCK_ALERTS }) {
       <div className="px-5 pb-4">
         {alerts.length === 0 ? (
           <div className="py-8 text-center">
-            <div className="w-10 h-10 rounded-xl bg-cream flex items-center justify-center mx-auto mb-3">
-              <svg className="w-5 h-5 text-sage" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <div className="w-10 h-10 rounded-xl bg-canvas flex items-center justify-center mx-auto mb-3">
+              <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </div>

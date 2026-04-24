@@ -42,19 +42,19 @@ function StepIndicator({ currentStep }) {
             <div className="flex flex-col items-center">
               <div className={`
                 w-6 h-6 rounded-full flex items-center justify-center text-xs font-sans font-medium transition-all
-                ${isDone ? 'bg-sage text-white' : isActive ? 'bg-charcoal text-white' : 'bg-border text-muted'}
+                ${isDone ? 'bg-primary text-white' : isActive ? 'bg-ink text-white' : 'bg-line text-muted'}
               `}>
                 {isDone
                   ? <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                   : i + 1
                 }
               </div>
-              <span className={`text-[11px] font-sans mt-1 whitespace-nowrap ${isActive ? 'text-charcoal font-medium' : isDone ? 'text-sage' : 'text-muted'}`}>
+              <span className={`text-[11px] font-sans mt-1 whitespace-nowrap ${isActive ? 'text-ink font-medium' : isDone ? 'text-primary' : 'text-muted'}`}>
                 {label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`w-8 h-0.5 mx-1 mb-4 ${i < currentStep ? 'bg-sage' : 'bg-border'}`} />
+              <div className={`w-8 h-0.5 mx-1 mb-4 ${i < currentStep ? 'bg-primary' : 'bg-line'}`} />
             )}
           </div>
         )
@@ -72,7 +72,7 @@ function InputField({ label, placeholder, type = 'text', value, onChange }) {
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+        className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
       />
     </div>
   )
@@ -85,7 +85,7 @@ function SelectField({ label, options, value, onChange }) {
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full border border-border rounded-lg px-4 py-2.5 text-sm font-sans text-charcoal outline-none focus:border-charcoal transition-colors bg-white"
+        className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
       >
         <option value="">Select…</option>
         {options.map(o => <option key={o}>{o}</option>)}
@@ -101,16 +101,16 @@ function DocumentSlot({ label, doc, onUpload }) {
   const isError = doc.status === 'error'
 
   return (
-    <div className="flex items-center justify-between py-3.5 border-b border-border last:border-0">
+    <div className="flex items-center justify-between py-3.5 border-b border-line last:border-0">
       <div className="flex items-center gap-3">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-sage-light' : 'bg-cream'}`}>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-primary-light' : 'bg-canvas'}`}>
           {isUploading ? (
             <svg className="w-4 h-4 text-muted animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
           ) : (
-            <svg className={`w-4 h-4 ${isDone ? 'text-sage' : isError ? 'text-red-soft' : 'text-muted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className={`w-4 h-4 ${isDone ? 'text-primary' : isError ? 'text-danger' : 'text-muted'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               {isDone
                 ? <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 : <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
@@ -119,14 +119,14 @@ function DocumentSlot({ label, doc, onUpload }) {
           )}
         </div>
         <div>
-          <p className="font-sans text-sm font-medium text-charcoal">{label}</p>
+          <p className="font-sans text-sm font-medium text-ink">{label}</p>
           <p className="font-sans text-xs text-muted mt-0.5 max-w-[200px] truncate">
             {isDone ? doc.name : isError ? 'Upload failed — try again' : 'Required'}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <Badge variant={isDone ? 'sage' : isError ? 'red' : 'amber'}>
+        <Badge variant={isDone ? 'primary' : isError ? 'red' : 'warning'}>
           {isDone ? 'Uploaded' : isError ? 'Error' : 'Pending'}
         </Badge>
         <input
@@ -140,7 +140,7 @@ function DocumentSlot({ label, doc, onUpload }) {
           type="button"
           onClick={() => inputRef.current?.click()}
           disabled={isUploading}
-          className="text-xs font-sans text-slate hover:text-charcoal transition-colors border border-border rounded-lg px-3 py-1.5 bg-white hover:border-charcoal cursor-pointer outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-xs font-sans text-secondary hover:text-ink transition-colors border border-line rounded-lg px-3 py-1.5 bg-white hover:border-ink cursor-pointer outline-none disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isUploading ? 'Uploading…' : isDone ? 'Replace' : 'Upload'}
         </button>
@@ -155,32 +155,32 @@ function CrematoriumCard({ crm, selected, onSelect }) {
       onClick={crm.status === 'active' ? onSelect : undefined}
       className={`
         rounded-xl border-2 p-5 transition-all
-        ${crm.status !== 'active' ? 'opacity-50 cursor-not-allowed border-border' :
-          selected ? 'border-charcoal shadow-md cursor-pointer' : 'border-border cursor-pointer hover:border-slate/40 hover:shadow-sm'
+        ${crm.status !== 'active' ? 'opacity-50 cursor-not-allowed border-line' :
+          selected ? 'border-ink shadow-md cursor-pointer' : 'border-line cursor-pointer hover:border-secondary/40 hover:shadow-sm'
         }
       `}
     >
       <div className="flex items-start justify-between mb-3">
         <div>
-          <p className="font-sans font-semibold text-sm text-charcoal">{crm.name}</p>
+          <p className="font-sans font-semibold text-sm text-ink">{crm.name}</p>
           <p className="font-sans text-xs text-muted mt-0.5">{crm.location} · {crm.distance}</p>
         </div>
-        <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center flex-shrink-0 ${selected ? 'border-charcoal bg-charcoal' : 'border-gray-300'}`}>
+        <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center flex-shrink-0 ${selected ? 'border-ink bg-ink' : 'border-gray-300'}`}>
           {selected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border">
+      <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-line">
         <div>
           <p className="font-sans text-[10px] text-muted uppercase tracking-wide">Turnaround</p>
-          <p className="font-sans text-xs font-medium text-charcoal mt-0.5">{crm.avgTurnaround}</p>
+          <p className="font-sans text-xs font-medium text-ink mt-0.5">{crm.avgTurnaround}</p>
         </div>
         <div>
           <p className="font-sans text-[10px] text-muted uppercase tracking-wide">Avg Fee</p>
-          <p className="font-sans text-xs font-medium text-charcoal mt-0.5">{crm.avgFee}</p>
+          <p className="font-sans text-xs font-medium text-ink mt-0.5">{crm.avgFee}</p>
         </div>
         <div>
           <p className="font-sans text-[10px] text-muted uppercase tracking-wide">YTD</p>
-          <p className="font-sans text-xs font-medium text-charcoal mt-0.5">{crm.completedYTD} orders</p>
+          <p className="font-sans text-xs font-medium text-ink mt-0.5">{crm.completedYTD} orders</p>
         </div>
       </div>
     </div>
@@ -265,13 +265,13 @@ export function NewCasePage({ onBack, onComplete }) {
   if (isComplete) {
     return (
       <div className="flex flex-col items-center text-center py-16">
-        <div className="w-14 h-14 rounded-full bg-sage-light flex items-center justify-center text-2xl mb-5">
-          <svg className="w-7 h-7 text-sage" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="w-14 h-14 rounded-full bg-primary-light flex items-center justify-center text-2xl mb-5">
+          <svg className="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="font-display text-3xl text-charcoal">Case Created</h2>
-        <p className="font-sans text-sm text-slate mt-3 max-w-sm leading-relaxed">
+        <h2 className="font-display text-3xl text-ink">Case Created</h2>
+        <p className="font-sans text-sm text-secondary mt-3 max-w-sm leading-relaxed">
           The new case has been created and is now visible in your Cases list.
           The family will receive a confirmation email shortly.
         </p>
@@ -288,14 +288,14 @@ export function NewCasePage({ onBack, onComplete }) {
       <div className="mb-6">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-xs font-sans text-muted hover:text-charcoal transition-colors cursor-pointer border-0 bg-transparent outline-none mb-4"
+          className="flex items-center gap-1.5 text-xs font-sans text-muted hover:text-ink transition-colors cursor-pointer border-0 bg-transparent outline-none mb-4"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
           Cancel
         </button>
-        <h1 className="font-display text-3xl font-light text-charcoal">New Case</h1>
+        <h1 className="font-display text-3xl font-light text-ink">New Case</h1>
         <p className="font-sans text-sm text-muted mt-1">Create a new arrangement for a family.</p>
       </div>
 
@@ -303,8 +303,8 @@ export function NewCasePage({ onBack, onComplete }) {
 
       {/* Step 0 — First Call */}
       {step === 0 && (
-        <div className="bg-warm-white rounded-xl border border-border p-7 max-w-2xl m-auto">
-          <h2 className="font-sans text-sm font-semibold text-charcoal uppercase tracking-wide mb-5">First Call Information</h2>
+        <div className="bg-surface rounded-xl border border-line p-7 max-w-2xl m-auto">
+          <h2 className="font-sans text-sm font-semibold text-ink uppercase tracking-wide mb-5">First Call Information</h2>
           <div className="grid grid-cols-2 gap-4">
             <InputField label="First Name" placeholder="Deceased first name" value={firstCall.firstName} onChange={v => setFC('firstName', v)} />
             <InputField label="Last Name" placeholder="Deceased last name" value={firstCall.lastName} onChange={v => setFC('lastName', v)} />
@@ -320,7 +320,7 @@ export function NewCasePage({ onBack, onComplete }) {
             </div>
           </div>
 
-          <div className="border-t border-border mt-6 pt-6">
+          <div className="border-t border-line mt-6 pt-6">
             <h3 className="font-sans text-xs font-semibold text-muted uppercase tracking-wide mb-4">Next of Kin</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
@@ -347,14 +347,14 @@ export function NewCasePage({ onBack, onComplete }) {
 
       {/* Step 1 — Removal Log */}
       {step === 1 && (
-        <div className="bg-warm-white rounded-xl border border-border p-7 max-w-2xl m-auto">
-          <h2 className="font-sans text-sm font-semibold text-charcoal uppercase tracking-wide mb-1">Removal Log</h2>
+        <div className="bg-surface rounded-xl border border-line p-7 max-w-2xl m-auto">
+          <h2 className="font-sans text-sm font-semibold text-ink uppercase tracking-wide mb-1">Removal Log</h2>
 
-          <div className="flex items-start gap-2.5 bg-blue-light rounded-lg px-4 py-3 mb-6 mt-3">
-            <svg className="w-4 h-4 text-blue-soft flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="flex items-start gap-2.5 bg-info-tint rounded-lg px-4 py-3 mb-6 mt-3">
+            <svg className="w-4 h-4 text-info flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
             </svg>
-            <p className="font-sans text-xs text-blue-soft leading-relaxed">
+            <p className="font-sans text-xs text-info leading-relaxed">
               Saving this step automatically creates the first chain-of-custody entry for this case, timestamped to the time of removal.
             </p>
           </div>
@@ -391,8 +391,8 @@ export function NewCasePage({ onBack, onComplete }) {
 
       {/* Step 2 — Documents */}
       {step === 2 && (
-        <div className="bg-warm-white rounded-xl border border-border p-7 max-w-2xl m-auto">
-          <h2 className="font-sans text-sm font-semibold text-charcoal uppercase tracking-wide mb-1">Required Documents</h2>
+        <div className="bg-surface rounded-xl border border-line p-7 max-w-2xl m-auto">
+          <h2 className="font-sans text-sm font-semibold text-ink uppercase tracking-wide mb-1">Required Documents</h2>
           <p className="font-sans text-xs text-muted mb-6 mt-1">Upload documents now or continue — you can upload later from the case file.</p>
 
           <div>
@@ -414,7 +414,7 @@ export function NewCasePage({ onBack, onComplete }) {
           </div>
 
           <p className="font-sans text-xs text-muted mt-5 leading-relaxed">
-            Case will be flagged as <span className="text-amber font-medium">Authorization Pending</span> until all three documents are uploaded.
+            Case will be flagged as <span className="text-warning font-medium">Authorization Pending</span> until all three documents are uploaded.
           </p>
 
           <div className="flex justify-between mt-6">
@@ -471,7 +471,7 @@ export function NewCasePage({ onBack, onComplete }) {
       {/* Step 5 — Confirm */}
       {step === 5 && (
         <div className="max-w-2xl">
-          <div className="bg-charcoal rounded-xl p-6 text-warm-white mb-4">
+          <div className="bg-ink rounded-xl p-6 text-surface mb-4">
             <h3 className="font-display text-xl mb-5">Case Summary</h3>
             <div className="space-y-0">
               <div className="flex justify-between py-3 border-b border-white/10">
@@ -514,11 +514,11 @@ export function NewCasePage({ onBack, onComplete }) {
           </div>
 
           {submitError && (
-            <p className="font-sans text-xs text-red-soft mb-3">{submitError}</p>
+            <p className="font-sans text-xs text-danger mb-3">{submitError}</p>
           )}
           <div className="flex justify-between">
             <Button variant="secondary" onClick={() => setStep(4)}>← Back</Button>
-            <Button variant="sage" onClick={handleConfirm}>Create Case →</Button>
+            <Button variant="primary" onClick={handleConfirm}>Create Case →</Button>
           </div>
         </div>
       )}

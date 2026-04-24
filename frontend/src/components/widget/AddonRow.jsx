@@ -4,14 +4,14 @@ export function AddonRow({ addon, selected, onToggle }) {
       onClick={onToggle}
       className={`
         flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all
-        ${selected ? 'border-charcoal bg-warm-white' : 'border-border bg-warm-white hover:bg-cream'}
+        ${selected ? 'border-ink bg-surface' : 'border-line bg-surface hover:bg-canvas'}
       `}
     >
       {/* Circular checkbox */}
       <div
         className={`
           w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all
-          ${selected ? 'border-charcoal bg-charcoal' : 'border-gray-300 bg-white'}
+          ${selected ? 'border-ink bg-ink' : 'border-gray-300 bg-white'}
         `}
       >
         {selected && (
@@ -23,12 +23,12 @@ export function AddonRow({ addon, selected, onToggle }) {
 
       {/* Name + description */}
       <div className="flex-1 min-w-0">
-        <p className="font-sans font-medium text-sm text-charcoal">{addon.name}</p>
+        <p className="font-sans font-medium text-sm text-ink">{addon.name}</p>
         <p className="font-sans text-xs text-muted mt-0.5">{addon.description}</p>
       </div>
 
       {/* Price */}
-      <span className="font-sans text-sm font-medium text-slate flex-shrink-0">
+      <span className="font-sans text-sm font-medium text-secondary flex-shrink-0">
         +${addon.price}
       </span>
     </div>
