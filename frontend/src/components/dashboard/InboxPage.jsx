@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Bell, MessageSquare, Calendar, Star, Search, TriangleAlert,
   Check, Archive, X, Mail, Clock, CheckCheck, ChevronRight,
@@ -128,14 +129,21 @@ function TypeBadge({ type }) {
 // ─── Top bar ──────────────────────────────────────────────────────────────────
 function TopBar({ search, setSearch, category, setCategory, selected, onMarkAllRead, onArchiveSelected, onClearSelected, totalCount, unreadCount, unreadCounts }) {
   const [filterOpen, setFilterOpen] = useState(false)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
   const filterRef = useRef(null)
+  const dropdownRef = useRef(null)
 
   useEffect(() => {
     if (!filterOpen) return
-    const h = e => { if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false) }
+    const h = e => {
+      const inButton = filterRef.current?.contains(e.target)
+      const inDropdown = dropdownRef.current?.contains(e.target)
+      if (!inButton && !inDropdown) setFilterOpen(false)
+    }
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [filterOpen])
+  
 
   const filtersActive = category !== 'all' ? 1 : 0
 
@@ -178,65 +186,80 @@ function TopBar({ search, setSearch, category, setCategory, selected, onMarkAllR
             </div>
 
             <div className="flex items-center gap-2 ml-auto">
-            <div ref={filterRef} className="relative">
-              <button
-                onClick={() => setFilterOpen(o => !o)}
-                className={`relative h-9 w-9 rounded-lg border bg-white hover:bg-surface flex items-center justify-center cursor-pointer transition
-                  ${filterOpen || filtersActive ? 'border-ink text-ink' : 'border-line text-secondary'}`}
-              >
-                <Filter size={15} />
-                {filtersActive > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-ink text-surface font-sans text-[9px] font-medium flex items-center justify-center">
-                    {filtersActive}
-                  </span>
-                )}
-              </button>
+              <div ref={filterRef} className="relative">
+                <button
+                  onClick={() => {
+                    if (!filterOpen && filterRef.current) {
+                      const rect = filterRef.current.getBoundingClientRect()
+                      setDropdownPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right })
+                    }
+                    setFilterOpen(o => !o)
+                  }}
+                  className={`relative h-9 w-9 rounded-lg border bg-white hover:bg-surface flex items-center justify-center cursor-pointer transition
+                    ${filterOpen || filtersActive ? 'border-ink text-ink' : 'border-line text-secondary'}`}
+                >
+                  <Filter size={15} />
+                  {filtersActive > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-ink text-surface font-sans text-[9px] font-medium flex items-center justify-center">
+                      {filtersActive}
+                    </span>
+                  )}
+                </button>
 
-              {filterOpen && (
-                <div className="absolute left-0 top-[calc(100%+6px)] w-56 bg-surface border border-line rounded-xl shadow-[0_12px_32px_-8px_rgba(28,28,30,0.18)] z-[60] overflow-hidden">
-                  <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-line">
-                    <span className="font-sans text-[12px] font-medium text-ink">Filter by type</span>
-                    {category !== 'all' && (
-                      <button onClick={() => setCategory('all')} className="font-sans text-[11px] text-danger hover:underline cursor-pointer">
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <div className="p-2">
-                    {CATEGORIES.map(cat => {
-                      const Icon = cat.icon
-                      const unread = unreadCounts[cat.id] || 0
-                      const isActive = category === cat.id
-                      return (
-                        <button
-                          key={cat.id}
-                          onClick={() => { setCategory(cat.id); setFilterOpen(false) }}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer border-0 outline-none
-                            ${isActive ? 'bg-ink text-surface' : 'hover:bg-canvas text-secondary'}`}
-                        >
-                          <Icon size={13} className={isActive ? 'text-surface' : 'text-muted'} strokeWidth={1.8} />
-                          <span className="font-sans text-[12.5px] flex-1">{cat.label}</span>
-                          {unread > 0 && (
-                            <span className={`font-sans text-[10.5px] font-semibold px-1.5 py-px rounded-full leading-none
-                              ${isActive ? 'bg-surface/20 text-surface' : 'bg-ink/10 text-ink'}`}>
-                              {unread}
-                            </span>
-                          )}
+                {filterOpen && createPortal(
+                  <div
+                    ref={dropdownRef}
+                    style={{ position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }}
+                    className="w-56 bg-surface border border-line rounded-xl shadow-[0_12px_32px_-8px_rgba(28,28,30,0.18)]"
+                  >
+                    <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-line">
+                      <span className="font-sans text-[12px] font-medium text-ink">Filter by type</span>
+                      {category !== 'all' && (
+                        <button onClick={() => setCategory('all')} className="font-sans text-[11px] text-danger hover:underline cursor-pointer border-0 bg-transparent outline-none">
+                          Clear
                         </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      {CATEGORIES.map(cat => {
+                        const Icon = cat.icon
+                        const unread = unreadCounts[cat.id] || 0
+                        const isActive = category === cat.id
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => { setCategory(cat.id); setFilterOpen(false) }}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer border-0 outline-none
+                              ${isActive ? 'bg-ink text-surface' : 'hover:bg-canvas text-secondary'}`}
+                          >
+                            <Icon size={13} className={isActive ? 'text-surface' : 'text-muted'} strokeWidth={1.8} />
+                            <span className="font-sans text-[12.5px] flex-1">{cat.label}</span>
+                            {unread > 0 && (
+                              <span className={`font-sans text-[10.5px] font-semibold px-1.5 py-px rounded-full leading-none
+                                ${isActive ? 'bg-surface/20 text-surface' : 'bg-ink/10 text-ink'}`}>
+                                {unread}
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <div className="px-4 py-2.5 border-t border-line flex items-center justify-between">
+                      <span className="font-sans text-[11px] text-muted">{filtersActive === 0 ? 'No filters applied' : `${filtersActive} active`}</span>
+                      <button onClick={() => setFilterOpen(false)} className="h-7 px-3 rounded-md bg-ink text-surface font-sans text-[11.5px] cursor-pointer border-0 outline-none">Done</button>
+                    </div>
+                  </div>,
+                  document.body
+                )}
+              </div>
 
-            <button
-              onClick={onMarkAllRead}
-              className="h-9 px-3.5 rounded-lg bg-white border border-line hover:bg-canvas text-secondary font-sans text-[12.5px] font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-            >
-              <CheckCheck size={14} />
-              Mark all read
-            </button>
+              <button
+                onClick={onMarkAllRead}
+                className="h-9 px-3.5 rounded-lg bg-white border border-line hover:bg-canvas text-secondary font-sans text-[12.5px] font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              >
+                <CheckCheck size={14} />
+                Mark all read
+              </button>
             </div>
           </>
         )}
