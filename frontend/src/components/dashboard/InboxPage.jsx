@@ -144,15 +144,18 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
   })
 
   const setDatePreset = (id) => setFilters(f => ({ ...f, datePreset: f.datePreset === id ? '' : id }))
-  const clearAll = () => setFilters({ types: new Set(), datePreset: '' })
+  const setReadStatus = (id) => setFilters(f => ({ ...f, readStatus: f.readStatus === id ? '' : id }))
+  const clearAll = () => setFilters({ types: new Set(), datePreset: '', readStatus: '' })
 
-  const filtersActive = filters.types.size + (filters.datePreset ? 1 : 0)
+  const filtersActive = filters.types.size + (filters.datePreset ? 1 : 0) + (filters.readStatus ? 1 : 0)
 
   return (
     <div className="border-b border-line bg-surface/80 backdrop-blur shrink-0">
-      <div className="px-6 pt-5 pb-3">
+      <div className="flex items-center gap-1.5 font-sans text-[11.5px] text-muted mb-1.5">
+      </div>
+      <div className="px-6 pt-5 pb-4 flex items-baseline gap-3">
         <h1 className="font-display font-light text-[30px] leading-none text-ink">Inbox</h1>
-        <p className="font-sans text-[12px] text-muted mt-1">
+        <p className="font-sans text-[12.5px] text-muted ">
           {unreadCount > 0 ? `${unreadCount} unread · ` : ''}{totalCount} total
         </p>
       </div>
@@ -262,6 +265,26 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
                             const on = filters.datePreset === id
                             return (
                               <button key={id} onClick={() => setDatePreset(id)}
+                                className={`px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
+                                  ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Read status */}
+                      <div className="px-4 pb-3 border-t border-line/60 pt-3">
+                        <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Read</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { id: 'unread', label: 'Unread' },
+                            { id: 'read',   label: 'Read'   },
+                          ].map(({ id, label }) => {
+                            const on = filters.readStatus === id
+                            return (
+                              <button key={id} onClick={() => setReadStatus(id)}
                                 className={`px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
                                   ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
                                 {label}
@@ -509,7 +532,7 @@ function StatusFooter({ count, unread }) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 export function InboxPage() {
   const [items, setItems] = useState(INITIAL_ITEMS)
-  const [filters, setFilters] = useState({ types: new Set(), datePreset: '' })
+  const [filters, setFilters] = useState({ types: new Set(), datePreset: '', readStatus: '' })
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
   const [activeId, setActiveId] = useState(null)
@@ -527,6 +550,8 @@ export function InboxPage() {
       }[filters.datePreset]
       rows = rows.filter(r => new Date(r.date) >= cutoff)
     }
+    if (filters.readStatus === 'unread') rows = rows.filter(r => !r.read)
+    if (filters.readStatus === 'read')   rows = rows.filter(r => r.read)
     if (search.trim()) {
       const q = search.toLowerCase()
       rows = rows.filter(r =>
