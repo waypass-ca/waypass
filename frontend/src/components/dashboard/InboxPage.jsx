@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  Bell, MessageSquare, Calendar, Star, Search, TriangleAlert,
+  Star, Search, TriangleAlert,
   Check, Archive, X, Mail, Clock, CheckCheck, ChevronRight,
   AlertCircle, Info, Inbox, Filter,
 } from 'lucide-react'
@@ -91,13 +91,6 @@ const INITIAL_ITEMS = [
 ]
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const CATEGORIES = [
-  { id: 'all',      label: 'All',       icon: Inbox },
-  { id: 'alert',    label: 'Alerts',    icon: Bell },
-  { id: 'message',  label: 'Messages',  icon: MessageSquare },
-  { id: 'schedule', label: 'Scheduling', icon: Calendar },
-]
-
 const SEVERITY_CONFIG = {
   danger:  { icon: AlertCircle, text: 'text-danger', bg: 'bg-danger-tint', border: 'border-danger/25', dot: 'bg-danger' },
   warning: { icon: TriangleAlert, text: 'text-warning', bg: 'bg-warning-light', border: 'border-warning/25', dot: 'bg-warning' },
@@ -127,7 +120,7 @@ function TypeBadge({ type }) {
 }
 
 // ─── Top bar ──────────────────────────────────────────────────────────────────
-function TopBar({ search, setSearch, category, setCategory, selected, onMarkAllRead, onArchiveSelected, onClearSelected, totalCount, unreadCount, unreadCounts }) {
+function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRead, onArchiveSelected, onClearSelected, totalCount, unreadCount }) {
   const [filterOpen, setFilterOpen] = useState(false)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
   const filterRef = useRef(null)
@@ -143,9 +136,17 @@ function TopBar({ search, setSearch, category, setCategory, selected, onMarkAllR
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [filterOpen])
-  
 
-  const filtersActive = category !== 'all' ? 1 : 0
+  const toggleType = (type) => setFilters(f => {
+    const types = new Set(f.types)
+    types.has(type) ? types.delete(type) : types.add(type)
+    return { ...f, types }
+  })
+
+  const setDatePreset = (id) => setFilters(f => ({ ...f, datePreset: f.datePreset === id ? '' : id }))
+  const clearAll = () => setFilters({ types: new Set(), datePreset: '' })
+
+  const filtersActive = filters.types.size + (filters.datePreset ? 1 : 0)
 
   return (
     <div className="border-b border-line bg-surface/80 backdrop-blur shrink-0">
@@ -210,41 +211,69 @@ function TopBar({ search, setSearch, category, setCategory, selected, onMarkAllR
                   <div
                     ref={dropdownRef}
                     style={{ position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }}
-                    className="w-56 bg-surface border border-line rounded-xl shadow-[0_12px_32px_-8px_rgba(28,28,30,0.18)]"
+                    className="w-72 bg-surface border border-line rounded-xl shadow-[0_12px_32px_-8px_rgba(28,28,30,0.18)] overflow-hidden flex flex-col"
                   >
-                    <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-line">
-                      <span className="font-sans text-[12px] font-medium text-ink">Filter by type</span>
-                      {category !== 'all' && (
-                        <button onClick={() => setCategory('all')} className="font-sans text-[11px] text-danger hover:underline cursor-pointer border-0 bg-transparent outline-none">
-                          Clear
-                        </button>
-                      )}
+                    {/* Header */}
+                    <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-line shrink-0">
+                      <div className="font-sans text-[12px] font-medium text-ink">Filters</div>
+                      <button
+                        onClick={clearAll}
+                        disabled={!filtersActive}
+                        className={`font-sans text-[11px] border-0 bg-transparent outline-none ${filtersActive ? 'text-danger hover:underline cursor-pointer' : 'text-muted cursor-default'}`}
+                      >
+                        Clear all
+                      </button>
                     </div>
-                    <div className="p-2">
-                      {CATEGORIES.map(cat => {
-                        const Icon = cat.icon
-                        const unread = unreadCounts[cat.id] || 0
-                        const isActive = category === cat.id
-                        return (
-                          <button
-                            key={cat.id}
-                            onClick={() => { setCategory(cat.id); setFilterOpen(false) }}
-                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer border-0 outline-none
-                              ${isActive ? 'bg-ink text-surface' : 'hover:bg-canvas text-secondary'}`}
-                          >
-                            <Icon size={13} className={isActive ? 'text-surface' : 'text-muted'} strokeWidth={1.8} />
-                            <span className="font-sans text-[12.5px] flex-1">{cat.label}</span>
-                            {unread > 0 && (
-                              <span className={`font-sans text-[10.5px] font-semibold px-1.5 py-px rounded-full leading-none
-                                ${isActive ? 'bg-surface/20 text-surface' : 'bg-ink/10 text-ink'}`}>
-                                {unread}
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })}
+
+                    {/* Body */}
+                    <div className="bg-white">
+                      {/* Message Type */}
+                      <div className="px-4 pt-3 pb-3">
+                        <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Message Type</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { id: 'alert',    label: 'Alerts',     dot: 'bg-warning' },
+                            { id: 'message',  label: 'Messages',   dot: 'bg-primary' },
+                            { id: 'schedule', label: 'Scheduling', dot: 'bg-info'    },
+                          ].map(({ id, label, dot }) => {
+                            const on = filters.types.has(id)
+                            return (
+                              <button key={id} onClick={() => toggleType(id)}
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
+                                  ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${on ? 'bg-white/60' : dot}`} />
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Date */}
+                      <div className="px-4 pb-3 border-t border-line/60 pt-3">
+                        <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Date</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {[
+                            { id: '7d',  label: 'Last 7 days'   },
+                            { id: '30d', label: 'Last 30 days'  },
+                            { id: '3m',  label: 'Last 3 months' },
+                            { id: '1y',  label: 'This year'     },
+                          ].map(({ id, label }) => {
+                            const on = filters.datePreset === id
+                            return (
+                              <button key={id} onClick={() => setDatePreset(id)}
+                                className={`px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
+                                  ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
                     </div>
-                    <div className="px-4 py-2.5 border-t border-line flex items-center justify-between">
+
+                    {/* Footer */}
+                    <div className="px-4 py-2.5 border-t border-line bg-surface flex items-center justify-between shrink-0">
                       <span className="font-sans text-[11px] text-muted">{filtersActive === 0 ? 'No filters applied' : `${filtersActive} active`}</span>
                       <button onClick={() => setFilterOpen(false)} className="h-7 px-3 rounded-md bg-ink text-surface font-sans text-[11.5px] cursor-pointer border-0 outline-none">Done</button>
                     </div>
@@ -480,14 +509,24 @@ function StatusFooter({ count, unread }) {
 // ─── Main export ──────────────────────────────────────────────────────────────
 export function InboxPage() {
   const [items, setItems] = useState(INITIAL_ITEMS)
-  const [category, setCategory] = useState('all')
+  const [filters, setFilters] = useState({ types: new Set(), datePreset: '' })
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
   const [activeId, setActiveId] = useState(null)
 
   const filtered = useMemo(() => {
     let rows = items
-    if (category !== 'all') rows = rows.filter(r => r.type === category)
+    if (filters.types.size > 0) rows = rows.filter(r => filters.types.has(r.type))
+    if (filters.datePreset) {
+      const now = new Date()
+      const cutoff = {
+        '7d':  new Date(now - 7  * 86400000),
+        '30d': new Date(now - 30 * 86400000),
+        '3m':  new Date(now - 90 * 86400000),
+        '1y':  new Date(now.getFullYear(), 0, 1),
+      }[filters.datePreset]
+      rows = rows.filter(r => new Date(r.date) >= cutoff)
+    }
     if (search.trim()) {
       const q = search.toLowerCase()
       rows = rows.filter(r =>
@@ -498,17 +537,7 @@ export function InboxPage() {
       )
     }
     return rows
-  }, [items, category, search])
-
-  const unreadCounts = useMemo(() => {
-    const all = items.filter(i => !i.read).length
-    return {
-      all,
-      alert:    items.filter(i => i.type === 'alert'    && !i.read).length,
-      message:  items.filter(i => i.type === 'message'  && !i.read).length,
-      schedule: items.filter(i => i.type === 'schedule' && !i.read).length,
-    }
-  }, [items])
+  }, [items, filters, search])
 
   const activeItem = activeId ? items.find(i => i.id === activeId) : null
 
@@ -527,7 +556,7 @@ export function InboxPage() {
 
   function markAllRead() {
     setItems(prev => prev.map(i =>
-      (category === 'all' || i.type === category) ? { ...i, read: true } : i
+      (filters.types.size === 0 || filters.types.has(i.type)) ? { ...i, read: true } : i
     ))
   }
 
@@ -547,15 +576,14 @@ export function InboxPage() {
         <TopBar
           search={search}
           setSearch={setSearch}
-          category={category}
-          setCategory={setCategory}
+          filters={filters}
+          setFilters={setFilters}
           selected={selected}
           onMarkAllRead={markAllRead}
           onArchiveSelected={archiveSelected}
           onClearSelected={() => setSelected(new Set())}
           totalCount={filtered.length}
           unreadCount={filtered.filter(i => !i.read).length}
-          unreadCounts={unreadCounts}
         />
 
         <div className="flex-1 flex min-h-0 overflow-hidden">
