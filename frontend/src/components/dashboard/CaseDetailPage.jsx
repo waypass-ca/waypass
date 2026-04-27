@@ -795,7 +795,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
 
           {/* ── Documents tab ── */}
           {activeTab === 'documents' && (
-            <div className="max-w-2xl mx-auto px-4 py-6">
+            <div className="max-w-2xl mx-auto px-8 py-6">
               <div className="flex justify-end gap-2 mb-6 -mx-4">
                 {docsActionNeeded && (
                   <button
