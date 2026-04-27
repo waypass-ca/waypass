@@ -9,6 +9,7 @@ import { NewCasePage } from '../components/dashboard/NewCasePage'
 import { CrematoriumsPage } from '../components/dashboard/CrematoriumsPage'
 import { NewCrematoriumPage } from '../components/dashboard/NewCrematoriumPage'
 import { RevenuePage } from '../components/dashboard/RevenuePage'
+import { InboxPage } from '../components/dashboard/InboxPage'
 import { SettingsPage } from '../components/dashboard/SettingsPage'
 import { FamilyPageEditorPage } from '../components/dashboard/FamilyPageEditorPage'
 import { Button } from '../components/ui/Button'
@@ -130,7 +131,9 @@ export function FuneralDashboardPage() {
         }}
       />
 
-      {view === 'cases' ? (
+      {view === 'inbox' ? (
+        <InboxPage />
+      ) : view === 'cases' ? (
         <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} />
       ) : view === 'case-detail' && selectedCase ? (
         <CaseDetailPage
@@ -197,15 +200,6 @@ export function FuneralDashboardPage() {
               </div>
             </div>
           </>
-        )}
-
-        {/* ── Inbox ── */}
-        {view === 'inbox' && (
-          <BlankPage
-            title="Inbox"
-            description="Notifications and messages from families and crematory partners will appear here."
-            icon={<svg className="w-6 h-6 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0H4m13 0l-3 3m0 0l-3-3" /></svg>}
-          />
         )}
 
         {/* ── Book cremation ── */}
