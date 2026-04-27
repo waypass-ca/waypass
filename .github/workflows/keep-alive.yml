@@ -2,7 +2,7 @@ name: Keep Supabase Alive
 
 on:
   schedule:
-    - cron: '0 12 */3 * *'  # runs every 3 days at noon UTC
+    - cron: "0 12 */3 * *" # runs every 3 days at noon UTC
   workflow_dispatch:
 
 jobs:
@@ -12,14 +12,16 @@ jobs:
       - name: Query Supabase to prevent pausing
         run: |
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive?select=last_ping&limit=1" \
+            -X PATCH \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive?id=eq.true" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Accept: application/json")
+            -H "Content-Type: application/json" \
+            -d '{"last_ping": "now()"}')
 
           echo "Response code: $RESPONSE"
 
-          if [ "$RESPONSE" -ne 200 ]; then
+          if [ "$RESPONSE" -ne 204 ]; then
             echo "Unexpected response: $RESPONSE"
             exit 1
           fi
