@@ -1,80 +1,83 @@
-# Graph Report - .  (2026-04-12)
+# Graph Report - .  (2026-04-28)
 
 ## Corpus Check
-- Corpus is ~24,249 words - fits in a single context window. You may not need a graph.
+- 64 files · ~31,753 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 186 nodes · 156 edges · 61 communities detected
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 7 edges (avg confidence: 0.8)
+- 216 nodes · 185 edges · 63 communities detected
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 5 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Backend API Layer|Backend API Layer]]
-- [[_COMMUNITY_Dev Tooling & Build Assets|Dev Tooling & Build Assets]]
-- [[_COMMUNITY_Case Detail & Authorization|Case Detail & Authorization]]
-- [[_COMMUNITY_Family Portal Editor|Family Portal Editor]]
-- [[_COMMUNITY_Settings & Admin|Settings & Admin]]
-- [[_COMMUNITY_New Case Workflow|New Case Workflow]]
-- [[_COMMUNITY_Family Widget Steps|Family Widget Steps]]
-- [[_COMMUNITY_Crematorium Management|Crematorium Management]]
+- [[_COMMUNITY_Backend API Handlers|Backend API Handlers]]
+- [[_COMMUNITY_Cases List UI|Cases List UI]]
+- [[_COMMUNITY_Vite Build Tooling|Vite Build Tooling]]
+- [[_COMMUNITY_Case Detail UI|Case Detail UI]]
+- [[_COMMUNITY_Family Page Editor|Family Page Editor]]
+- [[_COMMUNITY_Settings Page|Settings Page]]
+- [[_COMMUNITY_Inbox Messaging|Inbox Messaging]]
+- [[_COMMUNITY_New Case Wizard|New Case Wizard]]
+- [[_COMMUNITY_Family Widget Flow|Family Widget Flow]]
+- [[_COMMUNITY_Home Dashboard|Home Dashboard]]
+- [[_COMMUNITY_Crematoriums Management|Crematoriums Management]]
+- [[_COMMUNITY_App Shell & States|App Shell & States]]
 - [[_COMMUNITY_New Crematorium Wizard|New Crematorium Wizard]]
-- [[_COMMUNITY_Funeral Dashboard Shell|Funeral Dashboard Shell]]
-- [[_COMMUNITY_App Root & Routing|App Root & Routing]]
+- [[_COMMUNITY_Sidebar Navigation|Sidebar Navigation]]
+- [[_COMMUNITY_Test Utilities|Test Utilities]]
+- [[_COMMUNITY_App Root|App Root]]
 - [[_COMMUNITY_Auth Context|Auth Context]]
 - [[_COMMUNITY_Operational Alerts|Operational Alerts]]
-- [[_COMMUNITY_Backend Test Setup|Backend Test Setup]]
-- [[_COMMUNITY_UI Button Component|UI Button Component]]
-- [[_COMMUNITY_UI Badge Component|UI Badge Component]]
-- [[_COMMUNITY_Status Pill Component|Status Pill Component]]
-- [[_COMMUNITY_Stat Card Component|Stat Card Component]]
-- [[_COMMUNITY_Progress Track Component|Progress Track Component]]
-- [[_COMMUNITY_Crematorium Order Queue|Crematorium Order Queue]]
-- [[_COMMUNITY_Crematorium Order Card|Crematorium Order Card]]
-- [[_COMMUNITY_Crematorium Earnings Card|Crematorium Earnings Card]]
-- [[_COMMUNITY_Widget Order Summary|Widget Order Summary]]
-- [[_COMMUNITY_Widget Addon Row|Widget Addon Row]]
-- [[_COMMUNITY_Widget Success Screen|Widget Success Screen]]
-- [[_COMMUNITY_Widget Package Card|Widget Package Card]]
+- [[_COMMUNITY_Auth Middleware|Auth Middleware]]
+- [[_COMMUNITY_Auth Tests|Auth Tests]]
+- [[_COMMUNITY_Database Seeding|Database Seeding]]
+- [[_COMMUNITY_Cases Route|Cases Route]]
+- [[_COMMUNITY_Portal Route|Portal Route]]
+- [[_COMMUNITY_Crematoriums Route|Crematoriums Route]]
+- [[_COMMUNITY_Button Component|Button Component]]
+- [[_COMMUNITY_Badge Component|Badge Component]]
+- [[_COMMUNITY_Status Pill|Status Pill]]
+- [[_COMMUNITY_Stat Card|Stat Card]]
+- [[_COMMUNITY_Progress Track|Progress Track]]
+- [[_COMMUNITY_Order Queue|Order Queue]]
+- [[_COMMUNITY_Order Card|Order Card]]
+- [[_COMMUNITY_Earnings Card|Earnings Card]]
+- [[_COMMUNITY_Order Summary|Order Summary]]
+- [[_COMMUNITY_Addon Row|Addon Row]]
+- [[_COMMUNITY_Success Screen|Success Screen]]
+- [[_COMMUNITY_Package Card|Package Card]]
 - [[_COMMUNITY_Login Screen|Login Screen]]
-- [[_COMMUNITY_Sidebar Layout|Sidebar Layout]]
-- [[_COMMUNITY_Navbar Layout|Navbar Layout]]
-- [[_COMMUNITY_Page Header Layout|Page Header Layout]]
-- [[_COMMUNITY_Cases Page|Cases Page]]
+- [[_COMMUNITY_Navbar|Navbar]]
+- [[_COMMUNITY_Page Header|Page Header]]
 - [[_COMMUNITY_Revenue Page|Revenue Page]]
 - [[_COMMUNITY_Cases Table|Cases Table]]
 - [[_COMMUNITY_Revenue Chart|Revenue Chart]]
 - [[_COMMUNITY_Stats Row|Stats Row]]
-- [[_COMMUNITY_useOrders Hook|useOrders Hook]]
-- [[_COMMUNITY_Crematorium Portal Page|Crematorium Portal Page]]
-- [[_COMMUNITY_Auth Middleware|Auth Middleware]]
-- [[_COMMUNITY_Auth Middleware Tests|Auth Middleware Tests]]
-- [[_COMMUNITY_Database Seed Script|Database Seed Script]]
-- [[_COMMUNITY_Cases Route|Cases Route]]
-- [[_COMMUNITY_Portal Route|Portal Route]]
-- [[_COMMUNITY_Crematoriums Route|Crematoriums Route]]
-- [[_COMMUNITY_Vite Config|Vite Config]]
-- [[_COMMUNITY_ESLint Config|ESLint Config]]
-- [[_COMMUNITY_App Entry Point|App Entry Point]]
-- [[_COMMUNITY_Frontend Supabase Client|Frontend Supabase Client]]
-- [[_COMMUNITY_Mock Data|Mock Data]]
-- [[_COMMUNITY_Backend Server|Backend Server]]
-- [[_COMMUNITY_Vitest Config|Vitest Config]]
-- [[_COMMUNITY_Packages Route Tests|Packages Route Tests]]
-- [[_COMMUNITY_Cases Route Tests|Cases Route Tests]]
-- [[_COMMUNITY_Health Route Tests|Health Route Tests]]
-- [[_COMMUNITY_Orders Route Tests|Orders Route Tests]]
-- [[_COMMUNITY_Addons Route Tests|Addons Route Tests]]
-- [[_COMMUNITY_Portal Route Tests|Portal Route Tests]]
-- [[_COMMUNITY_Crematoriums Route Tests|Crematoriums Route Tests]]
-- [[_COMMUNITY_Backend Supabase Client|Backend Supabase Client]]
+- [[_COMMUNITY_Orders Hook|Orders Hook]]
+- [[_COMMUNITY_Crematorium Portal|Crematorium Portal]]
+- [[_COMMUNITY_Express Server|Express Server]]
+- [[_COMMUNITY_Test Config|Test Config]]
+- [[_COMMUNITY_Packages Tests|Packages Tests]]
+- [[_COMMUNITY_Cases Tests|Cases Tests]]
+- [[_COMMUNITY_Health Tests|Health Tests]]
+- [[_COMMUNITY_Orders Tests|Orders Tests]]
+- [[_COMMUNITY_Addons Tests|Addons Tests]]
+- [[_COMMUNITY_Portal Tests|Portal Tests]]
+- [[_COMMUNITY_Crematoriums Tests|Crematoriums Tests]]
+- [[_COMMUNITY_Supabase Client (Backend)|Supabase Client (Backend)]]
 - [[_COMMUNITY_Addons Route|Addons Route]]
 - [[_COMMUNITY_Orders Route|Orders Route]]
 - [[_COMMUNITY_Packages Route|Packages Route]]
+- [[_COMMUNITY_Vite Config|Vite Config]]
+- [[_COMMUNITY_ESLint Config|ESLint Config]]
+- [[_COMMUNITY_React Entry Point|React Entry Point]]
+- [[_COMMUNITY_Supabase Client (Frontend)|Supabase Client (Frontend)]]
+- [[_COMMUNITY_Mock Data|Mock Data]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `mutate()` - 13 edges
 2. `request()` - 10 edges
-3. `React + Vite Template` - 8 edges
+3. `React + Vite Template` - 7 edges
 4. `@vitejs/plugin-react (Babel/OXC)` - 4 edges
 5. `Hot Module Replacement (HMR)` - 3 edges
 6. `@vitejs/plugin-react-swc (SWC)` - 3 edges
@@ -84,300 +87,311 @@
 10. `TypeScript Integration` - 3 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `React Logo SVG` --conceptually_related_to--> `React + Vite Template`  [INFERRED]
-  frontend/src/assets/react.svg → frontend/README.md
 - `Vite Logo SVG` --conceptually_related_to--> `React + Vite Template`  [INFERRED]
   frontend/public/vite.svg → frontend/README.md
-- `React Logo SVG` --semantically_similar_to--> `Vite Logo SVG`  [INFERRED] [semantically similar]
-  frontend/src/assets/react.svg → frontend/public/vite.svg
 
 ## Hyperedges (group relationships)
 - **Fast Refresh Plugin Alternatives (Babel/OXC vs SWC)** — readme_plugin_react_babel, readme_plugin_react_swc, readme_hmr [EXTRACTED 0.95]
 - **JavaScript Transpiler Options** — readme_babel, readme_oxc, readme_swc [INFERRED 0.82]
-- **React + Vite Brand Assets** — asset_react_svg, asset_vite_svg, readme_react_vite_template [INFERRED 0.78]
 
 ## Communities
 
-### Community 0 - "Backend API Layer"
+### Community 0 - "Backend API Handlers"
 Cohesion: 0.18
 Nodes (21): addCaseDocument(), addCaseNote(), advanceOrder(), createCase(), createCrematorium(), deleteCrematorium(), fetchAddons(), fetchCase() (+13 more)
 
-### Community 1 - "Dev Tooling & Build Assets"
-Cohesion: 0.22
-Nodes (14): React Logo SVG, Vite Logo SVG, Babel Transpiler, ESLint Rules, Hot Module Replacement (HMR), OXC Transformer, @vitejs/plugin-react (Babel/OXC), @vitejs/plugin-react-swc (SWC) (+6 more)
+### Community 1 - "Cases List UI"
+Cohesion: 0.13
+Nodes (2): calcAge(), CasePreviewBody()
 
-### Community 2 - "Case Detail & Authorization"
+### Community 2 - "Vite Build Tooling"
+Cohesion: 0.23
+Nodes (13): Vite Logo SVG, Babel Transpiler, ESLint Rules, Hot Module Replacement (HMR), OXC Transformer, @vitejs/plugin-react (Babel/OXC), @vitejs/plugin-react-swc (SWC), React Compiler (+5 more)
+
+### Community 3 - "Case Detail UI"
 Cohesion: 0.18
-Nodes (2): CustodyModal(), now()
+Nodes (2): LogCustodyModal(), now()
 
-### Community 3 - "Family Portal Editor"
+### Community 4 - "Family Page Editor"
 Cohesion: 0.2
 Nodes (0): 
 
-### Community 4 - "Settings & Admin"
+### Community 5 - "Settings Page"
 Cohesion: 0.22
 Nodes (0): 
 
-### Community 5 - "New Case Workflow"
+### Community 6 - "Inbox Messaging"
+Cohesion: 0.25
+Nodes (0): 
+
+### Community 7 - "New Case Wizard"
 Cohesion: 0.29
 Nodes (2): NewCasePage(), useData()
 
-### Community 6 - "Family Widget Steps"
+### Community 8 - "Family Widget Flow"
 Cohesion: 0.29
 Nodes (0): 
 
-### Community 7 - "Crematorium Management"
+### Community 9 - "Home Dashboard"
+Cohesion: 0.4
+Nodes (2): getGreeting(), HomeDashboard()
+
+### Community 10 - "Crematoriums Management"
 Cohesion: 0.33
 Nodes (0): 
 
-### Community 8 - "New Crematorium Wizard"
+### Community 11 - "App Shell & States"
+Cohesion: 0.4
+Nodes (2): activeSidebarItem(), FuneralDashboardPage()
+
+### Community 12 - "New Crematorium Wizard"
 Cohesion: 0.4
 Nodes (0): 
 
-### Community 9 - "Funeral Dashboard Shell"
+### Community 13 - "Sidebar Navigation"
 Cohesion: 0.5
-Nodes (2): activeSidebarItem(), FuneralDashboardPage()
-
-### Community 10 - "App Root & Routing"
-Cohesion: 0.67
 Nodes (0): 
 
-### Community 11 - "Auth Context"
-Cohesion: 0.67
-Nodes (0): 
-
-### Community 12 - "Operational Alerts"
-Cohesion: 0.67
-Nodes (0): 
-
-### Community 13 - "Backend Test Setup"
+### Community 14 - "Test Utilities"
 Cohesion: 1.0
 Nodes (2): makeChain(), makeSupabaseMock()
 
-### Community 14 - "UI Button Component"
+### Community 15 - "App Root"
+Cohesion: 0.67
+Nodes (0): 
+
+### Community 16 - "Auth Context"
+Cohesion: 0.67
+Nodes (0): 
+
+### Community 17 - "Operational Alerts"
+Cohesion: 0.67
+Nodes (0): 
+
+### Community 18 - "Auth Middleware"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 15 - "UI Badge Component"
+### Community 19 - "Auth Tests"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 16 - "Status Pill Component"
+### Community 20 - "Database Seeding"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 17 - "Stat Card Component"
+### Community 21 - "Cases Route"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 18 - "Progress Track Component"
+### Community 22 - "Portal Route"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 19 - "Crematorium Order Queue"
+### Community 23 - "Crematoriums Route"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 20 - "Crematorium Order Card"
+### Community 24 - "Button Component"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 21 - "Crematorium Earnings Card"
+### Community 25 - "Badge Component"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 22 - "Widget Order Summary"
+### Community 26 - "Status Pill"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 23 - "Widget Addon Row"
+### Community 27 - "Stat Card"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 24 - "Widget Success Screen"
+### Community 28 - "Progress Track"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 25 - "Widget Package Card"
+### Community 29 - "Order Queue"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 26 - "Login Screen"
+### Community 30 - "Order Card"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 27 - "Sidebar Layout"
+### Community 31 - "Earnings Card"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 28 - "Navbar Layout"
+### Community 32 - "Order Summary"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 29 - "Page Header Layout"
+### Community 33 - "Addon Row"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 30 - "Cases Page"
+### Community 34 - "Success Screen"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 31 - "Revenue Page"
+### Community 35 - "Package Card"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 32 - "Cases Table"
+### Community 36 - "Login Screen"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 33 - "Revenue Chart"
+### Community 37 - "Navbar"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 34 - "Stats Row"
+### Community 38 - "Page Header"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 35 - "useOrders Hook"
+### Community 39 - "Revenue Page"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 36 - "Crematorium Portal Page"
+### Community 40 - "Cases Table"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 37 - "Auth Middleware"
+### Community 41 - "Revenue Chart"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 38 - "Auth Middleware Tests"
+### Community 42 - "Stats Row"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 39 - "Database Seed Script"
+### Community 43 - "Orders Hook"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 40 - "Cases Route"
+### Community 44 - "Crematorium Portal"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 41 - "Portal Route"
+### Community 45 - "Express Server"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 42 - "Crematoriums Route"
+### Community 46 - "Test Config"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 43 - "Vite Config"
+### Community 47 - "Packages Tests"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 44 - "ESLint Config"
+### Community 48 - "Cases Tests"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 45 - "App Entry Point"
+### Community 49 - "Health Tests"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 46 - "Frontend Supabase Client"
+### Community 50 - "Orders Tests"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 47 - "Mock Data"
+### Community 51 - "Addons Tests"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 48 - "Backend Server"
+### Community 52 - "Portal Tests"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 49 - "Vitest Config"
+### Community 53 - "Crematoriums Tests"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 50 - "Packages Route Tests"
+### Community 54 - "Supabase Client (Backend)"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 51 - "Cases Route Tests"
+### Community 55 - "Addons Route"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 52 - "Health Route Tests"
+### Community 56 - "Orders Route"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 53 - "Orders Route Tests"
+### Community 57 - "Packages Route"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 54 - "Addons Route Tests"
+### Community 58 - "Vite Config"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 55 - "Portal Route Tests"
+### Community 59 - "ESLint Config"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 56 - "Crematoriums Route Tests"
+### Community 60 - "React Entry Point"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 57 - "Backend Supabase Client"
+### Community 61 - "Supabase Client (Frontend)"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 58 - "Addons Route"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 59 - "Orders Route"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 60 - "Packages Route"
+### Community 62 - "Mock Data"
 Cohesion: 1.0
 Nodes (0): 
 
 ## Knowledge Gaps
-- **2 isolated node(s):** `React Compiler Disabled — Dev/Build Performance Rationale`, `typescript-eslint`
+- **3 isolated node(s):** `React Compiler Disabled — Dev/Build Performance Rationale`, `typescript-eslint`, `Vite Logo SVG`
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `UI Button Component`** (2 nodes): `Button()`, `Button.jsx`
+- **Thin community `Auth Middleware`** (2 nodes): `requireAuth()`, `auth.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `UI Badge Component`** (2 nodes): `Badge()`, `Badge.jsx`
+- **Thin community `Auth Tests`** (2 nodes): `makeRes()`, `auth.test.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Status Pill Component`** (2 nodes): `StatusPill.jsx`, `StatusPill()`
+- **Thin community `Database Seeding`** (2 nodes): `seed.js`, `seed()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Stat Card Component`** (2 nodes): `StatCard.jsx`, `StatCard()`
+- **Thin community `Cases Route`** (2 nodes): `cases.js`, `shapeRow()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Progress Track Component`** (2 nodes): `ProgressTrack.jsx`, `ProgressTrack()`
+- **Thin community `Portal Route`** (2 nodes): `portal.js`, `shapeRow()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Crematorium Order Queue`** (2 nodes): `OrderQueue.jsx`, `OrderQueue()`
+- **Thin community `Crematoriums Route`** (2 nodes): `crematoriums.js`, `shapeRow()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Crematorium Order Card`** (2 nodes): `OrderCard.jsx`, `OrderCard()`
+- **Thin community `Button Component`** (2 nodes): `Button()`, `Button.jsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Crematorium Earnings Card`** (2 nodes): `EarningsCard()`, `EarningsCard.jsx`
+- **Thin community `Badge Component`** (2 nodes): `Badge()`, `Badge.jsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Widget Order Summary`** (2 nodes): `OrderSummary.jsx`, `OrderSummary()`
+- **Thin community `Status Pill`** (2 nodes): `StatusPill.jsx`, `StatusPill()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Widget Addon Row`** (2 nodes): `AddonRow()`, `AddonRow.jsx`
+- **Thin community `Stat Card`** (2 nodes): `StatCard.jsx`, `StatCard()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Widget Success Screen`** (2 nodes): `SuccessScreen.jsx`, `SuccessScreen()`
+- **Thin community `Progress Track`** (2 nodes): `ProgressTrack.jsx`, `ProgressTrack()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Widget Package Card`** (2 nodes): `PackageCard.jsx`, `PackageCard()`
+- **Thin community `Order Queue`** (2 nodes): `OrderQueue.jsx`, `OrderQueue()`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Order Card`** (2 nodes): `OrderCard.jsx`, `OrderCard()`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Earnings Card`** (2 nodes): `EarningsCard()`, `EarningsCard.jsx`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Order Summary`** (2 nodes): `OrderSummary.jsx`, `OrderSummary()`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Addon Row`** (2 nodes): `AddonRow()`, `AddonRow.jsx`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Success Screen`** (2 nodes): `SuccessScreen.jsx`, `SuccessScreen()`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Package Card`** (2 nodes): `PackageCard.jsx`, `PackageCard()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Login Screen`** (2 nodes): `LoginScreen.jsx`, `LoginScreen()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Sidebar Layout`** (2 nodes): `Sidebar.jsx`, `Sidebar()`
+- **Thin community `Navbar`** (2 nodes): `Navbar.jsx`, `Navbar()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Navbar Layout`** (2 nodes): `Navbar.jsx`, `Navbar()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Page Header Layout`** (2 nodes): `PageHeader.jsx`, `PageHeader()`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Cases Page`** (2 nodes): `CasesPage()`, `CasesPage.jsx`
+- **Thin community `Page Header`** (2 nodes): `PageHeader.jsx`, `PageHeader()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Revenue Page`** (2 nodes): `RevenuePage.jsx`, `RevenuePage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -387,51 +401,29 @@ Nodes (0):
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Stats Row`** (2 nodes): `StatsRow.jsx`, `StatsRow()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `useOrders Hook`** (2 nodes): `useOrders.js`, `useOrders()`
+- **Thin community `Orders Hook`** (2 nodes): `useOrders.js`, `useOrders()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Crematorium Portal Page`** (2 nodes): `CrematoriumPortalPage()`, `CrematoriumPortalPage.jsx`
+- **Thin community `Crematorium Portal`** (2 nodes): `CrematoriumPortalPage()`, `CrematoriumPortalPage.jsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Auth Middleware`** (2 nodes): `requireAuth()`, `auth.js`
+- **Thin community `Express Server`** (1 nodes): `server.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Auth Middleware Tests`** (2 nodes): `makeRes()`, `auth.test.js`
+- **Thin community `Test Config`** (1 nodes): `vitest.config.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Database Seed Script`** (2 nodes): `seed.js`, `seed()`
+- **Thin community `Packages Tests`** (1 nodes): `packages.test.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Cases Route`** (2 nodes): `cases.js`, `shapeRow()`
+- **Thin community `Cases Tests`** (1 nodes): `cases.test.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Portal Route`** (2 nodes): `portal.js`, `shapeRow()`
+- **Thin community `Health Tests`** (1 nodes): `health.test.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Crematoriums Route`** (2 nodes): `crematoriums.js`, `shapeRow()`
+- **Thin community `Orders Tests`** (1 nodes): `orders.test.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Vite Config`** (1 nodes): `vite.config.js`
+- **Thin community `Addons Tests`** (1 nodes): `addons.test.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `ESLint Config`** (1 nodes): `eslint.config.js`
+- **Thin community `Portal Tests`** (1 nodes): `portal.test.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `App Entry Point`** (1 nodes): `main.jsx`
+- **Thin community `Crematoriums Tests`** (1 nodes): `crematoriums.test.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Frontend Supabase Client`** (1 nodes): `supabase.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Mock Data`** (1 nodes): `mockData.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Backend Server`** (1 nodes): `server.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Vitest Config`** (1 nodes): `vitest.config.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Packages Route Tests`** (1 nodes): `packages.test.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Cases Route Tests`** (1 nodes): `cases.test.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Health Route Tests`** (1 nodes): `health.test.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Orders Route Tests`** (1 nodes): `orders.test.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Addons Route Tests`** (1 nodes): `addons.test.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Portal Route Tests`** (1 nodes): `portal.test.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Crematoriums Route Tests`** (1 nodes): `crematoriums.test.js`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Backend Supabase Client`** (1 nodes): `supabase.js`
+- **Thin community `Supabase Client (Backend)`** (1 nodes): `supabase.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Addons Route`** (1 nodes): `addons.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -439,11 +431,21 @@ Nodes (0):
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Packages Route`** (1 nodes): `packages.js`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Vite Config`** (1 nodes): `vite.config.js`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `ESLint Config`** (1 nodes): `eslint.config.js`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `React Entry Point`** (1 nodes): `main.jsx`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Supabase Client (Frontend)`** (1 nodes): `supabase.js`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Mock Data`** (1 nodes): `mockData.js`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Are the 2 inferred relationships involving `React + Vite Template` (e.g. with `React Logo SVG` and `Vite Logo SVG`) actually correct?**
-  _`React + Vite Template` has 2 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `React Compiler Disabled — Dev/Build Performance Rationale`, `typescript-eslint` to the rest of the system?**
-  _2 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **What connects `React Compiler Disabled — Dev/Build Performance Rationale`, `typescript-eslint`, `Vite Logo SVG` to the rest of the system?**
+  _3 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Cases List UI` be split into smaller, more focused modules?**
+  _Cohesion score 0.13 - nodes in this community are weakly interconnected._
