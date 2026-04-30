@@ -163,7 +163,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                         return (
                           <button key={id} onClick={() => toggleSet('statuses', id)}
                             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                              ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
+                              ${on ? 'border-ink bg-ink text-surface' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${on ? 'bg-surface/60' : dot}`} />
                             {label}
                           </button>
@@ -187,7 +187,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                           <button key={id}
                             onClick={() => setFilters(f => ({ ...f, datePreset: f.datePreset === id ? '' : id }))}
                             className={`px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                              ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
+                              ${on ? 'border-ink bg-ink text-surface' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
                             {label}
                           </button>
                         )
@@ -204,7 +204,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                         return (
                           <button key={p} onClick={() => toggleSet('packages', p)}
                             className={`px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                              ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
+                              ${on ? 'border-ink bg-ink text-surface' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
                             {p}
                           </button>
                         )
@@ -419,7 +419,7 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
                     <button onClick={e => { e.stopPropagation(); toggleSelect(c.id) }}
                       className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
                         ${selected.has(c.id) ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}>
-                      {selected.has(c.id) && <Check size={11} className="text-white" />}
+                      {selected.has(c.id) && <Check size={11} className="text-surface" />}
                     </button>
                   </td>
                   <td className="px-3 py-2.5 align-middle">
@@ -489,14 +489,14 @@ function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarr
                   <button onClick={e => { e.stopPropagation(); toggleSelect(c.id) }}
                       className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
                         ${selected.has(c.id) ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}>
-                      {selected.has(c.id) && <Check size={11} className="text-white" />}
+                      {selected.has(c.id) && <Check size={11} className="text-surface" />}
                     </button>
                 </div>
                 <button
                   onClick={e => { e.stopPropagation(); setActiveId(c.id === activeId ? null : c.id) }}
                   title="Preview"
                   className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100
-                    ${activeId === c.id ? 'bg-ink text-white opacity-100' : 'bg-white text-secondary hover:bg-surface'}`}>
+                    ${activeId === c.id ? 'bg-ink text-surface opacity-100' : 'bg-white text-secondary hover:bg-surface'}`}>
                   <Eye size={11} />
                 </button>
                 {isStarred(c.id) && <StarFilled size={12} className="absolute top-2 left-7 text-warning" />}

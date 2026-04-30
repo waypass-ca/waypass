@@ -556,7 +556,7 @@ export function FamilyPageEditorPage() {
                     onClick={() => update('fontStyle', opt.value)}
                     className={`flex-1 py-2 rounded-lg border text-xs font-sans transition-all cursor-pointer outline-none ${
                       settings.fontStyle === opt.value
-                        ? 'border-ink bg-ink text-white'
+                        ? 'border-ink bg-ink text-surface'
                         : 'border-line text-secondary hover:border-ink'
                     }`}
                   >
