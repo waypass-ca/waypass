@@ -425,7 +425,7 @@ function GridView({ rows, selected, toggleSelect }) {
           className={`relative bg-white rounded-xl border p-4 cursor-pointer group transition-all
             ${selected.has(d.id) ? 'border-ink ring-1 ring-ink' : 'border-line hover:border-secondary/50 hover:shadow-sm'}`}>
           {/* Select indicator */}
-          <div className={`absolute top-3 left-3 w-5 h-5 rounded border flex items-center justify-center transition
+          <div className={`absolute top-3 left-3 w-4 h-4 rounded border flex items-center justify-center transition
             ${selected.has(d.id) ? 'border-ink bg-ink' : 'border-line bg-white opacity-0 group-hover:opacity-100'}`}>
             {selected.has(d.id) && <Check size={10} className="text-surface" />}
           </div>
@@ -449,13 +449,13 @@ function GridView({ rows, selected, toggleSelect }) {
             <button
               onClick={e => { e.stopPropagation() }}
               title="Download"
-              className="w-5 h-5 rounded-sm bg-surface border border-line flex items-center justify-center text-muted hover:text-ink hover:border-secondary transition cursor-pointer">
+              className="w-6 h-6 rounded-sm bg-surface border border-line flex items-center justify-center text-muted hover:text-ink hover:border-secondary transition cursor-pointer">
               <Download size={12} />
             </button>
             <button
               onClick={e => { e.stopPropagation() }}
               title="More"
-              className="w-5 h-5 rounded-sm bg-surface border border-line flex items-center justify-center text-muted hover:text-ink hover:border-secondary transition cursor-pointer">
+              className="w-6 h-6 rounded-sm bg-surface border border-line flex items-center justify-center text-muted hover:text-ink hover:border-secondary transition cursor-pointer">
               <MoreHorizontal size={12} />
             </button>
           </div>
