@@ -1,8 +1,10 @@
+import { PageTitle } from './PageTitle'
+
 export function PageHeader({ title, subtitle, date, rightSlot }) {
   return (
     <div className="flex items-start justify-between mb-6">
       <div>
-        <h1 className="font-display text-3xl font-light text-ink leading-tight">{title}</h1>
+        <PageTitle>{title}</PageTitle>
         {subtitle && (
           <p className="text-sm font-sans text-muted mt-1">{subtitle}</p>
         )}

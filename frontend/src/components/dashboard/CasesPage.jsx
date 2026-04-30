@@ -4,6 +4,7 @@ import {
   Users, Grid2x2, List, Columns2, ChevronRight, Plus, MoreHorizontal,
   Filter, Home, Phone, X, Check, Eye,
 } from 'lucide-react'
+import { PageTitle } from '../layout/PageTitle'
 
 // ─── Filled star (lucide Star forced-fill via CSS selector) ───────────────────
 const StarFilled = ({ size = 14, className = '' }) => (
@@ -98,7 +99,7 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
           <div className="flex items-center gap-1.5 font-sans text-[11.5px] text-muted mb-1.5">
           </div>
           <div className="flex items-baseline gap-3">
-            <h1 className="font-display font-light text-[30px] leading-none text-ink">Cases</h1>
+            <PageTitle className="leading-none">Cases</PageTitle>
             <span className="font-sans text-[12.5px] text-muted">{count} of {total}</span>
           </div>
         </div>

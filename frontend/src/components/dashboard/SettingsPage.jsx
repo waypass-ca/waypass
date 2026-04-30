@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LogOut, Check, Plus, Trash2, UserPlus } from 'lucide-react'
 import { Button } from '../ui/Button'
+import { PageTitle } from '../layout/PageTitle'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { useDarkMode } from '../../context/DarkModeContext.jsx'
 
@@ -449,8 +450,8 @@ export function SettingsPage() {
   return (
     <div className="flex gap-12 min-h-0">
       {/* Left sidebar nav */}
-      <aside className="w-44 flex-shrink-0 pt-1">
-        <p className="font-display text-2xl text-ink mb-6">Settings</p>
+      <aside className="w-44 flex-shrink-0">
+        <PageTitle className="mb-6">Settings</PageTitle>
         <nav className="space-y-0.5">
           {NAV_ITEMS.map(({ id, label }) => (
             <button
@@ -469,7 +470,7 @@ export function SettingsPage() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 min-w-0 pt-1 pb-16">
+      <main className="flex-1 min-w-0 pt-15 pb-16">
         <Content />
       </main>
     </div>
