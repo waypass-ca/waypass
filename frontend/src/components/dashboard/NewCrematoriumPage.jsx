@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createCrematorium } from '../../lib/api.js'
 import { Button } from '../ui/Button'
+import { PageTitle } from '../layout/PageTitle'
 
 const STEPS = ['Details', 'Contact', 'Confirm']
 
@@ -129,7 +130,7 @@ export function NewCrematoriumPage({ onBack, onComplete }) {
           </svg>
           Back
         </button>
-        <h1 className="font-display text-3xl text-ink">Add Cremation Partner</h1>
+        <PageTitle>Add Cremation Partner</PageTitle>
         <p className="font-sans text-sm text-muted mt-1">Register a new crematorium as a service partner.</p>
       </div>
 
