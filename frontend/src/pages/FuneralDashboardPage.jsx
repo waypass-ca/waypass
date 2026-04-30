@@ -137,7 +137,7 @@ export function FuneralDashboardPage() {
       ) : view === 'cases' ? (
         <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} />
       ) : view === 'documents' ? (
-        <DocumentsPage />
+        <DocumentsPage cases={cases} />
       ) : view === 'case-detail' && selectedCase ? (
         <CaseDetailPage
           caseData={selectedCase}

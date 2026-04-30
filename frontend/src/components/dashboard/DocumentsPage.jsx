@@ -4,44 +4,65 @@ import {
   Upload, Download, MoreHorizontal, FileText, File,
 } from 'lucide-react'
 import { PageTitle } from '../layout/PageTitle'
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const MOCK_DOCS = [
-  { id: 'd01', name: 'Death Certificate',            type: 'Death Certificate', case: 'Margaret Chen',    caseId: 'c1', uploadedAt: '2024-03-08', ext: 'PDF', size: '245 KB', status: 'signed'  },
-  { id: 'd02', name: 'Authorization for Cremation',  type: 'Authorization',     case: 'Margaret Chen',    caseId: 'c1', uploadedAt: '2024-03-08', ext: 'PDF', size: '182 KB', status: 'signed'  },
-  { id: 'd03', name: 'Cremation Permit',             type: 'Permit',            case: 'Robert Williams',  caseId: 'c2', uploadedAt: '2024-03-05', ext: 'PDF', size: '98 KB',  status: 'pending' },
-  { id: 'd04', name: 'Pre-Planning Agreement',       type: 'Agreement',         case: 'Dorothy Hayes',    caseId: 'c3', uploadedAt: '2024-02-28', ext: 'PDF', size: '356 KB', status: 'signed'  },
-  { id: 'd05', name: 'Invoice — Comfort Package',    type: 'Invoice',           case: 'Dorothy Hayes',    caseId: 'c3', uploadedAt: '2024-02-28', ext: 'PDF', size: '124 KB', status: 'signed'  },
-  { id: 'd06', name: 'Body Receipt',                 type: 'Receipt',           case: 'James Patterson',  caseId: 'c4', uploadedAt: '2024-03-01', ext: 'PDF', size: '78 KB',  status: 'signed'  },
-  { id: 'd07', name: 'Death Certificate',            type: 'Death Certificate', case: 'Eleanor Voss',     caseId: 'c5', uploadedAt: '2024-03-10', ext: 'PDF', size: '245 KB', status: 'pending' },
-  { id: 'd08', name: 'Authorization for Cremation',  type: 'Authorization',     case: 'Eleanor Voss',     caseId: 'c5', uploadedAt: '2024-03-10', ext: 'PDF', size: '189 KB', status: 'pending' },
-  { id: 'd09', name: 'Certificate of Cremation',     type: 'Certificate',       case: 'Margaret Chen',    caseId: 'c1', uploadedAt: '2024-03-09', ext: 'PDF', size: '210 KB', status: 'signed'  },
-  { id: 'd10', name: 'Disposition Authorization',    type: 'Authorization',     case: 'Robert Williams',  caseId: 'c2', uploadedAt: '2024-03-05', ext: 'PDF', size: '164 KB', status: 'signed'  },
-  { id: 'd11', name: 'Invoice — Essential Package',  type: 'Invoice',           case: 'Robert Williams',  caseId: 'c2', uploadedAt: '2024-03-06', ext: 'PDF', size: '118 KB', status: 'signed'  },
-  { id: 'd12', name: 'Cremation Permit',             type: 'Permit',            case: 'James Patterson',  caseId: 'c4', uploadedAt: '2024-03-01', ext: 'PDF', size: '102 KB', status: 'signed'  },
-  { id: 'd13', name: 'Pre-Planning Agreement',       type: 'Agreement',         case: 'Frank Nguyen',     caseId: 'c6', uploadedAt: '2024-01-15', ext: 'PDF', size: '398 KB', status: 'archived'},
-  { id: 'd14', name: 'Death Certificate',            type: 'Death Certificate', case: 'Frank Nguyen',     caseId: 'c6', uploadedAt: '2024-01-14', ext: 'PDF', size: '245 KB', status: 'archived'},
-  { id: 'd15', name: 'Certificate of Cremation',     type: 'Certificate',       case: 'James Patterson',  caseId: 'c4', uploadedAt: '2024-03-04', ext: 'PDF', size: '215 KB', status: 'signed'  },
-  { id: 'd16', name: 'Authorization for Cremation',  type: 'Authorization',     case: 'Dorothy Hayes',    caseId: 'c3', uploadedAt: '2024-02-27', ext: 'PDF', size: '177 KB', status: 'signed'  },
-  { id: 'd17', name: 'Cremation Permit',             type: 'Permit',            case: 'Eleanor Voss',     caseId: 'c5', uploadedAt: '2024-03-11', ext: 'PDF', size: '98 KB',  status: 'pending' },
-  { id: 'd18', name: 'Invoice — Tribute Package',    type: 'Invoice',           case: 'Margaret Chen',    caseId: 'c1', uploadedAt: '2024-03-07', ext: 'PDF', size: '136 KB', status: 'signed'  },
-]
+import { supabase } from '../../lib/supabase.js'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  pending:  { label: 'Pending',  dot: 'bg-warning', text: 'text-warning', tint: 'bg-warning-light', border: 'border-warning/30' },
-  signed:   { label: 'Signed',   dot: 'bg-primary',  text: 'text-primary',  tint: 'bg-primary-light',  border: 'border-primary/30'  },
-  archived: { label: 'Archived', dot: 'bg-muted',    text: 'text-muted',    tint: 'bg-canvas',          border: 'border-line'         },
+  pending:     { label: 'Pending',     dot: 'bg-warning', text: 'text-warning', tint: 'bg-warning-light', border: 'border-warning/30' },
+  in_progress: { label: 'In Progress', dot: 'bg-info',    text: 'text-info',    tint: 'bg-info-tint',     border: 'border-info/30'    },
+  complete:    { label: 'Complete',    dot: 'bg-primary',  text: 'text-primary',  tint: 'bg-primary-light',  border: 'border-primary/30'  },
 }
 
 const DOC_TYPES = ['Death Certificate', 'Authorization', 'Certificate', 'Permit', 'Agreement', 'Invoice', 'Receipt']
 
 const CATEGORY_TABS = [
-  { id: 'all',      label: 'All' },
-  { id: 'pending',  label: 'Pending' },
-  { id: 'signed',   label: 'Signed' },
-  { id: 'archived', label: 'Archived' },
+  { id: 'all',         label: 'All' },
+  { id: 'pending',     label: 'Pending' },
+  { id: 'in_progress', label: 'In Progress' },
+  { id: 'complete',    label: 'Complete' },
 ]
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function inferDocType(name = '') {
+  const n = name.toLowerCase()
+  if (n.includes('death cert') || n.includes('death_cert'))      return 'Death Certificate'
+  if (n.includes('authorization') || n.includes('authorisation')) return 'Authorization'
+  if (n.includes('certificate') || n.includes('cert'))            return 'Certificate'
+  if (n.includes('permit'))                                        return 'Permit'
+  if (n.includes('agreement') || n.includes('contract'))          return 'Agreement'
+  if (n.includes('invoice') || n.includes('inv-'))                return 'Invoice'
+  if (n.includes('receipt'))                                       return 'Receipt'
+  return 'Document'
+}
+
+function inferDocStatus(caseStatus) {
+  if (caseStatus === 'complete') return 'complete'
+  if (caseStatus === 'pending')  return 'pending'
+  return 'in_progress'
+}
+
+function casesToDocs(cases = []) {
+  return cases.flatMap(c =>
+    (c.documents ?? []).map(d => {
+      const name    = typeof d === 'string' ? d : (d.name ?? d.path ?? 'Document')
+      const path    = typeof d === 'string' ? null : d.path
+      const rawName = name.replace(/\.[^.]+$/, '')
+      const ext     = name.includes('.') ? name.split('.').pop().toUpperCase() : 'FILE'
+      return {
+        id:         path ?? `${c.id}_${name}`,
+        name:       rawName,
+        type:       inferDocType(name),
+        case:       c.deceased ?? c.family ?? 'Unknown',
+        caseId:     c.id,
+        uploadedAt: d.uploadedAt ?? '—',
+        ext,
+        size:       '—',
+        status:     inferDocStatus(c.status),
+        path,
+      }
+    })
+  )
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
@@ -158,8 +179,8 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                     <div className="flex flex-wrap gap-1.5">
                       {[
                         { id: 'pending',  label: 'Pending',  dot: 'bg-warning' },
-                        { id: 'signed',   label: 'Signed',   dot: 'bg-primary' },
-                        { id: 'archived', label: 'Archived', dot: 'bg-muted'   },
+                        { id: 'in_progress', label: 'In Progress', dot: 'bg-info'    },
+                        { id: 'complete',    label: 'Complete',    dot: 'bg-primary' },
                       ].map(({ id, label, dot }) => {
                         const on = filters.statuses.has(id)
                         return (
@@ -323,6 +344,12 @@ function Empty() {
 }
 
 // ─── List view ────────────────────────────────────────────────────────────────
+async function openDoc(path) {
+  if (!path) return
+  const { data, error } = await supabase.storage.from('case-documents').createSignedUrl(path, 60)
+  if (!error && data?.signedUrl) window.open(data.signedUrl, '_blank')
+}
+
 function ListView({ rows, selected, toggleSelect, selectAll }) {
   const allChecked = rows.length > 0 && rows.every(r => selected.has(r.id))
 
@@ -398,7 +425,8 @@ function ListView({ rows, selected, toggleSelect, selectAll }) {
                 </td>
                 <td className="px-2 py-2.5 align-middle">
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button title="Download" className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors">
+                    <button onClick={e => { e.stopPropagation(); openDoc(d.path) }} title="Download"
+                      className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors">
                       <Download size={13} />
                     </button>
                     <button title="More" className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors">
@@ -421,12 +449,14 @@ function GridView({ rows, selected, toggleSelect }) {
     <div className="grid gap-3 p-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
       {rows.map(d => (
         <div key={d.id}
-          onClick={() => toggleSelect(d.id)}
+          onClick={() => openDoc(d.path)}
           className={`relative bg-white rounded-xl border p-4 cursor-pointer group transition-all
             ${selected.has(d.id) ? 'border-ink ring-1 ring-ink' : 'border-line hover:border-secondary/50 hover:shadow-sm'}`}>
-          {/* Select indicator */}
-          <div className={`absolute top-3 left-3 w-4 h-4 rounded border flex items-center justify-center transition
-            ${selected.has(d.id) ? 'border-ink bg-ink' : 'border-line bg-white opacity-0 group-hover:opacity-100'}`}>
+          {/* Select checkbox */}
+          <div
+            onClick={e => { e.stopPropagation(); toggleSelect(d.id) }}
+            className={`absolute top-3 left-3 w-4 h-4 rounded border flex items-center justify-center transition cursor-pointer
+              ${selected.has(d.id) ? 'border-ink bg-ink' : 'border-line bg-white opacity-0 group-hover:opacity-100'}`}>
             {selected.has(d.id) && <Check size={10} className="text-surface" />}
           </div>
 
@@ -447,7 +477,7 @@ function GridView({ rows, selected, toggleSelect }) {
           {/* Hover actions */}
           <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
-              onClick={e => { e.stopPropagation() }}
+              onClick={e => { e.stopPropagation(); openDoc(d.path) }}
               title="Download"
               className="w-6 h-6 rounded-sm bg-surface border border-line flex items-center justify-center text-muted hover:text-ink hover:border-secondary transition cursor-pointer">
               <Download size={12} />
@@ -641,24 +671,26 @@ function ColumnsView({ docs, activeDocId, setActiveDocId }) {
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
-export function DocumentsPage() {
-  const [category, setCategory]   = useState('all')
-  const [search, setSearch]       = useState('')
-  const [view, setView]           = useState('list')
-  const [sortBy, setSortBy]       = useState('date')
-  const [selected, setSelected]   = useState(new Set())
+export function DocumentsPage({ cases = [] }) {
+  const [category, setCategory]         = useState('all')
+  const [search, setSearch]             = useState('')
+  const [view, setView]                 = useState('list')
+  const [sortBy, setSortBy]             = useState('date')
+  const [selected, setSelected]         = useState(new Set())
   const [activeDocId, setActiveDocId] = useState(null)
-  const [page, setPage]           = useState(1)
-  const [pageSize, setPageSize]   = useState(20)
-  const [filters, setFilters]     = useState({ types: new Set(), statuses: new Set(), datePreset: '' })
+  const [page, setPage]                 = useState(1)
+  const [pageSize, setPageSize]         = useState(20)
+  const [filters, setFilters]           = useState({ types: new Set(), statuses: new Set(), datePreset: '' })
+
+  const allDocs = useMemo(() => casesToDocs(cases), [cases])
 
   const filtersActive = filters.types.size + filters.statuses.size + (filters.datePreset ? 1 : 0)
 
   // Category → status filter
   const categoryFiltered = useMemo(() => {
-    if (category === 'all') return MOCK_DOCS
-    return MOCK_DOCS.filter(d => d.status === category)
-  }, [category])
+    if (category === 'all') return allDocs
+    return allDocs.filter(d => d.status === category)
+  }, [allDocs, category])
 
   // Search
   const searched = useMemo(() => {
@@ -701,13 +733,13 @@ export function DocumentsPage() {
     setSelected(s => s.size === paginated.length ? new Set() : new Set(paginated.map(d => d.id)))
   }
 
-  // Category counts
+  // Category counts (always from full set)
   const counts = useMemo(() => ({
-    all:      MOCK_DOCS.length,
-    pending:  MOCK_DOCS.filter(d => d.status === 'pending').length,
-    signed:   MOCK_DOCS.filter(d => d.status === 'signed').length,
-    archived: MOCK_DOCS.filter(d => d.status === 'archived').length,
-  }), [])
+    all:         allDocs.length,
+    pending:     allDocs.filter(d => d.status === 'pending').length,
+    in_progress: allDocs.filter(d => d.status === 'in_progress').length,
+    complete:    allDocs.filter(d => d.status === 'complete').length,
+  }), [allDocs])
 
   // Reset page when filters change
   useEffect(() => { setPage(1) }, [category, search, filters, sortBy])
@@ -718,7 +750,7 @@ export function DocumentsPage() {
         search={search} setSearch={setSearch}
         view={view} setView={setView}
         sortBy={sortBy} setSortBy={setSortBy}
-        count={sorted.length} total={MOCK_DOCS.length}
+        count={sorted.length} total={allDocs.length}
         filters={filters} setFilters={setFilters}
         filtersActive={filtersActive}
       />
