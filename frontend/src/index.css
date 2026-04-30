@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ─────────────────────────────────────────────────────────────────────────────
    THEME — single source of truth
    Change values here to retheme the entire application.
@@ -32,6 +34,37 @@
   /* Typography */
   --font-display: 'Cormorant Garamond', serif;
   --font-sans: 'DM Sans', sans-serif;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DARK MODE — override every token; components update automatically
+───────────────────────────────────────────────────────────────────────────── */
+.dark {
+  --color-canvas:         #10121A;
+  --color-surface:        #171B27;
+  --color-ink:            #EAEAF0;
+  --color-secondary:      #8C8CA0;
+  --color-muted:          #52525E;
+  --color-line:           #252A3D;
+
+  --color-primary:        #6B93D6;
+  --color-primary-light:  #18243E;
+
+  --color-warning:        #D4A86C;
+  --color-warning-light:  #231A0D;
+
+  --color-danger:         #CC7272;
+  --color-danger-tint:    #230E0E;
+
+  --color-info:           #7090CC;
+  --color-info-tint:      #10193A;
+
+  color-scheme: dark;
+}
+
+/* bg-white is not a CSS-variable token; override it for dark mode */
+.dark .bg-white {
+  background-color: var(--color-surface);
 }
 
 *, *::before, *::after {
