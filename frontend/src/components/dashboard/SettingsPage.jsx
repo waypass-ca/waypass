@@ -470,7 +470,7 @@ export function SettingsPage() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 min-w-0 pt-15 pb-16">
+      <main className="flex-1 min-w-0 pt-15 pb-16 max-w-3xl">
         <Content />
       </main>
     </div>
