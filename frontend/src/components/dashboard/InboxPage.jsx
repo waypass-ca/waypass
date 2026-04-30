@@ -243,7 +243,7 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
                             return (
                               <button key={id} onClick={() => toggleType(id)}
                                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                                  ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
+                                  ${on ? 'border-ink bg-ink text-surface' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${on ? 'bg-white/60' : dot}`} />
                                 {label}
                               </button>
@@ -266,7 +266,7 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
                             return (
                               <button key={id} onClick={() => setDatePreset(id)}
                                 className={`px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                                  ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
+                                  ${on ? 'border-ink bg-ink text-surface' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
                                 {label}
                               </button>
                             )
@@ -286,7 +286,7 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
                             return (
                               <button key={id} onClick={() => setReadStatus(id)}
                                 className={`px-2.5 py-1 rounded-full border font-sans text-[11.5px] cursor-pointer transition
-                                  ${on ? 'border-ink bg-ink text-white' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
+                                  ${on ? 'border-ink bg-ink text-surface' : 'border-line bg-white text-secondary hover:border-secondary'}`}>
                                 {label}
                               </button>
                             )
@@ -339,7 +339,7 @@ function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar }) {
         className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 cursor-pointer transition
           ${isSelected ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}
       >
-        {isSelected && <Check size={10} className="text-white" />}
+        {isSelected && <Check size={10} className="text-surface" />}
       </button>
 
       {/* Star */}

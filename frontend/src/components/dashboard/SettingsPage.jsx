@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { LogOut } from 'lucide-react'
+import { LogOut, Check } from 'lucide-react'
 import { PageHeader } from '../layout/PageHeader'
 import { Button } from '../ui/Button'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { useDarkMode } from '../../context/DarkModeContext.jsx'
 
-const TABS = ['Profile', 'Branding', 'Notifications', 'Billing']
+const TABS = ['Profile', 'Branding', 'Notifications', 'Appearance', 'Billing']
 
 function SectionHeader({ title, description }) {
   return (
@@ -240,7 +241,121 @@ function BillingTab() {
   )
 }
 
-const TAB_CONTENT = [ProfileTab, BrandingTab, NotificationsTab, BillingTab]
+function AppearanceTab() {
+  const { mode, setMode } = useDarkMode()
+
+  const options = [
+    {
+      id: 'light',
+      label: 'Light',
+      preview: (
+        <div className="w-full rounded-lg overflow-hidden border border-line/60 mb-3" style={{ aspectRatio: '4/3', background: '#EEF1F7' }}>
+          <div className="flex h-full">
+            <div className="w-1/4 h-full" style={{ background: '#F7F9FD', borderRight: '1px solid #DCE3F0' }}>
+              <div className="m-1.5 space-y-1">
+                {[40, 30, 30].map((w, i) => (
+                  <div key={i} style={{ width: `${w}%`, height: 4, background: '#DCE3F0', borderRadius: 2 }} />
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 p-2 space-y-1.5">
+              <div style={{ height: 6, width: '55%', background: '#1C1C1E', borderRadius: 2, opacity: 0.15 }} />
+              <div style={{ height: 36, background: '#F7F9FD', borderRadius: 6, border: '1px solid #DCE3F0' }} />
+              <div style={{ height: 36, background: '#F7F9FD', borderRadius: 6, border: '1px solid #DCE3F0' }} />
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'dark',
+      label: 'Dark',
+      preview: (
+        <div className="w-full rounded-lg overflow-hidden border border-line/60 mb-3" style={{ aspectRatio: '4/3', background: '#10121A' }}>
+          <div className="flex h-full">
+            <div className="w-1/4 h-full" style={{ background: '#171B27', borderRight: '1px solid #252A3D' }}>
+              <div className="m-1.5 space-y-1">
+                {[40, 30, 30].map((w, i) => (
+                  <div key={i} style={{ width: `${w}%`, height: 4, background: '#252A3D', borderRadius: 2 }} />
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 p-2 space-y-1.5">
+              <div style={{ height: 6, width: '55%', background: '#EAEAF0', borderRadius: 2, opacity: 0.2 }} />
+              <div style={{ height: 36, background: '#171B27', borderRadius: 6, border: '1px solid #252A3D' }} />
+              <div style={{ height: 36, background: '#171B27', borderRadius: 6, border: '1px solid #252A3D' }} />
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'system',
+      label: 'System',
+      preview: (
+        <div className="w-full rounded-lg overflow-hidden border border-line/60 mb-3 flex" style={{ aspectRatio: '4/3' }}>
+          <div className="w-1/2 h-full flex" style={{ background: '#EEF1F7' }}>
+            <div className="w-1/3 h-full" style={{ background: '#F7F9FD', borderRight: '1px solid #DCE3F0' }}>
+              <div className="m-1 space-y-1">
+                {[50, 35].map((w, i) => (
+                  <div key={i} style={{ width: `${w}%`, height: 3, background: '#DCE3F0', borderRadius: 2 }} />
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 p-1.5 space-y-1">
+              <div style={{ height: 5, width: '60%', background: '#1C1C1E', borderRadius: 2, opacity: 0.15 }} />
+              <div style={{ height: 28, background: '#F7F9FD', borderRadius: 4, border: '1px solid #DCE3F0' }} />
+            </div>
+          </div>
+          <div className="w-1/2 h-full flex" style={{ background: '#10121A', borderLeft: '1px solid #252A3D' }}>
+            <div className="w-1/3 h-full" style={{ background: '#171B27', borderRight: '1px solid #252A3D' }}>
+              <div className="m-1 space-y-1">
+                {[50, 35].map((w, i) => (
+                  <div key={i} style={{ width: `${w}%`, height: 3, background: '#252A3D', borderRadius: 2 }} />
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 p-1.5 space-y-1">
+              <div style={{ height: 5, width: '60%', background: '#EAEAF0', borderRadius: 2, opacity: 0.2 }} />
+              <div style={{ height: 28, background: '#171B27', borderRadius: 4, border: '1px solid #252A3D' }} />
+            </div>
+          </div>
+        </div>
+      ),
+    },
+  ]
+
+  return (
+    <div className="bg-surface rounded-xl border border-line p-6">
+      <SectionHeader title="Appearance" description="Choose how Passage looks on this device. System follows your OS setting." />
+      <div className="grid grid-cols-3 gap-4">
+        {options.map(({ id, label, preview }) => {
+          const selected = mode === id
+          return (
+            <button
+              key={id}
+              onClick={() => setMode(id)}
+              className={`relative text-left p-3 rounded-xl border-2 transition-all cursor-pointer outline-none
+                ${selected ? 'border-ink bg-surface' : 'border-line bg-canvas hover:border-secondary/50'}`}
+            >
+              {preview}
+              <div className="flex items-center justify-between">
+                <span className={`font-sans text-[13px] font-medium ${selected ? 'text-ink' : 'text-secondary'}`}>{label}</span>
+                {selected && (
+                  <span className="w-4 h-4 rounded-full bg-ink flex items-center justify-center flex-shrink-0">
+                    <Check size={9} className="text-surface" strokeWidth={3} />
+                  </span>
+                )}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const TAB_CONTENT = [ProfileTab, BrandingTab, NotificationsTab, AppearanceTab, BillingTab]
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState(0)

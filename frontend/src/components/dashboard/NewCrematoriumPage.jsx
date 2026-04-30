@@ -15,7 +15,7 @@ function StepIndicator({ currentStep }) {
             <div className="flex flex-col items-center">
               <div className={`
                 w-6 h-6 rounded-full flex items-center justify-center text-xs font-sans font-medium transition-all
-                ${isDone ? 'bg-primary text-white' : isActive ? 'bg-ink text-white' : 'bg-line text-muted'}
+                ${isDone ? 'bg-primary text-surface' : isActive ? 'bg-ink text-surface' : 'bg-line text-muted'}
               `}>
                 {isDone
                   ? <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>

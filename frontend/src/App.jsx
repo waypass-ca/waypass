@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
+import { DarkModeProvider } from './context/DarkModeContext.jsx'
 import { LoginScreen } from './components/auth/LoginScreen.jsx'
 import { FuneralDashboardPage } from './pages/FuneralDashboardPage'
 
@@ -11,8 +12,10 @@ function AppInner() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppInner />
-    </AuthProvider>
+    <DarkModeProvider>
+      <AuthProvider>
+        <AppInner />
+      </AuthProvider>
+    </DarkModeProvider>
   )
 }
