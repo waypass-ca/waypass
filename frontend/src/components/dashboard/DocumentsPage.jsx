@@ -51,6 +51,7 @@ function casesToDocs(cases = []) {
       return {
         id:         path ?? `${c.id}_${name}`,
         name:       rawName,
+        fullName:   name,
         type:       inferDocType(name),
         case:       c.deceased ?? c.family ?? 'Unknown',
         caseId:     c.id,
@@ -68,7 +69,7 @@ function casesToDocs(cases = []) {
 function StatusBadge({ status }) {
   const s = STATUS_CONFIG[status] || STATUS_CONFIG.pending
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-sans font-medium ${s.tint} ${s.text} ${s.border}`}>
+    <span className={`inline-flex items-center gap-1.5 px-4 py-0.5 rounded-full border text-[11px] font-sans font-medium ${s.tint} ${s.text} ${s.border}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
       {s.label}
     </span>
@@ -350,7 +351,7 @@ async function openDoc(path) {
   if (!error && data?.signedUrl) window.open(data.signedUrl, '_blank')
 }
 
-function ListView({ rows, selected, toggleSelect, selectAll }) {
+function ListView({ rows, selected, toggleSelect, selectAll, onPreview }) {
   const allChecked = rows.length > 0 && rows.every(r => selected.has(r.id))
 
   const Th = ({ children, className = '' }) => (
@@ -367,7 +368,6 @@ function ListView({ rows, selected, toggleSelect, selectAll }) {
             <col style={{ minWidth: 160 }} />
             <col style={{ width: 110 }} />
             <col style={{ width: 90 }} />
-            <col style={{ width: 110 }} />
             <col style={{ width: 72 }} />
           </colgroup>
           <thead className="bg-white border-b border-line">
@@ -382,7 +382,6 @@ function ListView({ rows, selected, toggleSelect, selectAll }) {
               <Th>Case</Th>
               <Th>Uploaded</Th>
               <Th>Size</Th>
-              <Th>Status</Th>
               <th />
             </tr>
           </thead>
@@ -393,10 +392,11 @@ function ListView({ rows, selected, toggleSelect, selectAll }) {
               </tr>
             ) : rows.map(d => (
               <tr key={d.id}
-                className={`border-b border-line last:border-b-0 group transition-colors cursor-default
+                onClick={() => onPreview(d)}
+                className={`border-b border-line last:border-b-0 group transition-colors cursor-pointer
                   ${selected.has(d.id) ? 'bg-info-tint/40' : 'hover:bg-canvas/40'}`}>
                 <td className="px-3 py-2.5 align-middle">
-                  <button onClick={() => toggleSelect(d.id)}
+                  <button onClick={e => { e.stopPropagation(); toggleSelect(d.id) }}
                     className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
                       ${selected.has(d.id) ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}>
                     {selected.has(d.id) && <Check size={11} className="text-surface" />}
@@ -420,9 +420,6 @@ function ListView({ rows, selected, toggleSelect, selectAll }) {
                 <td className="px-3 py-2.5 align-middle">
                   <span className="font-sans text-[11.5px] text-muted">{d.size}</span>
                 </td>
-                <td className="px-3 py-2.5 align-middle">
-                  <StatusBadge status={d.status} />
-                </td>
                 <td className="px-2 py-2.5 align-middle">
                   <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={e => { e.stopPropagation(); openDoc(d.path) }} title="Download"
@@ -443,13 +440,13 @@ function ListView({ rows, selected, toggleSelect, selectAll }) {
 }
 
 // ─── Grid view ────────────────────────────────────────────────────────────────
-function GridView({ rows, selected, toggleSelect }) {
+function GridView({ rows, selected, toggleSelect, onPreview }) {
   if (rows.length === 0) return <Empty />
   return (
     <div className="grid gap-3 p-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
       {rows.map(d => (
         <div key={d.id}
-          onClick={() => openDoc(d.path)}
+          onClick={() => onPreview(d)}
           className={`relative bg-white rounded-xl border p-4 cursor-pointer group transition-all
             ${selected.has(d.id) ? 'border-ink ring-1 ring-ink' : 'border-line hover:border-secondary/50 hover:shadow-sm'}`}>
           {/* Select checkbox */}
@@ -498,7 +495,7 @@ function GridView({ rows, selected, toggleSelect }) {
 // ─── Columns view ─────────────────────────────────────────────────────────────
 const COL1_TYPES = [{ id: 'all', label: 'All Types' }, ...DOC_TYPES.map(t => ({ id: t, label: t }))]
 
-function DocDetailPanel({ doc }) {
+function DocDetailPanel({ doc, onPreview }) {
   if (!doc) {
     return (
       <div className="h-full flex flex-col items-center justify-center px-8 text-center">
@@ -553,8 +550,10 @@ function DocDetailPanel({ doc }) {
 
       {/* Actions */}
       <div className="px-5 py-3 border-t border-line flex gap-2 shrink-0">
-        <button className="flex-1 h-9 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer transition-colors flex items-center justify-center gap-1.5">
-          <Download size={13} /> Download
+        <button
+          onClick={() => onPreview(doc)}
+          className="flex-1 h-9 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer transition-colors flex items-center justify-center gap-1.5">
+          <FileText size={13} /> Open
         </button>
         <button className="h-9 px-3 rounded-lg border border-line hover:bg-canvas font-sans text-[12.5px] text-secondary cursor-pointer flex items-center justify-center transition-colors">
           <MoreHorizontal size={14} />
@@ -564,7 +563,7 @@ function DocDetailPanel({ doc }) {
   )
 }
 
-function ColumnsView({ docs, activeDocId, setActiveDocId }) {
+function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview }) {
   const [colType, setColType] = useState('all')
   const wrapRef = useRef(null)
   const [col1, setCol1] = useState(() => Number(localStorage.getItem('docs-col1')) || 190)
@@ -663,7 +662,84 @@ function ColumnsView({ docs, activeDocId, setActiveDocId }) {
 
         {/* Col 3: Detail preview */}
         <div className="overflow-auto shrink-0" style={{ width: col3 }}>
-          <DocDetailPanel doc={activeDoc} />
+          <DocDetailPanel doc={activeDoc} onPreview={onPreview} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Document Preview Modal ───────────────────────────────────────────────────
+function DocumentPreviewModal({ doc, onClose }) {
+  const fileName = doc.fullName ?? doc.name
+  const isPdf    = fileName.toLowerCase().endsWith('.pdf')
+  const isImage  = /\.(png|jpe?g|gif|webp|svg)$/i.test(fileName)
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface rounded-2xl border border-line shadow-2xl flex flex-col overflow-hidden"
+        style={{ width: '760px', height: '88vh', maxWidth: '100%' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-line bg-white shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-lg bg-canvas border border-line flex items-center justify-center shrink-0">
+              <FileText size={13} className="text-muted" />
+            </div>
+            <span className="font-sans text-sm font-medium text-ink truncate max-w-[400px]">{fileName}</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href={doc.url}
+              download={fileName}
+              target="_blank"
+              rel="noreferrer"
+              className="h-8 px-3 rounded-lg border border-line bg-canvas text-xs font-sans font-medium text-secondary hover:text-ink hover:bg-white transition-colors flex items-center gap-1.5"
+            >
+              <Download size={12} strokeWidth={1.8} />
+              Download
+            </a>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg hover:bg-canvas flex items-center justify-center text-muted transition-colors cursor-pointer"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-hidden bg-[#f0f0f0]">
+          {isPdf ? (
+            <iframe
+              src={`${doc.url}#toolbar=0&navpanes=0`}
+              title={fileName}
+              className="w-full h-full border-none"
+            />
+          ) : isImage ? (
+            <div className="w-full h-full flex items-center justify-center p-6">
+              <img src={doc.url} alt={fileName} className="max-w-full max-h-full object-contain rounded-lg shadow" />
+            </div>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+              <FileText size={48} className="text-muted/40" />
+              <p className="font-sans text-[13px] text-secondary">Preview not available for this file type</p>
+              <a
+                href={doc.url}
+                download={fileName}
+                target="_blank"
+                rel="noreferrer"
+                className="h-8 px-4 rounded-lg bg-ink text-surface font-sans text-[12.5px] font-medium flex items-center gap-1.5 hover:bg-ink/90 transition-colors"
+              >
+                <Download size={13} /> Download to view
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -678,6 +754,7 @@ export function DocumentsPage({ cases = [] }) {
   const [sortBy, setSortBy]             = useState('date')
   const [selected, setSelected]         = useState(new Set())
   const [activeDocId, setActiveDocId] = useState(null)
+  const [previewDoc, setPreviewDoc]   = useState(null)
   const [page, setPage]                 = useState(1)
   const [pageSize, setPageSize]         = useState(20)
   const [filters, setFilters]           = useState({ types: new Set(), statuses: new Set(), datePreset: '' })
@@ -744,6 +821,12 @@ export function DocumentsPage({ cases = [] }) {
   // Reset page when filters change
   useEffect(() => { setPage(1) }, [category, search, filters, sortBy])
 
+  const handlePreview = async (doc) => {
+    if (!doc.path) return
+    const { data, error } = await supabase.storage.from('case-documents').createSignedUrl(doc.path, 3600)
+    if (!error && data?.signedUrl) setPreviewDoc({ ...doc, url: data.signedUrl })
+  }
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-white">
       <TopBar
@@ -759,13 +842,13 @@ export function DocumentsPage({ cases = [] }) {
 
       {view === 'columns' ? (
         <div className="flex-1 overflow-hidden">
-          <ColumnsView docs={sorted} activeDocId={activeDocId} setActiveDocId={setActiveDocId} />
+          <ColumnsView docs={sorted} activeDocId={activeDocId} setActiveDocId={setActiveDocId} onPreview={handlePreview} />
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
           {view === 'list'
-            ? <ListView rows={paginated} selected={selected} toggleSelect={toggleSelect} selectAll={selectAll} />
-            : <GridView rows={paginated} selected={selected} toggleSelect={toggleSelect} />
+            ? <ListView rows={paginated} selected={selected} toggleSelect={toggleSelect} selectAll={selectAll} onPreview={handlePreview} />
+            : <GridView rows={paginated} selected={selected} toggleSelect={toggleSelect} onPreview={handlePreview} />
           }
         </div>
       )}
@@ -778,6 +861,10 @@ export function DocumentsPage({ cases = [] }) {
         onPrev={() => setPage(p => Math.max(1, p - 1))}
         onNext={() => setPage(p => Math.min(totalPages, p + 1))}
       />
+
+      {previewDoc && (
+        <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
+      )}
     </div>
   )
 }
