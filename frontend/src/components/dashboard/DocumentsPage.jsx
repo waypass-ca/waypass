@@ -269,6 +269,56 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
 
 
 
+// ─── Doc context menu ─────────────────────────────────────────────────────────
+function DocMenu({ doc, onPreview, up = false }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative">
+      
+      
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
+        className={`w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors
+          ${open ? 'bg-canvas text-ink' : ''}`}>
+        <MoreHorizontal size={13} />
+      </button>
+
+      {open && (
+        <div
+          onClick={e => e.stopPropagation()}
+          className={`absolute ${up ? 'bottom-[calc(100%+12px)]' : 'top-[calc(100%+4px)]'} z-50 w-36 bg-white border border-line rounded-xl shadow-[0_8px_24px_-4px_rgba(28,28,30,0.14)] overflow-hidden
+            right-0`}>
+          <button
+            onClick={() => { setOpen(false); onPreview(doc) }}
+            className="w-full px-3 py-2.5 text-left font-sans text-[12.5px] text-ink hover:bg-canvas flex items-center gap-2.5 cursor-pointer transition-colors">
+            Open
+          </button>
+          <button
+            onClick={() => { setOpen(false) }}
+            className="w-full px-3 py-2.5 text-left font-sans text-[12.5px] text-ink hover:bg-canvas flex items-center gap-2.5 cursor-pointer transition-colors">
+            Edit
+          </button>
+          <div className="h-px bg-line mx-2" />
+          <button
+            onClick={() => { setOpen(false) }}
+            className="w-full px-3 py-2.5 text-left font-sans text-[12.5px] text-danger hover:bg-danger-tint flex items-center gap-2.5 cursor-pointer transition-colors">
+            Delete
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Selection bar ────────────────────────────────────────────────────────────
 function SelectionBar({ count, clear }) {
   return (
@@ -426,9 +476,7 @@ function ListView({ rows, selected, toggleSelect, selectAll, onPreview }) {
                       className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors">
                       <Download size={13} />
                     </button>
-                    <button title="More" className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors">
-                      <MoreHorizontal size={13} />
-                    </button>
+                    <DocMenu doc={d} onPreview={onPreview} />
                   </div>
                 </td>
               </tr>
@@ -472,19 +520,15 @@ function GridView({ rows, selected, toggleSelect, onPreview }) {
           </div>
 
           {/* Hover actions */}
-          <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-3 right-3 flex opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={e => { e.stopPropagation(); openDoc(d.path) }}
               title="Download"
-              className="w-6 h-6 rounded-sm bg-surface border border-line flex items-center justify-center text-muted hover:text-ink hover:border-secondary transition cursor-pointer">
+              className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors
+          hover:bg-canvas">
               <Download size={12} />
             </button>
-            <button
-              onClick={e => { e.stopPropagation() }}
-              title="More"
-              className="w-6 h-6 rounded-sm bg-surface border border-line flex items-center justify-center text-muted hover:text-ink hover:border-secondary transition cursor-pointer">
-              <MoreHorizontal size={12} />
-            </button>
+            <DocMenu doc={d} onPreview={onPreview} />
           </div>
         </div>
       ))}
@@ -555,9 +599,7 @@ function DocDetailPanel({ doc, onPreview }) {
           className="flex-1 h-9 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer transition-colors flex items-center justify-center gap-1.5">
           <FileText size={13} /> Open
         </button>
-        <button className="h-9 px-3 rounded-lg border border-line hover:bg-canvas font-sans text-[12.5px] text-secondary cursor-pointer flex items-center justify-center transition-colors">
-          <MoreHorizontal size={14} />
-        </button>
+        <DocMenu doc={doc} onPreview={onPreview} up />
       </div>
     </div>
   )
