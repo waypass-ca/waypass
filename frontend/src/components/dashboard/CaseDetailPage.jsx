@@ -10,6 +10,7 @@ import { crematoriums } from '../../data/mockData.js'
 import { supabase } from '../../lib/supabase.js'
 import { StatusPill } from '../ui/StatusPill'
 import { Button } from '../ui/Button'
+import { DocumentPreviewModal } from '../ui/DocumentPreviewModal'
 
 const CUSTODY_STAGES = [
   'Removal from Location',
@@ -408,21 +409,17 @@ function AuthorizationModal({ dop, onUpload, authComplete, onAuthComplete, authF
   )
 }
 
-function DocRow({ doc }) {
+function DocRow({ doc, onPreview }) {
   const name = typeof doc === 'string' ? doc : doc.name
   const path = typeof doc === 'string' ? null : doc.path
   const uploadedAt = typeof doc === 'string' ? null : doc.uploadedAt
   const ext = name?.split('.').pop().toUpperCase() ?? 'FILE'
 
-  async function handleDownload() {
-    if (!path) return
-    const { data, error } = await supabase.storage.from('case-documents').createSignedUrl(path, 60)
-    if (error || !data?.signedUrl) return
-    window.open(data.signedUrl, '_blank')
-  }
-
   return (
-    <div className="flex items-center justify-between py-3 border-b border-line last:border-0">
+    <div
+      onClick={() => onPreview(doc)}
+      className="flex items-center justify-between py-3 border-b border-line last:border-0 cursor-pointer hover:bg-canvas/50 -mx-2 px-2 rounded-lg transition-colors group"
+    >
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-8 h-8 rounded-lg bg-info-tint flex items-center justify-center flex-shrink-0">
           <span className="font-sans text-[9px] font-bold text-info">{ext}</span>
@@ -433,12 +430,9 @@ function DocRow({ doc }) {
         </div>
       </div>
       {path && (
-        <button
-          onClick={handleDownload}
-          className="font-sans text-xs font-medium text-secondary hover:text-ink transition-colors cursor-pointer border-0 bg-transparent outline-none flex-shrink-0 ml-4"
-        >
-          Download
-        </button>
+        <span className="font-sans text-xs font-medium text-muted group-hover:text-ink transition-colors flex-shrink-0 ml-4">
+          Open
+        </span>
       )}
     </div>
   )
@@ -581,6 +575,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authFormUploaded, setAuthFormUploaded] = useState(false)
   const [permitUploaded, setPermitUploaded] = useState(false)
+  const [previewDoc, setPreviewDoc] = useState(null)
   const uploadInputRef = useRef(null)
 
   useEffect(() => {
@@ -632,6 +627,16 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
       setNotes(prev => [...prev.slice(0, -1), { ...saved, _ts }])
     } catch (err) {
       console.error('Failed to save note:', err.message)
+    }
+  }
+
+  async function handlePreview(doc) {
+    const path = typeof doc === 'string' ? null : doc.path
+    if (!path) return
+    const { data, error } = await supabase.storage.from('case-documents').createSignedUrl(path, 3600)
+    if (!error && data?.signedUrl) {
+      const name = typeof doc === 'string' ? doc : doc.name
+      setPreviewDoc({ fullName: name, url: data.signedUrl })
     }
   }
 
@@ -827,7 +832,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
               {documents.length > 0 ? (
                 <div>
                   <p className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider py-2 mb-1">Files</p>
-                  {documents.map((doc, i) => <DocRow key={i} doc={doc} />)}
+                  {documents.map((doc, i) => <DocRow key={i} doc={doc} onPreview={handlePreview} />)}
                 </div>
               ) : (
                 <div className="text-center py-16">
@@ -867,6 +872,10 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange }) {
           onPermitUpload={() => setPermitUploaded(true)}
           onClose={() => setShowAuthModal(false)}
         />
+      )}
+
+      {previewDoc && (
+        <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
       )}
     </div>
   )
