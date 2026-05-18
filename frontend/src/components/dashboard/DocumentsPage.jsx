@@ -90,20 +90,21 @@ function casesToDocs(cases = []) {
           legacyName: null,
         }
       }
-      // ── Legacy JSONB object { name, folderId } ─────
+      // ── Legacy JSONB object { name, path, type, folderId? } ─────
       const name = d.name ?? d.path ?? 'Document'
+      const path = d.path ?? null
       const ext  = name.includes('.') ? name.split('.').pop().toUpperCase() : 'FILE'
       return {
-        id: `${c.id}_${name}`,
+        id: path ?? `${c.id}_${name}`,
         name: name.replace(/\.[^.]+$/, ''),
         fullName: name,
-        type: inferDocType(name),
+        type: d.type ? inferDocType(d.type) : inferDocType(name),
         case: c.deceased ?? c.family ?? 'Unknown',
         caseId: c.id,
-        uploadedAt: '—',
+        uploadedAt: d.uploadedAt ?? '—',
         ext, size: '—',
         status: inferDocStatus(c.status),
-        path: null,
+        path,
         dbFolderId: d.folderId ?? null,
         structuredId: null,
         legacyName: name,

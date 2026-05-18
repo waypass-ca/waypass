@@ -235,8 +235,12 @@ router.patch('/:id/document-folder', requireAuth, async (req, res, next) => {
 
     const updated = (caseRow?.documents ?? []).map(d => {
       const name = typeof d === 'string' ? d : (d.name ?? '')
-      if (name === docName) return folderId ? { name, folderId } : name
-      return d
+      if (name !== docName) return d
+      // Preserve all existing fields (path, type, etc.), only set/clear folderId
+      const base = typeof d === 'string' ? { name } : { ...d }
+      if (folderId) return { ...base, folderId }
+      const { folderId: _removed, ...rest } = base
+      return Object.keys(rest).length === 1 && rest.name ? rest.name : rest
     })
 
     const { error } = await supabase
