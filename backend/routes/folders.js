@@ -84,9 +84,33 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
   }
 })
 
-// DELETE /api/folders/:id — soft delete
+// DELETE /api/folders/:id?type=cases|documents&withContents=true
 router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
+    const { type, withContents } = req.query
+    const deleteContents = withContents === 'true'
+
+    if (type === 'documents') {
+      const { error } = deleteContents
+        ? await supabase.from('case_documents')
+            .update({ deleted_at: new Date().toISOString() })
+            .eq('folder_id', req.params.id)
+            .is('deleted_at', null)
+        : await supabase.from('case_documents')
+            .update({ folder_id: null })
+            .eq('folder_id', req.params.id)
+      if (error) throw error
+    } else if (type === 'cases') {
+      const update = deleteContents
+        ? { folder_id: null, deleted_at: new Date().toISOString() }
+        : { folder_id: null }
+      const { error } = await supabase.from('cases')
+        .update(update)
+        .eq('folder_id', req.params.id)
+        .is('deleted_at', null)
+      if (error) throw error
+    }
+
     const { error } = await supabase
       .from('folders')
       .update({ deleted_at: new Date().toISOString() })
