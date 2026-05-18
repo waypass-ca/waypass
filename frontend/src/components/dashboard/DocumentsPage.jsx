@@ -807,7 +807,7 @@ function GridView({ docs, docFolders, docFolderCounts, gridDocFolderView, setGri
 // ─── Columns view ─────────────────────────────────────────────────────────────
 const COL1_TYPES = [{ id: 'all', label: 'All Types' }, ...DOC_TYPES.map(t => ({ id: t, label: t }))]
 
-function DocDetailPanel({ doc, onPreview }) {
+function DocDetailPanel({ doc, onPreview, docFolders, onMoveToFolder, onCreateAndMove }) {
   if (!doc) {
     return (
       <div className="h-full flex flex-col items-center justify-center px-8 text-center">
@@ -864,7 +864,7 @@ function DocDetailPanel({ doc, onPreview }) {
           className="flex-1 h-9 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer transition-colors flex items-center justify-center gap-1.5">
           <FileText size={13} /> Open
         </button>
-        <DocMenu doc={doc} onPreview={onPreview} up />
+        <DocMenu doc={doc} onPreview={onPreview} folders={docFolders} onMoveToFolder={onMoveToFolder} onCreateAndMove={onCreateAndMove} up />
       </div>
     </div>
   )
@@ -1051,7 +1051,7 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders,
 
         {/* Col 3: Detail preview */}
         <div className="overflow-auto shrink-0" style={{ width: col3 }}>
-          <DocDetailPanel doc={activeDoc} onPreview={onPreview} />
+          <DocDetailPanel doc={activeDoc} onPreview={onPreview} docFolders={docFolders} onMoveToFolder={onMoveToFolder} onCreateAndMove={onCreateAndMove} />
         </div>
       </div>
     </div>
