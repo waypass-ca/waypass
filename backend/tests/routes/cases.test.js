@@ -66,6 +66,8 @@ const shapedCase = {
   crematorium: null,
   removalStaff: null,
   removalTime: null,
+  folderId: null,
+  folderName: null,
   documents: [],
   notes: [],
 }

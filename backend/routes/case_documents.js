@@ -4,6 +4,8 @@ import { requireAuth } from '../middleware/auth.js'
 
 const router = Router({ mergeParams: true })
 
+const DOC_SELECT = '*, folder:folders(*)'
+
 function shapeRow(row) {
   return {
     id: row.id,
@@ -15,6 +17,8 @@ function shapeRow(row) {
     storagePath: row.storage_path,
     status: row.status,
     visibleToFamily: row.visible_to_family,
+    folderId: row.folder?.id ?? row.folder_id ?? null,
+    folderName: row.folder?.name ?? null,
     uploadedAt: row.uploaded_at,
   }
 }
@@ -24,7 +28,7 @@ router.get('/structured', requireAuth, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('case_documents')
-      .select('*')
+      .select(DOC_SELECT)
       .eq('case_id', req.params.caseId)
       .is('deleted_at', null)
       .order('uploaded_at', { ascending: false })
@@ -54,8 +58,9 @@ router.post('/structured', requireAuth, async (req, res, next) => {
         storage_path: body.storagePath ?? null,
         status: body.status ?? 'pending',
         visible_to_family: body.visibleToFamily ?? false,
+        folder_id: body.folderId ?? null,
       })
-      .select()
+      .select(DOC_SELECT)
       .single()
     if (error) throw error
     res.status(201).json(shapeRow(data))
@@ -77,7 +82,26 @@ router.patch('/structured/:id', requireAuth, async (req, res, next) => {
       })
       .eq('id', req.params.id)
       .eq('case_id', req.params.caseId)
-      .select()
+      .select(DOC_SELECT)
+      .single()
+    if (error) throw error
+    if (!data) return res.status(404).json({ error: 'Document not found' })
+    res.json(shapeRow(data))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// PATCH /api/cases/:caseId/documents/structured/:id/folder
+router.patch('/structured/:id/folder', requireAuth, async (req, res, next) => {
+  try {
+    const { folderId } = req.body
+    const { data, error } = await supabase
+      .from('case_documents')
+      .update({ folder_id: folderId ?? null })
+      .eq('id', req.params.id)
+      .eq('case_id', req.params.caseId)
+      .select(DOC_SELECT)
       .single()
     if (error) throw error
     if (!data) return res.status(404).json({ error: 'Document not found' })

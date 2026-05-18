@@ -32,6 +32,8 @@ const shapedDocument = {
   storagePath: 'cases/PSG-2024-0001/cert.pdf',
   status: 'pending',
   visibleToFamily: false,
+  folderId: null,
+  folderName: null,
   uploadedAt: '2024-03-15T10:00:00Z',
 }
 

@@ -5,7 +5,7 @@ import { requireAuth } from '../middleware/auth.js'
 const router = Router()
 
 const CASE_SELECT =
-  '*, case_notes(*), deceased_record:deceased(*), case_contacts(*), case_addons(*), case_documents(*)'
+  '*, case_notes(*), deceased_record:deceased(*), case_contacts(*), case_addons(*), case_documents(*), folder:folders(*)'
 
 function shapeRow(row) {
   const d = row.deceased_record
@@ -39,6 +39,8 @@ function shapeRow(row) {
     crematorium: row.crematorium_name,
     removalStaff: row.removal_staff,
     removalTime: row.removal_time,
+    folderId: row.folder?.id ?? row.folder_id ?? null,
+    folderName: row.folder?.name ?? null,
     documents: row.case_documents?.length
       ? row.case_documents
       : (row.documents ?? []),
@@ -193,6 +195,24 @@ router.patch('/:id/status', requireAuth, async (req, res, next) => {
       .single()
 
     if (error) throw error
+    res.json(shapeRow(data))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// ── PATCH /api/cases/:id/folder ─────────────────
+router.patch('/:id/folder', requireAuth, async (req, res, next) => {
+  try {
+    const { folderId } = req.body
+    const { data, error } = await supabase
+      .from('cases')
+      .update({ folder_id: folderId ?? null, modified_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+      .select(CASE_SELECT)
+      .single()
+    if (error) throw error
+    if (!data) return res.status(404).json({ error: 'Case not found' })
     res.json(shapeRow(data))
   } catch (err) {
     next(err)
