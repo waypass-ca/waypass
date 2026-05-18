@@ -63,6 +63,101 @@ function StatusBadge({ status }) {
   )
 }
 
+// ─── Case context menu ────────────────────────────────────────────────────────
+function CaseMenu({ c, onViewCase, userFolders, onMoveToFolder, onCreateAndMove, up = false, triggerClassName }) {
+  const [open, setOpen] = useState(false)
+  const [addingFolder, setAddingFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const ref = useRef(null)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const h = e => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false); setAddingFolder(false); setNewFolderName('')
+      }
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  useEffect(() => { if (addingFolder) inputRef.current?.focus() }, [addingFolder])
+
+  function submitNewFolder(e) {
+    e?.preventDefault()
+    if (!newFolderName.trim()) return
+    onCreateAndMove(c.id, newFolderName.trim())
+    setNewFolderName(''); setAddingFolder(false); setOpen(false)
+  }
+
+  return (
+    <div ref={ref} className="relative" onClick={e => e.stopPropagation()}>
+      <button
+        onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
+        className={triggerClassName ?? `w-6 h-6 rounded-md flex items-center justify-center text-muted cursor-pointer transition-colors ${open ? 'bg-canvas text-ink' : 'hover:bg-canvas'}`}>
+        <MoreHorizontal size={13} />
+      </button>
+
+      {open && (
+        <div className={`absolute ${up ? 'bottom-[calc(100%+4px)]' : 'top-[calc(100%+4px)]'} right-0 z-50 w-48 bg-white border border-line rounded-xl shadow-[0_8px_24px_-4px_rgba(28,28,30,0.14)] overflow-hidden`}>
+          <button
+            onClick={() => { setOpen(false); onViewCase(c.id) }}
+            className="w-full px-3 py-2.5 text-left font-sans text-[12.5px] text-ink hover:bg-canvas cursor-pointer transition-colors">
+            Open
+          </button>
+
+          <div className="h-px bg-line mx-2" />
+          <div className="px-3 pt-2 pb-0.5 font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted">Move to</div>
+
+          {userFolders.map(f => (
+            <button key={f.id}
+              onClick={() => { onMoveToFolder(c.id, f.id); setOpen(false) }}
+              className="w-full px-3 py-1.5 text-left font-sans text-[12.5px] text-ink hover:bg-canvas cursor-pointer transition-colors flex items-center gap-2">
+              <Folder size={12} className="text-secondary shrink-0" />
+              <span className="flex-1 truncate">{f.name}</span>
+              {c.folderId === f.id && <Check size={11} className="text-primary shrink-0" />}
+            </button>
+          ))}
+
+          {addingFolder ? (
+            <form onSubmit={submitNewFolder} className="px-3 py-1.5">
+              <input
+                ref={inputRef}
+                value={newFolderName}
+                onChange={e => setNewFolderName(e.target.value)}
+                onBlur={submitNewFolder}
+                onKeyDown={e => { if (e.key === 'Escape') { setAddingFolder(false); setNewFolderName('') } }}
+                placeholder="Folder name…"
+                className="w-full text-[12px] font-sans rounded border border-ink/30 outline-none bg-white px-2 py-1 text-ink placeholder:text-muted"
+              />
+            </form>
+          ) : (
+            <button
+              onClick={() => setAddingFolder(true)}
+              className="w-full px-3 py-1.5 text-left font-sans text-[12.5px] text-secondary hover:bg-canvas cursor-pointer transition-colors flex items-center gap-2">
+              <Plus size={12} className="shrink-0" />
+              New Folder
+            </button>
+          )}
+
+          {c.folderId && (
+            <>
+              <div className="h-px bg-line mx-2 mt-0.5" />
+              <button
+                onClick={() => { onMoveToFolder(c.id, null); setOpen(false) }}
+                className="w-full px-3 py-2 text-left font-sans text-[12.5px] text-secondary hover:bg-canvas cursor-pointer transition-colors flex items-center gap-2">
+                <X size={12} className="shrink-0" />
+                Remove from folder
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function InfoRow({ label, value, sub }) {
   return (
     <div>
@@ -543,7 +638,7 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
 }
 
 // ─── Case card (reusable in grid) ────────────────────────────────────────────
-function CaseCard({ c, selected, toggleSelect, activeId, setActiveId, isStarred, onViewCase }) {
+function CaseCard({ c, selected, toggleSelect, activeId, setActiveId, isStarred, onViewCase, userFolders, onMoveToFolder, onCreateAndMove }) {
   const s = STATUS[c.status] || STATUS.pending
   return (
     <div
@@ -553,31 +648,47 @@ function CaseCard({ c, selected, toggleSelect, activeId, setActiveId, isStarred,
         e.dataTransfer.setDragImage(makeCaseDragImage(c.deceased), 20, 20)
       }}
       onClick={() => onViewCase(c.id)}
-      className={`group relative bg-white border rounded-lg overflow-hidden cursor-default transition
+      className={`group relative bg-white border rounded-lg cursor-default transition
         hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
         ${activeId === c.id ? 'border-ink/40 ring-2 ring-ink/10' : 'border-line'}
         ${selected.has(c.id) ? 'ring-2 ring-info/60' : ''}`}>
-      <div className={`h-14 ${s.tint} relative border-b ${s.border} flex items-center justify-center`}>
-        <div className="absolute top-1.5 left-1.5">
-          <button onClick={e => { e.stopPropagation(); toggleSelect(c.id) }}
-            className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
-              ${selected.has(c.id) ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}>
-            {selected.has(c.id) && <Check size={11} className="text-surface" />}
-          </button>
+      {/* Clip header to card's rounded top corners */}
+      <div className="rounded-t-[7px] overflow-hidden">
+        <div className={`h-14 ${s.tint} relative border-b ${s.border} flex items-center justify-center`}>
+          <div className="absolute top-1.5 left-1.5">
+            <button onClick={e => { e.stopPropagation(); toggleSelect(c.id) }}
+              className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
+                ${selected.has(c.id) ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}>
+              {selected.has(c.id) && <Check size={11} className="text-surface" />}
+            </button>
+          </div>
+          {isStarred(c.id) && <StarFilled size={12} className="absolute top-2 left-7 text-warning" />}
+          <div className="w-9 h-10 bg-white rounded-[4px] shadow-[0_2px_6px_rgba(28,28,30,0.08)] flex flex-col items-center justify-center gap-0.5">
+            <div className={`w-4 h-[2px] ${s.dot} rounded-full`} />
+            <span className="font-display text-[14px] text-ink leading-none">
+              {(c.deceased || '').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('')}
+            </span>
+          </div>
         </div>
+      </div>
+      {/* Eye + three-dots — top-right, hover-reveal, matching DocCard style */}
+      <div className="absolute top-2 right-2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         <button
           onClick={e => { e.stopPropagation(); setActiveId(c.id === activeId ? null : c.id) }}
           title="Preview"
-          className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100
-            ${activeId === c.id ? 'bg-ink text-surface opacity-100' : 'bg-white text-secondary hover:bg-surface'}`}>
-          <Eye size={11} />
+          className={`w-7 h-7 rounded-md flex items-center justify-center  cursor-pointer transition-colors
+            ${activeId === c.id ? 'bg-ink text-surface' : 'hover:bg-black/10 text-muted'}`}>
+          <Eye size={12} />
         </button>
-        {isStarred(c.id) && <StarFilled size={12} className="absolute top-2 left-7 text-warning" />}
-        <div className="w-9 h-10 bg-white rounded-[4px] shadow-[0_2px_6px_rgba(28,28,30,0.08)] flex flex-col items-center justify-center gap-0.5">
-          <div className={`w-4 h-[2px] ${s.dot} rounded-full`} />
-          <span className="font-display text-[14px] text-ink leading-none">
-            {(c.deceased || '').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('')}
-          </span>
+        <div onClick={e => e.stopPropagation()}>
+          <CaseMenu
+            c={c}
+            onViewCase={onViewCase}
+            userFolders={userFolders}
+            onMoveToFolder={onMoveToFolder}
+            onCreateAndMove={onCreateAndMove}
+            triggerClassName={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer transition-colors ${activeId === c.id ? 'bg-ink text-surface' : 'hover:bg-black/10 text-muted'}`}
+          />
         </div>
       </div>
       <div className="p-3">
@@ -604,7 +715,8 @@ function CaseCard({ c, selected, toggleSelect, activeId, setActiveId, isStarred,
 // ─── Grid view ────────────────────────────────────────────────────────────────
 function GridView({ cases, userFolders, folderCounts, gridFolderView, setGridFolderView,
   selected, toggleSelect, activeId, setActiveId, isStarred, onViewCase,
-  onAddFolder, onDeleteFolder, dragOverFolderId, setDragOverFolderId, onFolderDrop }) {
+  onAddFolder, onDeleteFolder, dragOverFolderId, setDragOverFolderId, onFolderDrop,
+  onMoveToFolder, onCreateAndMove }) {
 
   const currentFolder = gridFolderView ? userFolders.find(f => f.id === gridFolderView) : null
 
@@ -687,6 +799,9 @@ function GridView({ cases, userFolders, folderCounts, gridFolderView, setGridFol
               setActiveId={setActiveId}
               isStarred={isStarred}
               onViewCase={onViewCase}
+              userFolders={userFolders}
+              onMoveToFolder={onMoveToFolder}
+              onCreateAndMove={onCreateAndMove}
             />
           ))}
         </div>
@@ -699,6 +814,7 @@ function GridView({ cases, userFolders, folderCounts, gridFolderView, setGridFol
 function ColumnsView({
   rows, activeId, setActiveId, folder, setFolder, counts, cases, isStarred, onViewCase,
   userFolders, onAddFolder, onDeleteFolder, onFolderDrop, dragOverFolderId, setDragOverFolderId,
+  onMoveToFolder, onCreateAndMove,
 }) {
   const smartFolders = SMART_FOLDERS.map(f => ({ ...f, count: counts[f.id] }))
   const c = activeId ? (rows.find(r => r.id === activeId) || cases.find(r => r.id === activeId)) : null
@@ -834,7 +950,7 @@ function ColumnsView({
               }}
               onDoubleClick={() => onViewCase(r.id)}
               onClick={() => setActiveId(r.id)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 border-b border-line/60 text-left cursor-pointer transition-colors
+              className={`group w-full flex items-center gap-3 px-4 py-2.5 border-b border-line/60 text-left cursor-pointer transition-colors
                 ${activeId === r.id ? 'bg-canvas/60' : 'hover:bg-canvas/60'}`}>
               <div className="flex-1 min-w-0">
                 <div className="font-sans text-[13px] truncate flex items-center gap-1.5 text-ink">
@@ -845,6 +961,9 @@ function ColumnsView({
                   {r.family} · {r.date}
                 </div>
               </div>
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                <CaseMenu c={r} onViewCase={onViewCase} userFolders={userFolders} onMoveToFolder={onMoveToFolder} onCreateAndMove={onCreateAndMove} />
+              </div>
               <ChevronRight size={12} className="text-muted shrink-0" />
             </div>
           ))}
@@ -854,7 +973,7 @@ function ColumnsView({
 
         {/* Col 3: Preview */}
         <div className="overflow-auto shrink-0" style={{ width: col3 }}>
-          {c ? <CasePreviewBody c={c} isStarred={isStarred} /> : (
+          {c ? <CasePreviewBody c={c} isStarred={isStarred} onViewCase={onViewCase} userFolders={userFolders} onMoveToFolder={onMoveToFolder} onCreateAndMove={onCreateAndMove} /> : (
             <div className="h-full flex flex-col items-center justify-center px-8 text-center">
               <File size={32} className="text-muted/40 mb-3" />
               <div className="font-display text-[18px] text-secondary">Select a case</div>
@@ -882,7 +1001,7 @@ function PreviewPanel({ c, close, onViewCase, isStarred }) {
   )
 }
 
-function CasePreviewBody({ c, onViewCase, isStarred }) {
+function CasePreviewBody({ c, onViewCase, isStarred, userFolders = [], onMoveToFolder, onCreateAndMove }) {
   const s = STATUS[c.status] || STATUS.pending
   const age = calcAge(c.dob, c.dop)
   const docs = c.documents || []
@@ -965,6 +1084,9 @@ function CasePreviewBody({ c, onViewCase, isStarred }) {
               <Phone size={13} /> Call
             </button>
           )}
+          <div className="h-9 flex items-center">
+            <CaseMenu c={c} onViewCase={onViewCase} userFolders={userFolders} onMoveToFolder={onMoveToFolder} onCreateAndMove={onCreateAndMove} up />
+          </div>
         </div>
       )}
     </div>
@@ -1031,6 +1153,21 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
     if (!caseId || !onCaseFolderAssign) return
     setDragOverFolderId(null)
     await onCaseFolderAssign(caseId, folderId)
+  }
+
+  async function handleMoveToFolder(caseId, folderId) {
+    if (!onCaseFolderAssign) return
+    await onCaseFolderAssign(caseId, folderId)
+  }
+
+  async function handleCreateAndMove(caseId, name) {
+    try {
+      const f = await createFolder({ name, type: 'cases' })
+      setUserFolders(prev => [...prev, f])
+      if (onCaseFolderAssign) await onCaseFolderAssign(caseId, f.id)
+    } catch (err) {
+      console.error('Failed to create folder:', err.message)
+    }
   }
 
   const isUserFolder = (id) => !SMART_FOLDER_IDS.has(id) && userFolders.some(f => f.id === id)
@@ -1167,6 +1304,8 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
                 dragOverFolderId={dragOverFolderId}
                 setDragOverFolderId={setDragOverFolderId}
                 onFolderDrop={handleFolderDrop}
+                onMoveToFolder={handleMoveToFolder}
+                onCreateAndMove={handleCreateAndMove}
               />
             )}
             {viewMode === 'columns' && (
@@ -1182,6 +1321,8 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
                 onFolderDrop={handleFolderDrop}
                 dragOverFolderId={dragOverFolderId}
                 setDragOverFolderId={setDragOverFolderId}
+                onMoveToFolder={handleMoveToFolder}
+                onCreateAndMove={handleCreateAndMove}
               />
             )}
         </div>

@@ -346,19 +346,35 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
 }
 
 // ─── Doc context menu ─────────────────────────────────────────────────────────
-function DocMenu({ doc, onPreview, up = false }) {
+function DocMenu({ doc, onPreview, up = false, folders = [], onMoveToFolder, onCreateAndMove }) {
   const [open, setOpen] = useState(false)
+  const [addingFolder, setAddingFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
   const ref = useRef(null)
+  const inputRef = useRef(null)
 
   useEffect(() => {
     if (!open) return
-    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const h = e => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false); setAddingFolder(false); setNewFolderName('')
+      }
+    }
     document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [open])
 
+  useEffect(() => { if (addingFolder) inputRef.current?.focus() }, [addingFolder])
+
+  function submitNewFolder(e) {
+    e?.preventDefault()
+    if (!newFolderName.trim()) return
+    onCreateAndMove?.(doc.id, newFolderName.trim())
+    setNewFolderName(''); setAddingFolder(false); setOpen(false)
+  }
+
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative" onClick={e => e.stopPropagation()}>
       <button
         onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
         className={`w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors
@@ -369,18 +385,60 @@ function DocMenu({ doc, onPreview, up = false }) {
       {open && (
         <div
           onClick={e => e.stopPropagation()}
-          className={`absolute ${up ? 'bottom-[calc(100%+12px)]' : 'top-[calc(100%+4px)]'} z-50 w-36 bg-white border border-line rounded-xl shadow-[0_8px_24px_-4px_rgba(28,28,30,0.14)] overflow-hidden right-0`}>
+          className={`absolute ${up ? 'bottom-[calc(100%+12px)]' : 'top-[calc(100%+4px)]'} z-50 w-48 bg-white border border-line rounded-xl shadow-[0_8px_24px_-4px_rgba(28,28,30,0.14)] overflow-hidden right-0`}>
           <button
             onClick={() => { setOpen(false); onPreview(doc) }}
             className="w-full px-3 py-2.5 text-left font-sans text-[12.5px] text-ink hover:bg-canvas flex items-center gap-2.5 cursor-pointer transition-colors">
             Open
           </button>
-          <button
-            onClick={() => { setOpen(false) }}
-            className="w-full px-3 py-2.5 text-left font-sans text-[12.5px] text-ink hover:bg-canvas flex items-center gap-2.5 cursor-pointer transition-colors">
-            Edit
-          </button>
+
           <div className="h-px bg-line mx-2" />
+          <div className="px-3 pt-2 pb-0.5 font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted">Move to</div>
+
+          {folders.map(f => (
+            <button key={f.id}
+              onClick={() => { onMoveToFolder?.(doc.id, f.id); setOpen(false) }}
+              className="w-full px-3 py-1.5 text-left font-sans text-[12.5px] text-ink hover:bg-canvas cursor-pointer transition-colors flex items-center gap-2">
+              <Folder size={12} className="text-secondary shrink-0" />
+              <span className="flex-1 truncate">{f.name}</span>
+              {doc._folderId === f.id && <Check size={11} className="text-primary shrink-0" />}
+            </button>
+          ))}
+
+          {addingFolder ? (
+            <form onSubmit={submitNewFolder} className="px-3 py-1.5">
+              <input
+                ref={inputRef}
+                value={newFolderName}
+                onChange={e => setNewFolderName(e.target.value)}
+                onBlur={submitNewFolder}
+                onKeyDown={e => { if (e.key === 'Escape') { setAddingFolder(false); setNewFolderName('') } }}
+                placeholder="Folder name…"
+                className="w-full text-[12px] font-sans rounded border border-ink/30 outline-none bg-white px-2 py-1 text-ink placeholder:text-muted"
+              />
+            </form>
+          ) : (
+            <button
+              onClick={() => setAddingFolder(true)}
+              className="w-full px-3 py-1.5 text-left font-sans text-[12.5px] text-secondary hover:bg-canvas cursor-pointer transition-colors flex items-center gap-2">
+              <Plus size={12} className="shrink-0" />
+              New Folder
+            </button>
+          )}
+
+          {doc._folderId && (
+            <>
+              <div className="h-px bg-line mx-2 mt-0.5" />
+              <button
+                onClick={() => { onMoveToFolder?.(doc.id, null); setOpen(false) }}
+                className="w-full px-3 py-2 text-left font-sans text-[12.5px] text-secondary hover:bg-canvas cursor-pointer transition-colors flex items-center gap-2">
+                <X size={12} className="shrink-0" />
+                Remove from folder
+              </button>
+            </>
+          )}
+
+          <div className="h-px bg-line mx-2 mt-0.5" />
           <button
             onClick={() => { setOpen(false) }}
             className="w-full px-3 py-2.5 text-left font-sans text-[12.5px] text-danger hover:bg-danger-tint flex items-center gap-2.5 cursor-pointer transition-colors">
@@ -474,7 +532,7 @@ async function openDoc(path) {
   if (!error && data?.signedUrl) window.open(data.signedUrl, '_blank')
 }
 
-function ListView({ rows, selected, toggleSelect, selectAll, onPreview }) {
+function ListView({ rows, selected, toggleSelect, selectAll, onPreview, docFolders, onMoveToFolder, onCreateAndMove }) {
   const allChecked = rows.length > 0 && rows.every(r => selected.has(r.id))
 
   const Th = ({ children, className = '' }) => (
@@ -554,7 +612,7 @@ function ListView({ rows, selected, toggleSelect, selectAll, onPreview }) {
                       className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors">
                       <Download size={13} />
                     </button>
-                    <DocMenu doc={d} onPreview={onPreview} />
+                    <DocMenu doc={d} onPreview={onPreview} folders={docFolders} onMoveToFolder={onMoveToFolder} onCreateAndMove={onCreateAndMove} />
                   </div>
                 </td>
               </tr>
@@ -566,7 +624,7 @@ function ListView({ rows, selected, toggleSelect, selectAll, onPreview }) {
 }
 
 // ─── Doc card ────────────────────────────────────────────────────────────────
-function DocCard({ d, selected, toggleSelect, onPreview }) {
+function DocCard({ d, selected, toggleSelect, onPreview, docFolders, onMoveToFolder, onCreateAndMove }) {
   return (
     <div
       draggable
@@ -605,7 +663,7 @@ function DocCard({ d, selected, toggleSelect, onPreview }) {
           className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors">
           <Download size={12} />
         </button>
-        <DocMenu doc={d} onPreview={onPreview} />
+        <DocMenu doc={d} onPreview={onPreview} folders={docFolders} onMoveToFolder={onMoveToFolder} onCreateAndMove={onCreateAndMove} />
       </div>
     </div>
   )
@@ -614,7 +672,7 @@ function DocCard({ d, selected, toggleSelect, onPreview }) {
 // ─── Grid view ────────────────────────────────────────────────────────────────
 function GridView({ docs, docFolders, docFolderCounts, gridDocFolderView, setGridDocFolderView,
   selected, toggleSelect, onPreview, onAddDocFolder, onDeleteDocFolder,
-  docDragOverId, setDocDragOverId, onDocFolderDrop }) {
+  docDragOverId, setDocDragOverId, onDocFolderDrop, onMoveToFolder, onCreateAndMove }) {
 
   const currentFolder = gridDocFolderView ? docFolders.find(f => f.id === gridDocFolderView) : null
 
@@ -687,7 +745,7 @@ function GridView({ docs, docFolders, docFolderCounts, gridDocFolderView, setGri
       ) : (
         <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
           {displayDocs.map(d => (
-            <DocCard key={d.id} d={d} selected={selected} toggleSelect={toggleSelect} onPreview={onPreview} />
+            <DocCard key={d.id} d={d} selected={selected} toggleSelect={toggleSelect} onPreview={onPreview} docFolders={docFolders} onMoveToFolder={onMoveToFolder} onCreateAndMove={onCreateAndMove} />
           ))}
         </div>
       )}
@@ -761,7 +819,7 @@ function DocDetailPanel({ doc, onPreview }) {
   )
 }
 
-function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders, activeDocFolder, setActiveDocFolder, onAddDocFolder, onDeleteDocFolder, onDocFolderDrop, docDragOverId, setDocDragOverId, docFolderCounts }) {
+function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders, activeDocFolder, setActiveDocFolder, onAddDocFolder, onDeleteDocFolder, onDocFolderDrop, docDragOverId, setDocDragOverId, docFolderCounts, onMoveToFolder, onCreateAndMove }) {
   const [adding, setAdding] = useState(false)
   const [newName, setNewName] = useState('')
   const inputRef = useRef(null)
@@ -918,7 +976,7 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders,
                 e.dataTransfer.setDragImage(makeDocDragImage(d.name, d.ext), 20, 20)
               }}
               onClick={() => setActiveDocId(d.id === activeDocId ? null : d.id)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 border-b border-line/60 text-left cursor-pointer transition-colors
+              className={`group w-full flex items-center gap-3 px-4 py-2.5 border-b border-line/60 text-left cursor-pointer transition-colors
                 ${activeDocId === d.id ? 'bg-canvas/60' : 'hover:bg-canvas/40'}`}>
               <FileIcon ext={d.ext} size="sm" />
               <div className="flex-1 min-w-0">
@@ -927,6 +985,9 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders,
               </div>
               <div className="shrink-0 flex items-center gap-2">
                 <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[d.status]?.dot ?? 'bg-muted'}`} />
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <DocMenu doc={d} onPreview={onPreview} folders={docFolders} onMoveToFolder={onMoveToFolder} onCreateAndMove={onCreateAndMove} />
+                </div>
                 <ChevronRight size={12} className="text-muted" />
               </div>
             </div>
@@ -993,6 +1054,24 @@ export function DocumentsPage({ cases = [] }) {
     if (!docId) return
     setDocFolderMap(prev => ({ ...prev, [docId]: folderId }))
     setDocDragOverId(null)
+  }
+
+  function handleDocMoveToFolder(docId, folderId) {
+    if (folderId === null) {
+      setDocFolderMap(prev => { const n = { ...prev }; delete n[docId]; return n })
+    } else {
+      setDocFolderMap(prev => ({ ...prev, [docId]: folderId }))
+    }
+  }
+
+  async function handleDocCreateAndMove(docId, name) {
+    try {
+      const f = await createFolder({ name, type: 'documents' })
+      setDocFolders(prev => [...prev, f])
+      setDocFolderMap(prev => ({ ...prev, [docId]: f.id }))
+    } catch (err) {
+      console.error('Failed to create folder:', err.message)
+    }
   }
 
   const allDocs = useMemo(() => casesToDocs(cases), [cases])
@@ -1098,12 +1177,14 @@ export function DocumentsPage({ cases = [] }) {
             docDragOverId={docDragOverId}
             setDocDragOverId={setDocDragOverId}
             docFolderCounts={docFolderCounts}
+            onMoveToFolder={handleDocMoveToFolder}
+            onCreateAndMove={handleDocCreateAndMove}
           />
         </div>
       ) : (
         <div className="flex-1 overflow-auto">
           {view === 'list'
-            ? <ListView rows={paginated} selected={selected} toggleSelect={toggleSelect} selectAll={selectAll} onPreview={handlePreview} />
+            ? <ListView rows={paginated} selected={selected} toggleSelect={toggleSelect} selectAll={selectAll} onPreview={handlePreview} docFolders={docFolders} onMoveToFolder={handleDocMoveToFolder} onCreateAndMove={handleDocCreateAndMove} />
             : <GridView
                 docs={sorted}
                 docFolders={docFolders}
@@ -1118,6 +1199,8 @@ export function DocumentsPage({ cases = [] }) {
                 docDragOverId={docDragOverId}
                 setDocDragOverId={setDocDragOverId}
                 onDocFolderDrop={handleDocFolderDrop}
+                onMoveToFolder={handleDocMoveToFolder}
+                onCreateAndMove={handleDocCreateAndMove}
               />
           }
         </div>
