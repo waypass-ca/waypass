@@ -219,6 +219,37 @@ router.patch('/:id/folder', requireAuth, async (req, res, next) => {
   }
 })
 
+// ── PATCH /api/cases/:id/document-folder ────────
+// Persists folder assignment for a legacy JSONB document entry
+router.patch('/:id/document-folder', requireAuth, async (req, res, next) => {
+  try {
+    const { docName, folderId } = req.body
+    if (!docName) return res.status(400).json({ error: 'docName is required' })
+
+    const { data: caseRow, error: fetchErr } = await supabase
+      .from('cases')
+      .select('documents')
+      .eq('id', req.params.id)
+      .single()
+    if (fetchErr) throw fetchErr
+
+    const updated = (caseRow?.documents ?? []).map(d => {
+      const name = typeof d === 'string' ? d : (d.name ?? '')
+      if (name === docName) return folderId ? { name, folderId } : name
+      return d
+    })
+
+    const { error } = await supabase
+      .from('cases')
+      .update({ documents: updated, modified_at: new Date().toISOString() })
+      .eq('id', req.params.id)
+    if (error) throw error
+    res.json({ ok: true })
+  } catch (err) {
+    next(err)
+  }
+})
+
 // ── POST /api/cases/:id/notes ───────────────────
 router.post('/:id/notes', requireAuth, async (req, res, next) => {
   try {

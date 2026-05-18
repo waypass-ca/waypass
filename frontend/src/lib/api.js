@@ -76,3 +76,5 @@ export const assignCaseFolder = (caseId, folderId) =>
   mutate(`/api/cases/${caseId}/folder`, { method: 'PATCH', body: JSON.stringify({ folderId }) })
 export const assignDocFolder = (caseId, docId, folderId) =>
   mutate(`/api/cases/${caseId}/documents/structured/${docId}/folder`, { method: 'PATCH', body: JSON.stringify({ folderId }) })
+export const assignLegacyDocFolder = (caseId, docName, folderId) =>
+  mutate(`/api/cases/${caseId}/document-folder`, { method: 'PATCH', body: JSON.stringify({ docName, folderId }) })

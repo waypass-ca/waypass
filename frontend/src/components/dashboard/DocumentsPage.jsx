@@ -6,8 +6,11 @@ import {
 import { PageTitle } from '../layout/PageTitle'
 import { supabase } from '../../lib/supabase.js'
 import { DocumentPreviewModal } from '../ui/DocumentPreviewModal'
-import { fetchFolders, createFolder, deleteFolder } from '../../lib/api.js'
+import { fetchFolders, createFolder, deleteFolder, assignDocFolder, assignLegacyDocFolder } from '../../lib/api.js'
 import { makeDocDragImage } from '../../lib/dragImage.js'
+
+// Track whether a genuine drag is in progress (prevents accidental drops on click)
+let activeDragDocId = null
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -47,22 +50,63 @@ function inferDocStatus(caseStatus) {
 function casesToDocs(cases = []) {
   return cases.flatMap(c =>
     (c.documents ?? []).map(d => {
-      const name    = typeof d === 'string' ? d : (d.name ?? d.path ?? 'Document')
-      const path    = typeof d === 'string' ? null : d.path
-      const rawName = name.replace(/\.[^.]+$/, '')
-      const ext     = name.includes('.') ? name.split('.').pop().toUpperCase() : 'FILE'
+      // ── Legacy string ──────────────────────────────
+      if (typeof d === 'string') {
+        const ext = d.includes('.') ? d.split('.').pop().toUpperCase() : 'FILE'
+        return {
+          id: `${c.id}_${d}`,
+          name: d.replace(/\.[^.]+$/, ''),
+          fullName: d,
+          type: inferDocType(d),
+          case: c.deceased ?? c.family ?? 'Unknown',
+          caseId: c.id,
+          uploadedAt: '—',
+          ext, size: '—',
+          status: inferDocStatus(c.status),
+          path: null,
+          dbFolderId: null,
+          structuredId: null,
+          legacyName: d,
+        }
+      }
+      // ── Structured case_documents DB row ───────────
+      if (d.id) {
+        const name = d.file_name ?? 'Document'
+        const path = d.storage_path ?? null
+        const ext  = name.includes('.') ? name.split('.').pop().toUpperCase() : 'FILE'
+        return {
+          id: d.id,
+          name: name.replace(/\.[^.]+$/, ''),
+          fullName: name,
+          type: d.document_type ?? inferDocType(name),
+          case: c.deceased ?? c.family ?? 'Unknown',
+          caseId: c.id,
+          uploadedAt: d.uploaded_at ?? '—',
+          ext, size: '—',
+          status: d.status ?? inferDocStatus(c.status),
+          path,
+          dbFolderId: d.folder_id ?? null,
+          structuredId: d.id,
+          legacyName: null,
+        }
+      }
+      // ── Legacy JSONB object { name, folderId } ─────
+      const name = d.name ?? d.path ?? 'Document'
+      const ext  = name.includes('.') ? name.split('.').pop().toUpperCase() : 'FILE'
       return {
-        id:         path ?? `${c.id}_${name}`,
-        name:       rawName,
-        fullName:   name,
-        type:       inferDocType(name),
-        case:       c.deceased ?? c.family ?? 'Unknown',
-        caseId:     c.id,
-        uploadedAt: d.uploadedAt ?? '—',
-        ext,
-        size:       '—',
-        status:     inferDocStatus(c.status),
-        path,
+        id: `${c.id}_${name}`,
+        name: name.replace(/\.[^.]+$/, ''),
+        fullName: name,
+        type: inferDocType(name),
+        case: c.deceased ?? c.family ?? 'Unknown',
+        caseId: c.id,
+        uploadedAt: '—',
+        ext, size: '—',
+        status: inferDocStatus(c.status),
+        path: null,
+        dbFolderId: d.folderId ?? null,
+        structuredId: null,
+        legacyName: name,
       }
     })
   )
@@ -569,9 +613,11 @@ function ListView({ rows, selected, toggleSelect, selectAll, onPreview, docFolde
               <tr key={d.id}
                 draggable
                 onDragStart={e => {
+                  activeDragDocId = d.id
                   e.dataTransfer.setData('docId', d.id)
                   e.dataTransfer.setDragImage(makeDocDragImage(d.name, d.ext), 20, 20)
                 }}
+                onDragEnd={() => { activeDragDocId = null }}
                 onClick={() => onPreview(d)}
                 className={`border-b border-line last:border-b-0 group transition-colors cursor-pointer
                   ${selected.has(d.id) ? 'bg-info-tint/40' : 'hover:bg-canvas/40'}`}>
@@ -623,9 +669,11 @@ function DocCard({ d, selected, toggleSelect, onPreview, docFolders, onMoveToFol
     <div
       draggable
       onDragStart={e => {
+        activeDragDocId = d.id
         e.dataTransfer.setData('docId', d.id)
         e.dataTransfer.setDragImage(makeDocDragImage(d.name, d.ext), 20, 20)
       }}
+      onDragEnd={() => { activeDragDocId = null }}
       onClick={() => onPreview(d)}
       className={`relative bg-white rounded-xl border p-4 cursor-pointer group transition-all
         ${selected.has(d.id) ? 'border-ink ring-1 ring-ink' : 'border-line hover:border-secondary/50 hover:shadow-sm'}`}>
@@ -966,9 +1014,11 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders,
               key={d.id}
               draggable
               onDragStart={e => {
+                activeDragDocId = d.id
                 e.dataTransfer.setData('docId', d.id)
                 e.dataTransfer.setDragImage(makeDocDragImage(d.name, d.ext), 20, 20)
               }}
+              onDragEnd={() => { activeDragDocId = null }}
               onClick={() => setActiveDocId(d.id === activeDocId ? null : d.id)}
               className={`group w-full flex items-center gap-3 px-4 py-2.5 border-b border-line/60 text-left cursor-pointer transition-colors
                 ${activeDocId === d.id ? 'bg-canvas/60' : 'hover:bg-canvas/40'}`}>
@@ -1042,38 +1092,56 @@ export function DocumentsPage({ cases = [] }) {
     }
   }
 
-  function handleDocFolderDrop(e, folderId) {
-    e.preventDefault()
-    const docId = e.dataTransfer.getData('docId')
-    if (!docId) return
-    setDocFolderMap(prev => ({ ...prev, [docId]: folderId }))
-    setDocDragOverId(null)
-  }
+  const allDocs = useMemo(() => casesToDocs(cases), [cases])
 
-  function handleDocMoveToFolder(docId, folderId) {
+  // DB folder_id from doc, overridden by any in-session move
+  const allDocsWithFolders = useMemo(() =>
+    allDocs.map(d => ({
+      ...d,
+      _folderId: d.id in docFolderMap ? docFolderMap[d.id] : d.dbFolderId,
+    }))
+  , [allDocs, docFolderMap])
+
+  async function handleDocMoveToFolder(docId, folderId) {
+    // Optimistic local update
     if (folderId === null) {
       setDocFolderMap(prev => { const n = { ...prev }; delete n[docId]; return n })
     } else {
       setDocFolderMap(prev => ({ ...prev, [docId]: folderId }))
     }
+    // Persist to DB
+    const doc = allDocs.find(d => d.id === docId)
+    if (!doc) return
+    try {
+      if (doc.structuredId) {
+        await assignDocFolder(doc.caseId, doc.structuredId, folderId)
+      } else if (doc.legacyName) {
+        await assignLegacyDocFolder(doc.caseId, doc.legacyName, folderId)
+      }
+    } catch (err) {
+      console.error('Failed to persist folder assignment:', err.message)
+    }
+  }
+
+  async function handleDocFolderDrop(e, folderId) {
+    e.preventDefault()
+    const docId = e.dataTransfer.getData('docId')
+    // Require an active drag to have been started from a DocCard
+    if (!docId || docId !== activeDragDocId) return
+    activeDragDocId = null
+    setDocDragOverId(null)
+    await handleDocMoveToFolder(docId, folderId)
   }
 
   async function handleDocCreateAndMove(docId, name) {
     try {
       const f = await createFolder({ name, type: 'documents' })
       setDocFolders(prev => [...prev, f])
-      setDocFolderMap(prev => ({ ...prev, [docId]: f.id }))
+      await handleDocMoveToFolder(docId, f.id)
     } catch (err) {
       console.error('Failed to create folder:', err.message)
     }
   }
-
-  const allDocs = useMemo(() => casesToDocs(cases), [cases])
-
-  // Attach in-session folder assignments to docs
-  const allDocsWithFolders = useMemo(() =>
-    allDocs.map(d => ({ ...d, _folderId: docFolderMap[d.id] ?? null }))
-  , [allDocs, docFolderMap])
 
   const filtersActive = filters.types.size + filters.statuses.size + (filters.datePreset ? 1 : 0)
 
@@ -1115,10 +1183,10 @@ export function DocumentsPage({ cases = [] }) {
   const docFolderCounts = useMemo(() => {
     const map = {}
     docFolders.forEach(f => {
-      map[f.id] = Object.values(docFolderMap).filter(v => v === f.id).length
+      map[f.id] = allDocsWithFolders.filter(d => d._folderId === f.id).length
     })
     return map
-  }, [docFolders, docFolderMap])
+  }, [docFolders, allDocsWithFolders])
 
   const toggleSelect = id => setSelected(s => {
     const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n
@@ -1137,9 +1205,12 @@ export function DocumentsPage({ cases = [] }) {
   useEffect(() => { setPage(1) }, [category, search, filters, sortBy])
 
   const handlePreview = async (doc) => {
-    if (!doc.path) return
+    if (!doc.path) {
+      setPreviewDoc({ ...doc, url: null })
+      return
+    }
     const { data, error } = await supabase.storage.from('case-documents').createSignedUrl(doc.path, 3600)
-    if (!error && data?.signedUrl) setPreviewDoc({ ...doc, url: data.signedUrl })
+    setPreviewDoc({ ...doc, url: error ? null : (data?.signedUrl ?? null) })
   }
 
   return (
