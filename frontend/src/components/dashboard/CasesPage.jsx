@@ -288,72 +288,87 @@ const SMART_FOLDERS = [
 
 const SMART_FOLDER_IDS = new Set(SMART_FOLDERS.map(f => f.id))
 
-// ─── Folders strip (grid view) ────────────────────────────────────────────────
-function FoldersStrip({ folders, activeFolder, setFolder, onDelete, onDrop, dragOverId, setDragOver, counts, onAddFolder }) {
+// ─── Folder card (Apple-style) ───────────────────────────────────────────────
+function FolderCard({ folder, count, onClick, onDelete, onDragOver, onDragLeave, onDrop, isDragOver }) {
+  return (
+    <div
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      onClick={onClick}
+      className={`group relative bg-white border rounded-lg overflow-hidden cursor-pointer transition
+        hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
+        ${isDragOver ? 'border-primary ring-2 ring-primary/20 -translate-y-0.5 shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)]' : 'border-line'}`}>
+      {/* Folder icon */}
+      <div className="h-[72px] bg-primary-light/50 flex items-center justify-center relative">
+        <div className="absolute top-0 left-4 w-9 h-3 bg-primary/25 rounded-t-[5px]" />
+        <div className="absolute top-[11px] inset-x-4 bottom-2.5 bg-primary/20 rounded-[6px] border border-primary/15 flex items-center justify-center">
+          {count > 0 && (
+            <span className="font-display text-[20px] text-primary/40 leading-none select-none">{count}</span>
+          )}
+        </div>
+      </div>
+      <div className="px-3 py-2.5">
+        <div className="font-sans text-[12.5px] font-medium text-ink truncate">{folder.name}</div>
+        <div className="font-sans text-[11px] text-muted mt-0.5">{count} {count === 1 ? 'case' : 'cases'}</div>
+      </div>
+      <button
+        onClick={e => { e.stopPropagation(); onDelete(folder.id) }}
+        className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-ink text-surface flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-danger">
+        <X size={10} />
+      </button>
+    </div>
+  )
+}
+
+function NewFolderCard({ onAdd }) {
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
-  const inputRef = useRef(null)
-
-  useEffect(() => { if (adding) inputRef.current?.focus() }, [adding])
+  const ref = useRef(null)
+  useEffect(() => { if (adding) ref.current?.focus() }, [adding])
 
   function submit() {
-    if (name.trim()) onAddFolder(name.trim())
-    setName('')
-    setAdding(false)
+    if (name.trim()) onAdd(name.trim())
+    setName(''); setAdding(false)
+  }
+
+  if (adding) {
+    return (
+      <div className="bg-white border border-dashed border-ink/25 rounded-lg overflow-hidden">
+        <div className="h-[72px] bg-canvas/60 flex items-center justify-center relative">
+          <div className="absolute top-0 left-4 w-9 h-3 bg-muted/20 rounded-t-[5px]" />
+          <div className="absolute top-[11px] inset-x-4 bottom-2.5 bg-muted/10 rounded-[6px] border border-muted/15" />
+        </div>
+        <div className="px-3 py-2.5">
+          <input
+            ref={ref}
+            value={name}
+            onChange={e => setName(e.target.value)}
+            onBlur={submit}
+            onKeyDown={e => {
+              if (e.key === 'Enter') submit()
+              if (e.key === 'Escape') { setAdding(false); setName('') }
+            }}
+            placeholder="Folder name"
+            className="w-full text-[12.5px] font-sans rounded border border-ink/30 outline-none bg-white px-2 py-0.5 text-ink placeholder:text-muted"
+          />
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="px-4 pt-3 pb-2 border-b border-line/60 bg-canvas/30">
-      <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Folders</div>
-      <div className="flex items-center gap-2 flex-wrap">
-        {folders.map(f => (
-          <div
-            key={f.id}
-            onDragOver={e => { e.preventDefault(); setDragOver(f.id) }}
-            onDragLeave={() => setDragOver(null)}
-            onDrop={e => onDrop(e, f.id)}
-            onClick={() => setFolder(activeFolder === f.id ? 'all' : f.id)}
-            className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-all select-none
-              ${activeFolder === f.id
-                ? 'border-ink bg-ink text-surface'
-                : dragOverId === f.id
-                  ? 'border-primary bg-primary-light text-ink scale-105'
-                  : 'border-line bg-white text-ink hover:border-secondary/60 hover:shadow-sm'}`}>
-            <Folder size={13} className={activeFolder === f.id ? 'text-surface/80' : 'text-secondary'} />
-            <span className="font-sans text-[12.5px] font-medium">{f.name}</span>
-            <span className={`font-sans text-[11px] tabular-nums ${activeFolder === f.id ? 'text-surface/70' : 'text-muted'}`}>
-              {counts[f.id] ?? 0}
-            </span>
-            <button
-              onClick={e => { e.stopPropagation(); onDelete(f.id) }}
-              className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer
-                ${activeFolder === f.id ? 'bg-surface/20 text-surface hover:bg-surface/40' : 'bg-ink text-surface hover:bg-danger'}`}>
-              <X size={9} />
-            </button>
-          </div>
-        ))}
-
-        {adding ? (
-          <form onSubmit={e => { e.preventDefault(); submit() }} className="flex items-center">
-            <input
-              ref={inputRef}
-              value={name}
-              onChange={e => setName(e.target.value)}
-              onBlur={submit}
-              onKeyDown={e => { if (e.key === 'Escape') { setAdding(false); setName('') } }}
-              placeholder="Folder name"
-              className="h-8 px-3 rounded-lg border border-ink/40 font-sans text-[12.5px] text-ink outline-none bg-white w-36"
-            />
-          </form>
-        ) : (
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-dashed border-line text-muted hover:border-secondary hover:text-secondary font-sans text-[12px] cursor-pointer transition-colors">
-            <Plus size={12} /> New Folder
-          </button>
-        )}
+    <button
+      onClick={() => setAdding(true)}
+      className="bg-white border border-dashed border-line rounded-lg overflow-hidden hover:border-secondary/50 hover:bg-canvas/30 transition-colors cursor-pointer w-full text-left">
+      <div className="h-[72px] flex items-center justify-center">
+        <Plus size={22} className="text-muted/50" />
       </div>
-    </div>
+      <div className="px-3 py-2.5">
+        <div className="font-sans text-[12.5px] text-muted">New Folder</div>
+        <div className="font-sans text-[11px] text-muted/50 mt-0.5">Click to create</div>
+      </div>
+    </button>
   )
 }
 
@@ -525,73 +540,152 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
   )
 }
 
-// ─── Grid view ────────────────────────────────────────────────────────────────
-function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarred, onViewCase }) {
+// ─── Case card (reusable in grid) ────────────────────────────────────────────
+function CaseCard({ c, selected, toggleSelect, activeId, setActiveId, isStarred, onViewCase }) {
+  const s = STATUS[c.status] || STATUS.pending
   return (
-    <div className="px-4 py-3">
-      {rows.length === 0 && (
-        <div className="py-16 text-center">
-          <Folder size={32} className="mx-auto text-muted/40 mb-3" />
-          <p className="font-display text-[17px] text-secondary">No cases here</p>
-          <p className="font-sans text-[12px] text-muted mt-1">Try a different folder or adjust your search.</p>
+    <div
+      draggable
+      onDragStart={e => e.dataTransfer.setData('caseId', c.id)}
+      onClick={() => onViewCase(c.id)}
+      className={`group relative bg-white border rounded-lg overflow-hidden cursor-default transition
+        hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
+        ${activeId === c.id ? 'border-ink/40 ring-2 ring-ink/10' : 'border-line'}
+        ${selected.has(c.id) ? 'ring-2 ring-info/60' : ''}`}>
+      <div className={`h-14 ${s.tint} relative border-b ${s.border} flex items-center justify-center`}>
+        <div className="absolute top-1.5 left-1.5">
+          <button onClick={e => { e.stopPropagation(); toggleSelect(c.id) }}
+            className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
+              ${selected.has(c.id) ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}>
+            {selected.has(c.id) && <Check size={11} className="text-surface" />}
+          </button>
+        </div>
+        <button
+          onClick={e => { e.stopPropagation(); setActiveId(c.id === activeId ? null : c.id) }}
+          title="Preview"
+          className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100
+            ${activeId === c.id ? 'bg-ink text-surface opacity-100' : 'bg-white text-secondary hover:bg-surface'}`}>
+          <Eye size={11} />
+        </button>
+        {isStarred(c.id) && <StarFilled size={12} className="absolute top-2 left-7 text-warning" />}
+        <div className="w-9 h-10 bg-white rounded-[4px] shadow-[0_2px_6px_rgba(28,28,30,0.08)] flex flex-col items-center justify-center gap-0.5">
+          <div className={`w-4 h-[2px] ${s.dot} rounded-full`} />
+          <span className="font-display text-[14px] text-ink leading-none">
+            {(c.deceased || '').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('')}
+          </span>
+        </div>
+      </div>
+      <div className="p-3">
+        <div className="flex items-start justify-between gap-1.5 mb-1">
+          <div className="min-w-0">
+            <div className="font-sans text-[12.5px] font-medium text-ink truncate">{c.deceased}</div>
+            <div className="font-sans text-[11px] text-muted truncate">{c.family}</div>
+          </div>
+          <PackageChip pkg={c.package} />
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          <StatusBadge status={c.status} />
+          <span className="font-sans text-[11.5px] font-medium text-ink tabular-nums">${c.amount.toLocaleString()}</span>
+        </div>
+        <div className="mt-2 pt-2 border-t border-line flex items-center justify-between font-sans text-[10.5px] text-muted">
+          <span className="truncate pr-2">{c.crematorium || <span className="italic">Unassigned</span>}</span>
+          <span className="shrink-0">{c.date}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Grid view ────────────────────────────────────────────────────────────────
+function GridView({ cases, userFolders, folderCounts, gridFolderView, setGridFolderView,
+  selected, toggleSelect, activeId, setActiveId, isStarred, onViewCase,
+  onAddFolder, onDeleteFolder, dragOverFolderId, setDragOverFolderId, onFolderDrop }) {
+
+  const currentFolder = gridFolderView ? userFolders.find(f => f.id === gridFolderView) : null
+
+  // Inside a folder: show cases in that folder. Top level: show only unfiled cases.
+  const displayCases = gridFolderView
+    ? cases.filter(c => c.folderId === gridFolderView)
+    : cases.filter(c => !c.folderId)
+
+  const hasFolders = !gridFolderView && userFolders.length > 0
+  const hasUnfiled = !gridFolderView && displayCases.length > 0
+
+  return (
+    <div className="px-4 py-4">
+      {/* Breadcrumb when inside folder */}
+      {gridFolderView && (
+        <div className="flex items-center gap-2 mb-4">
+          <button
+            onClick={() => setGridFolderView(null)}
+            className="flex items-center gap-1 font-sans text-[12.5px] text-muted hover:text-ink cursor-pointer transition-colors">
+            <ChevronRight size={13} className="rotate-180" />
+            Cases
+          </button>
+          <ChevronRight size={12} className="text-muted/40" />
+          <span className="font-sans text-[12.5px] font-medium text-ink flex items-center gap-1.5">
+            <Folder size={13} className="text-secondary" />
+            {currentFolder?.name}
+          </span>
         </div>
       )}
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
-        {rows.map(c => {
-          const s = STATUS[c.status] || STATUS.pending
-          return (
-            <div key={c.id}
-              draggable
-              onDragStart={e => e.dataTransfer.setData('caseId', c.id)}
-              onClick={() => onViewCase(c.id)}
-              className={`group relative bg-white border rounded-lg overflow-hidden cursor-default transition
-                hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
-                ${activeId === c.id ? 'border-ink/40 ring-2 ring-ink/10' : 'border-line'}
-                ${selected.has(c.id) ? 'ring-2 ring-info/60' : ''}`}>
-              <div className={`h-14 ${s.tint} relative border-b ${s.border} flex items-center justify-center`}>
-                <div className="absolute top-1.5 left-1.5">
-                  <button onClick={e => { e.stopPropagation(); toggleSelect(c.id) }}
-                      className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition
-                        ${selected.has(c.id) ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}>
-                      {selected.has(c.id) && <Check size={11} className="text-surface" />}
-                    </button>
-                </div>
-                <button
-                  onClick={e => { e.stopPropagation(); setActiveId(c.id === activeId ? null : c.id) }}
-                  title="Preview"
-                  className={`absolute top-1.5 right-1.5 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer transition-all opacity-0 group-hover:opacity-100
-                    ${activeId === c.id ? 'bg-ink text-surface opacity-100' : 'bg-white text-secondary hover:bg-surface'}`}>
-                  <Eye size={11} />
-                </button>
-                {isStarred(c.id) && <StarFilled size={12} className="absolute top-2 left-7 text-warning" />}
-                <div className="w-9 h-10 bg-white rounded-[4px] shadow-[0_2px_6px_rgba(28,28,30,0.08)] flex flex-col items-center justify-center gap-0.5">
-                  <div className={`w-4 h-[2px] ${s.dot} rounded-full`} />
-                  <span className="font-display text-[14px] text-ink leading-none">
-                    {(c.deceased || '').split(' ').filter(Boolean).map(n => n[0]).slice(0, 2).join('')}
-                  </span>
-                </div>
-              </div>
-              <div className="p-3">
-                <div className="flex items-start justify-between gap-1.5 mb-1">
-                  <div className="min-w-0">
-                    <div className="font-sans text-[12.5px] font-medium text-ink truncate">{c.deceased}</div>
-                    <div className="font-sans text-[11px] text-muted truncate">{c.family}</div>
-                  </div>
-                  <PackageChip pkg={c.package} />
-                </div>
-                <div className="flex items-center justify-between mt-2">
-                  <StatusBadge status={c.status} />
-                  <span className="font-sans text-[11.5px] font-medium text-ink tabular-nums">${c.amount.toLocaleString()}</span>
-                </div>
-                <div className="mt-2 pt-2 border-t border-line flex items-center justify-between font-sans text-[10.5px] text-muted">
-                  <span className="truncate pr-2">{c.crematorium || <span className="italic">Unassigned</span>}</span>
-                  <span className="shrink-0">{c.date}</span>
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+
+      {/* Folders section — always show at top level */}
+      {!gridFolderView && (
+        <>
+          {hasUnfiled && (
+            <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-3">Folders</div>
+          )}
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 mb-5">
+            {userFolders.map(f => (
+              <FolderCard
+                key={f.id}
+                folder={f}
+                count={folderCounts[f.id] ?? 0}
+                onClick={() => setGridFolderView(f.id)}
+                onDelete={onDeleteFolder}
+                onDragOver={e => { e.preventDefault(); setDragOverFolderId(f.id) }}
+                onDragLeave={() => setDragOverFolderId(null)}
+                onDrop={e => onFolderDrop(e, f.id)}
+                isDragOver={dragOverFolderId === f.id}
+              />
+            ))}
+            <NewFolderCard onAdd={onAddFolder} />
+          </div>
+
+          {hasUnfiled && (
+            <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-3">Unfiled</div>
+          )}
+        </>
+      )}
+
+      {/* Cases */}
+      {displayCases.length === 0 ? (
+        <div className="py-12 text-center">
+          <Folder size={32} className="mx-auto text-muted/40 mb-3" />
+          <p className="font-display text-[17px] text-secondary">
+            {gridFolderView ? 'This folder is empty' : 'No unfiled cases'}
+          </p>
+          <p className="font-sans text-[12px] text-muted mt-1">
+            {gridFolderView ? 'Drag cases here to add them.' : 'All cases are in folders, or try adjusting your search.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3">
+          {displayCases.map(c => (
+            <CaseCard
+              key={c.id}
+              c={c}
+              selected={selected}
+              toggleSelect={toggleSelect}
+              activeId={activeId}
+              setActiveId={setActiveId}
+              isStarred={isStarred}
+              onViewCase={onViewCase}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -887,6 +981,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
   // User-created folders
   const [userFolders, setUserFolders] = useState([])
   const [dragOverFolderId, setDragOverFolderId] = useState(null)
+  const [gridFolderView, setGridFolderView] = useState(null) // null = top level, uuid = inside folder
 
   useEffect(() => {
     fetchFolders('cases').then(setUserFolders).catch(() => {})
@@ -942,10 +1037,6 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
       else if (folder === 'unassigned') rows = rows.filter(c => !c.crematorium)
       else if (folder === 'needs-attention') rows = rows.filter(c => c.status === 'pending' && (c.documents || []).length === 0)
       else if (['pending', 'transit', 'cremation', 'complete'].includes(folder)) rows = rows.filter(c => c.status === folder)
-    }
-
-    if (viewMode === 'grid' && isUserFolder(folder)) {
-      rows = rows.filter(c => c.folderId === folder)
     }
 
     if (filters.starredOnly)      rows = rows.filter(c => starredIds.has(c.id))
@@ -1041,22 +1132,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
       {selected.size > 0 && <SelectionBar count={selected.size} clear={() => setSelected(new Set())} />}
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <div className="flex-1 overflow-auto min-h-0 flex flex-col">
-          {viewMode === 'grid' && (
-            <FoldersStrip
-              folders={userFolders}
-              activeFolder={folder}
-              setFolder={f => { setFolder(f); setPage(1) }}
-              onAddFolder={handleAddFolder}
-              onDelete={handleDeleteFolder}
-              onDrop={handleFolderDrop}
-              dragOverId={dragOverFolderId}
-              setDragOver={setDragOverFolderId}
-              counts={folderCounts}
-            />
-          )}
-
-          <div className="flex-1 overflow-auto min-h-0">
+        <div className="flex-1 overflow-auto min-h-0">
             {viewMode === 'list' && (
               <ListView
                 rows={paginated} selected={selected}
@@ -1068,11 +1144,21 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
             )}
             {viewMode === 'grid' && (
               <GridView
-                rows={paginated} selected={selected}
+                cases={filtered}
+                userFolders={userFolders}
+                folderCounts={folderCounts}
+                gridFolderView={gridFolderView}
+                setGridFolderView={setGridFolderView}
+                selected={selected}
                 toggleSelect={toggleSelect}
                 activeId={activeId} setActiveId={setActiveId}
                 isStarred={isStarred}
                 onViewCase={onViewCase}
+                onAddFolder={handleAddFolder}
+                onDeleteFolder={handleDeleteFolder}
+                dragOverFolderId={dragOverFolderId}
+                setDragOverFolderId={setDragOverFolderId}
+                onFolderDrop={handleFolderDrop}
               />
             )}
             {viewMode === 'columns' && (
@@ -1090,7 +1176,6 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
                 setDragOverFolderId={setDragOverFolderId}
               />
             )}
-          </div>
         </div>
 
         {viewMode !== 'columns' && active && (

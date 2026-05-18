@@ -102,70 +102,86 @@ function filterByDate(docs, preset) {
   return docs.filter(d => new Date(d.uploadedAt) >= cutoff)
 }
 
-// ─── Folders strip (grid view) ────────────────────────────────────────────────
-function DocFoldersStrip({ folders, activeFolder, setFolder, onDelete, onDrop, dragOverId, setDragOver, counts, onAddFolder }) {
+// ─── Doc folder card (Apple-style) ───────────────────────────────────────────
+function DocFolderCard({ folder, count, onClick, onDelete, onDragOver, onDragLeave, onDrop, isDragOver }) {
+  return (
+    <div
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      onClick={onClick}
+      className={`group relative bg-white border rounded-xl overflow-hidden cursor-pointer transition
+        hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
+        ${isDragOver ? 'border-primary ring-2 ring-primary/20 -translate-y-0.5 shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)]' : 'border-line'}`}>
+      <div className="h-[72px] bg-primary-light/50 flex items-center justify-center relative">
+        <div className="absolute top-0 left-4 w-9 h-3 bg-primary/25 rounded-t-[5px]" />
+        <div className="absolute top-[11px] inset-x-4 bottom-2.5 bg-primary/20 rounded-[6px] border border-primary/15 flex items-center justify-center">
+          {count > 0 && (
+            <span className="font-display text-[20px] text-primary/40 leading-none select-none">{count}</span>
+          )}
+        </div>
+      </div>
+      <div className="px-3 py-2.5">
+        <div className="font-sans text-[12.5px] font-medium text-ink truncate">{folder.name}</div>
+        <div className="font-sans text-[11px] text-muted mt-0.5">{count} {count === 1 ? 'document' : 'documents'}</div>
+      </div>
+      <button
+        onClick={e => { e.stopPropagation(); onDelete(folder.id) }}
+        className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-ink text-surface flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer hover:bg-danger">
+        <X size={10} />
+      </button>
+    </div>
+  )
+}
+
+function DocNewFolderCard({ onAdd }) {
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
-  const inputRef = useRef(null)
-  useEffect(() => { if (adding) inputRef.current?.focus() }, [adding])
+  const ref = useRef(null)
+  useEffect(() => { if (adding) ref.current?.focus() }, [adding])
 
   function submit() {
-    if (name.trim()) onAddFolder(name.trim())
+    if (name.trim()) onAdd(name.trim())
     setName(''); setAdding(false)
   }
 
-  return (
-    <div className="px-4 pt-3 pb-2 border-b border-line/60 bg-canvas/30">
-      <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Folders</div>
-      <div className="flex items-center gap-2 flex-wrap">
-        {folders.map(f => (
-          <div
-            key={f.id}
-            onDragOver={e => { e.preventDefault(); setDragOver(f.id) }}
-            onDragLeave={() => setDragOver(null)}
-            onDrop={e => onDrop(e, f.id)}
-            onClick={() => setFolder(activeFolder === f.id ? null : f.id)}
-            className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-all select-none
-              ${activeFolder === f.id
-                ? 'border-ink bg-ink text-surface'
-                : dragOverId === f.id
-                  ? 'border-primary bg-primary-light text-ink scale-105'
-                  : 'border-line bg-white text-ink hover:border-secondary/60 hover:shadow-sm'}`}>
-            <Folder size={13} className={activeFolder === f.id ? 'text-surface/80' : 'text-secondary'} />
-            <span className="font-sans text-[12.5px] font-medium">{f.name}</span>
-            <span className={`font-sans text-[11px] tabular-nums ${activeFolder === f.id ? 'text-surface/70' : 'text-muted'}`}>
-              {counts[f.id] ?? 0}
-            </span>
-            <button
-              onClick={e => { e.stopPropagation(); onDelete(f.id) }}
-              className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer
-                ${activeFolder === f.id ? 'bg-surface/20 text-surface hover:bg-surface/40' : 'bg-ink text-surface hover:bg-danger'}`}>
-              <X size={9} />
-            </button>
-          </div>
-        ))}
-
-        {adding ? (
-          <form onSubmit={e => { e.preventDefault(); submit() }}>
-            <input
-              ref={inputRef}
-              value={name}
-              onChange={e => setName(e.target.value)}
-              onBlur={submit}
-              onKeyDown={e => { if (e.key === 'Escape') { setAdding(false); setName('') } }}
-              placeholder="Folder name"
-              className="h-8 px-3 rounded-lg border border-ink/40 font-sans text-[12.5px] text-ink outline-none bg-white w-36"
-            />
-          </form>
-        ) : (
-          <button
-            onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-dashed border-line text-muted hover:border-secondary hover:text-secondary font-sans text-[12px] cursor-pointer transition-colors">
-            <Plus size={12} /> New Folder
-          </button>
-        )}
+  if (adding) {
+    return (
+      <div className="bg-white border border-dashed border-ink/25 rounded-xl overflow-hidden">
+        <div className="h-[72px] bg-canvas/60 flex items-center justify-center relative">
+          <div className="absolute top-0 left-4 w-9 h-3 bg-muted/20 rounded-t-[5px]" />
+          <div className="absolute top-[11px] inset-x-4 bottom-2.5 bg-muted/10 rounded-[6px] border border-muted/15" />
+        </div>
+        <div className="px-3 py-2.5">
+          <input
+            ref={ref}
+            value={name}
+            onChange={e => setName(e.target.value)}
+            onBlur={submit}
+            onKeyDown={e => {
+              if (e.key === 'Enter') submit()
+              if (e.key === 'Escape') { setAdding(false); setName('') }
+            }}
+            placeholder="Folder name"
+            className="w-full text-[12.5px] font-sans rounded border border-ink/30 outline-none bg-white px-2 py-0.5 text-ink placeholder:text-muted"
+          />
+        </div>
       </div>
-    </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => setAdding(true)}
+      className="bg-white border border-dashed border-line rounded-xl overflow-hidden hover:border-secondary/50 hover:bg-canvas/30 transition-colors cursor-pointer w-full text-left">
+      <div className="h-[72px] flex items-center justify-center">
+        <Plus size={22} className="text-muted/50" />
+      </div>
+      <div className="px-3 py-2.5">
+        <div className="font-sans text-[12.5px] text-muted">New Folder</div>
+        <div className="font-sans text-[11px] text-muted/50 mt-0.5">Click to create</div>
+      </div>
+    </button>
   )
 }
 
@@ -545,50 +561,129 @@ function ListView({ rows, selected, toggleSelect, selectAll, onPreview }) {
   )
 }
 
-// ─── Grid view ────────────────────────────────────────────────────────────────
-function GridView({ rows, selected, toggleSelect, onPreview }) {
-  if (rows.length === 0) return <Empty />
+// ─── Doc card ────────────────────────────────────────────────────────────────
+function DocCard({ d, selected, toggleSelect, onPreview }) {
   return (
-    <div className="grid gap-3 p-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
-      {rows.map(d => (
-        <div key={d.id}
-          draggable
-          onDragStart={e => e.dataTransfer.setData('docId', d.id)}
-          onClick={() => onPreview(d)}
-          className={`relative bg-white rounded-xl border p-4 cursor-pointer group transition-all
-            ${selected.has(d.id) ? 'border-ink ring-1 ring-ink' : 'border-line hover:border-secondary/50 hover:shadow-sm'}`}>
-          <div
-            onClick={e => { e.stopPropagation(); toggleSelect(d.id) }}
-            className={`absolute top-3 left-3 w-4 h-4 rounded border flex items-center justify-center transition cursor-pointer
-              ${selected.has(d.id) ? 'border-ink bg-ink' : 'border-line bg-white opacity-0 group-hover:opacity-100'}`}>
-            {selected.has(d.id) && <Check size={10} className="text-surface" />}
-          </div>
+    <div
+      draggable
+      onDragStart={e => e.dataTransfer.setData('docId', d.id)}
+      onClick={() => onPreview(d)}
+      className={`relative bg-white rounded-xl border p-4 cursor-pointer group transition-all
+        ${selected.has(d.id) ? 'border-ink ring-1 ring-ink' : 'border-line hover:border-secondary/50 hover:shadow-sm'}`}>
+      <div
+        onClick={e => { e.stopPropagation(); toggleSelect(d.id) }}
+        className={`absolute top-3 left-3 w-4 h-4 rounded border flex items-center justify-center transition cursor-pointer
+          ${selected.has(d.id) ? 'border-ink bg-ink' : 'border-line bg-white opacity-0 group-hover:opacity-100'}`}>
+        {selected.has(d.id) && <Check size={10} className="text-surface" />}
+      </div>
 
-          <div className="flex justify-center">
-            <FileIcon ext={d.ext} />
-          </div>
+      <div className="flex justify-center">
+        <FileIcon ext={d.ext} />
+      </div>
 
-          <div className="mt-3 min-w-0">
-            <p className="font-sans text-[13px] font-medium text-ink truncate">{d.name}</p>
-            <p className="font-sans text-[11.5px] text-muted mt-0.5 truncate">{d.case}</p>
-          </div>
+      <div className="mt-3 min-w-0">
+        <p className="font-sans text-[13px] font-medium text-ink truncate">{d.name}</p>
+        <p className="font-sans text-[11.5px] text-muted mt-0.5 truncate">{d.case}</p>
+      </div>
 
-          <div className="mt-3 flex items-center justify-between">
-            <StatusBadge status={d.status} />
-            <span className="font-sans text-[10.5px] text-muted">{d.uploadedAt}</span>
-          </div>
+      <div className="mt-3 flex items-center justify-between">
+        <StatusBadge status={d.status} />
+        <span className="font-sans text-[10.5px] text-muted">{d.uploadedAt}</span>
+      </div>
 
-          <div className="absolute top-3 right-3 flex opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={e => { e.stopPropagation(); openDoc(d.path) }}
-              title="Download"
-              className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors">
-              <Download size={12} />
-            </button>
-            <DocMenu doc={d} onPreview={onPreview} />
-          </div>
+      <div className="absolute top-3 right-3 flex opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={e => { e.stopPropagation(); openDoc(d.path) }}
+          title="Download"
+          className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors">
+          <Download size={12} />
+        </button>
+        <DocMenu doc={d} onPreview={onPreview} />
+      </div>
+    </div>
+  )
+}
+
+// ─── Grid view ────────────────────────────────────────────────────────────────
+function GridView({ docs, docFolders, docFolderCounts, gridDocFolderView, setGridDocFolderView,
+  selected, toggleSelect, onPreview, onAddDocFolder, onDeleteDocFolder,
+  docDragOverId, setDocDragOverId, onDocFolderDrop }) {
+
+  const currentFolder = gridDocFolderView ? docFolders.find(f => f.id === gridDocFolderView) : null
+
+  const displayDocs = gridDocFolderView
+    ? docs.filter(d => d._folderId === gridDocFolderView)
+    : docs.filter(d => !d._folderId)
+
+  const hasFolders = !gridDocFolderView && docFolders.length > 0
+  const hasUnfiled = !gridDocFolderView && displayDocs.length > 0
+
+  return (
+    <div className="p-4">
+      {/* Breadcrumb */}
+      {gridDocFolderView && (
+        <div className="flex items-center gap-2 mb-4">
+          <button
+            onClick={() => setGridDocFolderView(null)}
+            className="flex items-center gap-1 font-sans text-[12.5px] text-muted hover:text-ink cursor-pointer transition-colors">
+            <ChevronRight size={13} className="rotate-180" />
+            Documents
+          </button>
+          <ChevronRight size={12} className="text-muted/40" />
+          <span className="font-sans text-[12.5px] font-medium text-ink flex items-center gap-1.5">
+            <Folder size={13} className="text-secondary" />
+            {currentFolder?.name}
+          </span>
         </div>
-      ))}
+      )}
+
+      {/* Folders section at top level */}
+      {!gridDocFolderView && (
+        <>
+          {hasUnfiled && (
+            <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-3">Folders</div>
+          )}
+          <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+            {docFolders.map(f => (
+              <DocFolderCard
+                key={f.id}
+                folder={f}
+                count={docFolderCounts[f.id] ?? 0}
+                onClick={() => setGridDocFolderView(f.id)}
+                onDelete={onDeleteDocFolder}
+                onDragOver={e => { e.preventDefault(); setDocDragOverId(f.id) }}
+                onDragLeave={() => setDocDragOverId(null)}
+                onDrop={e => onDocFolderDrop(e, f.id)}
+                isDragOver={docDragOverId === f.id}
+              />
+            ))}
+            <DocNewFolderCard onAdd={onAddDocFolder} />
+          </div>
+
+          {hasUnfiled && (
+            <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-3">Unfiled</div>
+          )}
+        </>
+      )}
+
+      {/* Documents */}
+      {displayDocs.length === 0 ? (
+        <div className="py-12 text-center">
+          <FileText size={32} className="mx-auto text-muted/40 mb-3" />
+          <p className="font-display text-[17px] text-secondary">
+            {gridDocFolderView ? 'This folder is empty' : 'No unfiled documents'}
+          </p>
+          <p className="font-sans text-[12px] text-muted mt-1">
+            {gridDocFolderView ? 'Drag documents here to add them.' : 'All documents are in folders, or try adjusting your search.'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+          {displayDocs.map(d => (
+            <DocCard key={d.id} d={d} selected={selected} toggleSelect={toggleSelect} onPreview={onPreview} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -733,8 +828,25 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders,
         {/* Col 1: Folders + Type sidebar */}
         <div className="overflow-auto py-2 shrink-0" style={{ width: col1 }}>
           {/* My Folders section */}
+          
+
+          {/* Types section */}
+          <div className="px-3 pt-1 pb-0.5 font-sans text-[10px] uppercase tracking-[0.1em] text-muted/60">Types</div>
+          {COL1_TYPES.map(({ id, label }) => (
+            <button key={id}
+              onClick={() => { setColType(id); setActiveDocFolder(null); setActiveDocId(null) }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left cursor-pointer transition-colors
+                ${colType === id && !activeDocFolder ? 'bg-ink/5 font-medium' : 'hover:bg-ink/5'}`}>
+              <FileText size={13} className="text-muted shrink-0" />
+              <span className="flex-1 font-sans text-[13px] text-ink truncate">{label}</span>
+              <span className="font-sans text-[11px] text-muted tabular-nums shrink-0">{typeCounts[id] ?? 0}</span>
+              <ChevronRight size={12} className="text-muted shrink-0" />
+            </button>
+          ))}
           {docFolders.length > 0 && (
             <>
+
+              <div className="mx-3 my-2 h-px bg-line" />
               <div className="px-3 pt-1 pb-0.5 font-sans text-[10px] uppercase tracking-[0.1em] text-muted/60">Folders</div>
               {docFolders.map(f => (
                 <div
@@ -756,7 +868,6 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders,
                   </button>
                 </div>
               ))}
-              <div className="mx-3 my-2 h-px bg-line" />
             </>
           )}
 
@@ -780,21 +891,9 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders,
               <span className="font-sans text-[12px]">New Folder</span>
             </button>
           )}
-
-          {/* Types section */}
-          <div className="px-3 pt-1 pb-0.5 font-sans text-[10px] uppercase tracking-[0.1em] text-muted/60">Types</div>
-          {COL1_TYPES.map(({ id, label }) => (
-            <button key={id}
-              onClick={() => { setColType(id); setActiveDocFolder(null); setActiveDocId(null) }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-left cursor-pointer transition-colors
-                ${colType === id && !activeDocFolder ? 'bg-ink/5 font-medium' : 'hover:bg-ink/5'}`}>
-              <FileText size={13} className="text-muted shrink-0" />
-              <span className="flex-1 font-sans text-[13px] text-ink truncate">{label}</span>
-              <span className="font-sans text-[11px] text-muted tabular-nums shrink-0">{typeCounts[id] ?? 0}</span>
-              <ChevronRight size={12} className="text-muted shrink-0" />
-            </button>
-          ))}
         </div>
+
+        
 
         <Handle onMouseDown={startDrag(1)} />
 
@@ -849,10 +948,11 @@ export function DocumentsPage({ cases = [] }) {
   const [filters, setFilters]         = useState({ types: new Set(), statuses: new Set(), datePreset: '' })
 
   // Folder state
-  const [docFolders, setDocFolders]           = useState([])
-  const [docFolderMap, setDocFolderMap]       = useState({}) // docId → folderId
-  const [activeDocFolder, setActiveDocFolder] = useState(null)
-  const [docDragOverId, setDocDragOverId]     = useState(null)
+  const [docFolders, setDocFolders]               = useState([])
+  const [docFolderMap, setDocFolderMap]           = useState({}) // docId → folderId
+  const [activeDocFolder, setActiveDocFolder]     = useState(null)
+  const [docDragOverId, setDocDragOverId]         = useState(null)
+  const [gridDocFolderView, setGridDocFolderView] = useState(null) // null = top level, uuid = inside folder
 
   useEffect(() => {
     fetchFolders('documents').then(setDocFolders).catch(() => {})
@@ -914,8 +1014,6 @@ export function DocumentsPage({ cases = [] }) {
     if (filters.statuses.size) docs = docs.filter(d => filters.statuses.has(d.status))
     if (filters.types.size)    docs = docs.filter(d => filters.types.has(d.type))
     docs = filterByDate(docs, filters.datePreset)
-    // Folder filter
-    if (activeDocFolder) docs = docs.filter(d => d._folderId === activeDocFolder)
     return docs
   }, [searched, filters, activeDocFolder])
 
@@ -953,7 +1051,7 @@ export function DocumentsPage({ cases = [] }) {
     complete:    allDocsWithFolders.filter(d => d.status === 'complete').length,
   }), [allDocsWithFolders])
 
-  useEffect(() => { setPage(1) }, [category, search, filters, sortBy, activeDocFolder])
+  useEffect(() => { setPage(1) }, [category, search, filters, sortBy])
 
   const handlePreview = async (doc) => {
     if (!doc.path) return
@@ -993,26 +1091,25 @@ export function DocumentsPage({ cases = [] }) {
           />
         </div>
       ) : (
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {view === 'grid' && (
-            <DocFoldersStrip
-              folders={docFolders}
-              activeFolder={activeDocFolder}
-              setFolder={f => { setActiveDocFolder(f); setPage(1) }}
-              onAddFolder={handleAddDocFolder}
-              onDelete={handleDeleteDocFolder}
-              onDrop={handleDocFolderDrop}
-              dragOverId={docDragOverId}
-              setDragOver={setDocDragOverId}
-              counts={docFolderCounts}
-            />
-          )}
-          <div className="flex-1 overflow-auto">
-            {view === 'list'
-              ? <ListView rows={paginated} selected={selected} toggleSelect={toggleSelect} selectAll={selectAll} onPreview={handlePreview} />
-              : <GridView rows={paginated} selected={selected} toggleSelect={toggleSelect} onPreview={handlePreview} />
-            }
-          </div>
+        <div className="flex-1 overflow-auto">
+          {view === 'list'
+            ? <ListView rows={paginated} selected={selected} toggleSelect={toggleSelect} selectAll={selectAll} onPreview={handlePreview} />
+            : <GridView
+                docs={sorted}
+                docFolders={docFolders}
+                docFolderCounts={docFolderCounts}
+                gridDocFolderView={gridDocFolderView}
+                setGridDocFolderView={setGridDocFolderView}
+                selected={selected}
+                toggleSelect={toggleSelect}
+                onPreview={handlePreview}
+                onAddDocFolder={handleAddDocFolder}
+                onDeleteDocFolder={handleDeleteDocFolder}
+                docDragOverId={docDragOverId}
+                setDocDragOverId={setDocDragOverId}
+                onDocFolderDrop={handleDocFolderDrop}
+              />
+          }
         </div>
       )}
 
