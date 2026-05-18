@@ -41,6 +41,13 @@ function inferDocType(name = '') {
   return 'Document'
 }
 
+function formatDate(raw) {
+  if (!raw || raw === '—') return '—'
+  const d = new Date(raw)
+  if (isNaN(d)) return '—'
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
 function inferDocStatus(caseStatus) {
   if (caseStatus === 'complete') return 'complete'
   if (caseStatus === 'pending')  return 'pending'
@@ -81,7 +88,7 @@ function casesToDocs(cases = []) {
           type: d.document_type ?? inferDocType(name),
           case: c.deceased ?? c.family ?? 'Unknown',
           caseId: c.id,
-          uploadedAt: d.uploaded_at ?? '—',
+          uploadedAt: formatDate(d.uploaded_at),
           ext, size: '—',
           status: d.status ?? inferDocStatus(c.status),
           path,
@@ -101,7 +108,7 @@ function casesToDocs(cases = []) {
         type: d.type ? inferDocType(d.type) : inferDocType(name),
         case: c.deceased ?? c.family ?? 'Unknown',
         caseId: c.id,
-        uploadedAt: d.uploadedAt ?? '—',
+        uploadedAt: formatDate(d.uploadedAt),
         ext, size: '—',
         status: inferDocStatus(c.status),
         path,
