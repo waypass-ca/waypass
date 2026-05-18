@@ -11,36 +11,61 @@ const dbCrematorium = {
   id: 'CRM-000001',
   name: 'Pacific Cremation',
   location: 'Oakland, CA',
+  street_address: '123 Oak St',
+  city: 'Oakland',
+  state: 'CA',
+  zip: '94601',
   distance: '12 miles',
+  active_orders: 3,
   active: 3,
   completed_ytd: 42,
   avg_turnaround: '2.1 days',
   avg_fee: '$520',
+  base_fee: 520,
+  passage_revenue_share: 0.08,
   status: 'active',
+  network_status: 'passage_network',
+  contact_name: 'James Park',
   contact: 'James Park',
+  contact_email: 'james@pacific.com',
   phone: '(510) 555-0110',
+  partner_since: '2021',
   since: '2021',
+  license_number: 'CA-1234',
+  vetting_notes: null,
+  deleted_at: null,
 }
 
 const shapedCrematorium = {
   id: 'CRM-000001',
   name: 'Pacific Cremation',
   location: 'Oakland, CA',
+  streetAddress: '123 Oak St',
+  city: 'Oakland',
+  state: 'CA',
+  zip: '94601',
   distance: '12 miles',
-  active: 3,
+  activeOrders: 3,
   completedYTD: 42,
   avgTurnaround: '2.1 days',
   avgFee: '$520',
+  baseFee: 520,
+  passageRevenueShare: 0.08,
   status: 'active',
-  contact: 'James Park',
+  networkStatus: 'passage_network',
+  contactName: 'James Park',
+  contactEmail: 'james@pacific.com',
   phone: '(510) 555-0110',
-  since: '2021',
+  partnerSince: '2021',
+  licenseNumber: 'CA-1234',
+  vettingNotes: null,
 }
 
 describe('GET /api/crematoriums', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     chain.select.mockReturnThis()
+    chain.is.mockReturnThis()
     chain.order.mockResolvedValue({ data: [dbCrematorium], error: null })
   })
 
@@ -58,7 +83,13 @@ describe('GET /api/crematoriums', () => {
 })
 
 describe('POST /api/crematoriums', () => {
-  const payload = { name: 'Bay Area Cremation', location: 'San Jose, CA' }
+  const payload = {
+    name: 'Bay Area Cremation',
+    location: 'San Jose, CA',
+    contactName: 'Sarah Lee',
+    phone: '(408) 555-0200',
+    networkStatus: 'private',
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -82,7 +113,12 @@ describe('POST /api/crematoriums', () => {
 })
 
 describe('PATCH /api/crematoriums/:id', () => {
-  const payload = { name: 'Pacific Cremation Updated', location: 'Oakland, CA', status: 'active' }
+  const payload = {
+    name: 'Pacific Cremation Updated',
+    location: 'Oakland, CA',
+    status: 'active',
+    networkStatus: 'preferred',
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -100,16 +136,14 @@ describe('PATCH /api/crematoriums/:id', () => {
   it('returns 200 with updated crematorium', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.single.mockResolvedValue({ data: dbCrematorium, error: null })
-
     const res = await request(app).patch('/api/crematoriums/CRM-000001').set(authHeader).send(payload)
     expect(res.status).toBe(200)
     expect(res.body).toEqual(shapedCrematorium)
   })
 
-  it('returns 404 when crematorium not found', async () => {
+  it('returns 404 when not found', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.single.mockResolvedValue({ data: null, error: null })
-
     const res = await request(app).patch('/api/crematoriums/CRM-NOPE').set(authHeader).send(payload)
     expect(res.status).toBe(404)
     expect(res.body.error).toBe('Crematorium not found')
@@ -119,7 +153,7 @@ describe('PATCH /api/crematoriums/:id', () => {
 describe('DELETE /api/crematoriums/:id', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    chain.delete.mockReturnThis()
+    chain.update.mockReturnThis()
     chain.eq.mockResolvedValue({ data: null, error: null })
   })
 
@@ -129,9 +163,10 @@ describe('DELETE /api/crematoriums/:id', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns 204 with auth', async () => {
+  it('returns 204 — soft deletes via deleted_at', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     const res = await request(app).delete('/api/crematoriums/CRM-000001').set(authHeader)
     expect(res.status).toBe(204)
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ deleted_at: expect.any(String) }))
   })
 })

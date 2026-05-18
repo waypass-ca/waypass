@@ -6,6 +6,18 @@ const STEPS = ['Received', 'Intake', 'Cremation', 'Return']
 
 const router = Router()
 
+function shapeRow(o) {
+  return {
+    ...o,
+    name: o.deceased_name ?? o.name,
+    funeralHome: o.funeral_home_name ?? o.funeral_home,
+    package: o.package_name ?? o.package,
+    received: o.received_at ?? o.received,
+    scheduled: o.scheduled_at ?? o.scheduled,
+    steps: STEPS,
+  }
+}
+
 // ── GET /api/orders ─────────────────────────────
 router.get('/', async (_req, res, next) => {
   try {
@@ -14,7 +26,7 @@ router.get('/', async (_req, res, next) => {
       .select('*')
       .order('id')
     if (error) throw error
-    res.json(data.map(o => ({ ...o, steps: STEPS })))
+    res.json(data.map(shapeRow))
   } catch (err) {
     next(err)
   }
@@ -35,15 +47,20 @@ router.patch('/:id/advance', requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'Order already at final status' })
     }
 
+    const newStatus = current.status + 1
     const { data, error } = await supabase
       .from('crematorium_orders')
-      .update({ status: current.status + 1 })
+      .update({
+        status: newStatus,
+        completed_at: newStatus === 3 ? new Date().toISOString().slice(0, 10) : null,
+        modified_at: new Date().toISOString(),
+      })
       .eq('id', req.params.id)
       .select()
       .single()
 
     if (error) throw error
-    res.json({ ...data, steps: STEPS })
+    res.json(shapeRow(data))
   } catch (err) {
     next(err)
   }
