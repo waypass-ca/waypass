@@ -7,6 +7,7 @@ import { PageTitle } from '../layout/PageTitle'
 import { supabase } from '../../lib/supabase.js'
 import { DocumentPreviewModal } from '../ui/DocumentPreviewModal'
 import { fetchFolders, createFolder, deleteFolder } from '../../lib/api.js'
+import { makeDocDragImage } from '../../lib/dragImage.js'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -515,7 +516,10 @@ function ListView({ rows, selected, toggleSelect, selectAll, onPreview }) {
             ) : rows.map(d => (
               <tr key={d.id}
                 draggable
-                onDragStart={e => e.dataTransfer.setData('docId', d.id)}
+                onDragStart={e => {
+                  e.dataTransfer.setData('docId', d.id)
+                  e.dataTransfer.setDragImage(makeDocDragImage(d.name, d.ext), 20, 20)
+                }}
                 onClick={() => onPreview(d)}
                 className={`border-b border-line last:border-b-0 group transition-colors cursor-pointer
                   ${selected.has(d.id) ? 'bg-info-tint/40' : 'hover:bg-canvas/40'}`}>
@@ -566,7 +570,10 @@ function DocCard({ d, selected, toggleSelect, onPreview }) {
   return (
     <div
       draggable
-      onDragStart={e => e.dataTransfer.setData('docId', d.id)}
+      onDragStart={e => {
+        e.dataTransfer.setData('docId', d.id)
+        e.dataTransfer.setDragImage(makeDocDragImage(d.name, d.ext), 20, 20)
+      }}
       onClick={() => onPreview(d)}
       className={`relative bg-white rounded-xl border p-4 cursor-pointer group transition-all
         ${selected.has(d.id) ? 'border-ink ring-1 ring-ink' : 'border-line hover:border-secondary/50 hover:shadow-sm'}`}>
@@ -906,7 +913,10 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders,
             <div
               key={d.id}
               draggable
-              onDragStart={e => e.dataTransfer.setData('docId', d.id)}
+              onDragStart={e => {
+                e.dataTransfer.setData('docId', d.id)
+                e.dataTransfer.setDragImage(makeDocDragImage(d.name, d.ext), 20, 20)
+              }}
               onClick={() => setActiveDocId(d.id === activeDocId ? null : d.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 border-b border-line/60 text-left cursor-pointer transition-colors
                 ${activeDocId === d.id ? 'bg-canvas/60' : 'hover:bg-canvas/40'}`}>

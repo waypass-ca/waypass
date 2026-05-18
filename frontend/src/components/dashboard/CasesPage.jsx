@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { PageTitle } from '../layout/PageTitle'
 import { fetchFolders, createFolder, deleteFolder } from '../../lib/api.js'
+import { makeCaseDragImage } from '../../lib/dragImage.js'
 
 // ─── Filled star ──────────────────────────────────────────────────────────────
 const StarFilled = ({ size = 14, className = '' }) => (
@@ -39,6 +40,7 @@ function calcAge(dob, dop) {
 }
 
 const StatusDot = ({ cls }) => <span className={`w-2 h-2 rounded-full ${cls} inline-block shrink-0`} />
+
 
 // ─── Shared small components ──────────────────────────────────────────────────
 function PackageChip({ pkg }) {
@@ -546,7 +548,10 @@ function CaseCard({ c, selected, toggleSelect, activeId, setActiveId, isStarred,
   return (
     <div
       draggable
-      onDragStart={e => e.dataTransfer.setData('caseId', c.id)}
+      onDragStart={e => {
+        e.dataTransfer.setData('caseId', c.id)
+        e.dataTransfer.setDragImage(makeCaseDragImage(c.deceased), 20, 20)
+      }}
       onClick={() => onViewCase(c.id)}
       className={`group relative bg-white border rounded-lg overflow-hidden cursor-default transition
         hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
@@ -823,7 +828,10 @@ function ColumnsView({
             <div
               key={r.id}
               draggable
-              onDragStart={e => e.dataTransfer.setData('caseId', r.id)}
+              onDragStart={e => {
+                e.dataTransfer.setData('caseId', r.id)
+                e.dataTransfer.setDragImage(makeCaseDragImage(r.deceased), 20, 20)
+              }}
               onDoubleClick={() => onViewCase(r.id)}
               onClick={() => setActiveId(r.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 border-b border-line/60 text-left cursor-pointer transition-colors
