@@ -6,7 +6,7 @@ import {
 import { PageTitle } from '../layout/PageTitle'
 import { supabase } from '../../lib/supabase.js'
 import { DocumentPreviewModal } from '../ui/DocumentPreviewModal'
-import { fetchFolders, createFolder, deleteFolder, assignDocFolder, assignLegacyDocFolder } from '../../lib/api.js'
+import { fetchFolders, createFolder, deleteFolder, assignDocFolder } from '../../lib/api.js'
 import { makeDocDragImage } from '../../lib/dragImage.js'
 
 // Track whether a genuine drag is in progress (prevents accidental drops on click)
@@ -1104,21 +1104,15 @@ export function DocumentsPage({ cases = [] }) {
   , [allDocs, docFolderMap])
 
   async function handleDocMoveToFolder(docId, folderId) {
-    // Optimistic local update
     if (folderId === null) {
       setDocFolderMap(prev => { const n = { ...prev }; delete n[docId]; return n })
     } else {
       setDocFolderMap(prev => ({ ...prev, [docId]: folderId }))
     }
-    // Persist to DB
     const doc = allDocs.find(d => d.id === docId)
-    if (!doc) return
+    if (!doc?.structuredId) return
     try {
-      if (doc.structuredId) {
-        await assignDocFolder(doc.caseId, doc.structuredId, folderId)
-      } else if (doc.legacyName) {
-        await assignLegacyDocFolder(doc.caseId, doc.legacyName, folderId)
-      }
+      await assignDocFolder(doc.caseId, doc.structuredId, folderId)
     } catch (err) {
       console.error('Failed to persist folder assignment:', err.message)
     }

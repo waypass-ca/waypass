@@ -41,9 +41,7 @@ function shapeRow(row) {
     removalTime: row.removal_time,
     folderId: row.folder?.id ?? row.folder_id ?? null,
     folderName: row.folder?.name ?? null,
-    documents: row.case_documents?.length
-      ? row.case_documents
-      : (row.documents ?? []),
+    documents: (row.case_documents ?? []).filter(d => !d.deleted_at),
     notes: (row.case_notes ?? [])
       .sort((a, b) => a.id - b.id)
       .map(n => ({
@@ -214,41 +212,6 @@ router.patch('/:id/folder', requireAuth, async (req, res, next) => {
     if (error) throw error
     if (!data) return res.status(404).json({ error: 'Case not found' })
     res.json(shapeRow(data))
-  } catch (err) {
-    next(err)
-  }
-})
-
-// ── PATCH /api/cases/:id/document-folder ────────
-// Persists folder assignment for a legacy JSONB document entry
-router.patch('/:id/document-folder', requireAuth, async (req, res, next) => {
-  try {
-    const { docName, folderId } = req.body
-    if (!docName) return res.status(400).json({ error: 'docName is required' })
-
-    const { data: caseRow, error: fetchErr } = await supabase
-      .from('cases')
-      .select('documents')
-      .eq('id', req.params.id)
-      .single()
-    if (fetchErr) throw fetchErr
-
-    const updated = (caseRow?.documents ?? []).map(d => {
-      const name = typeof d === 'string' ? d : (d.name ?? '')
-      if (name !== docName) return d
-      // Preserve all existing fields (path, type, etc.), only set/clear folderId
-      const base = typeof d === 'string' ? { name } : { ...d }
-      if (folderId) return { ...base, folderId }
-      const { folderId: _removed, ...rest } = base
-      return Object.keys(rest).length === 1 && rest.name ? rest.name : rest
-    })
-
-    const { error } = await supabase
-      .from('cases')
-      .update({ documents: updated, modified_at: new Date().toISOString() })
-      .eq('id', req.params.id)
-    if (error) throw error
-    res.json({ ok: true })
   } catch (err) {
     next(err)
   }
