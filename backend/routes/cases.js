@@ -41,9 +41,7 @@ function shapeRow(row) {
     removalTime: row.removal_time,
     folderId: row.folder?.id ?? row.folder_id ?? null,
     folderName: row.folder?.name ?? null,
-    documents: row.case_documents?.length
-      ? row.case_documents
-      : (row.documents ?? []),
+    documents: (row.case_documents ?? []).filter(d => !d.deleted_at),
     notes: (row.case_notes ?? [])
       .sort((a, b) => a.id - b.id)
       .map(n => ({

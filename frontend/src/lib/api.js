@@ -66,3 +66,14 @@ export const advanceOrder = (id) =>
 export const fetchPortalSettings = () => request('/api/portal-settings')
 export const savePortalSettings = (payload) =>
   mutate('/api/portal-settings', { method: 'PUT', body: JSON.stringify(payload) })
+
+// ── Folders ───────────────────────────────────────────
+export const fetchFolders = (type) => mutate(`/api/folders?type=${type}`)
+export const createFolder = (payload) => mutate('/api/folders', { method: 'POST', body: JSON.stringify(payload) })
+export const renameFolder = (id, name) => mutate(`/api/folders/${id}`, { method: 'PATCH', body: JSON.stringify({ name }) })
+export const deleteFolder = (id, { withContents = false, type = '' } = {}) =>
+  mutate(`/api/folders/${id}?type=${encodeURIComponent(type)}&withContents=${withContents}`, { method: 'DELETE' })
+export const assignCaseFolder = (caseId, folderId) =>
+  mutate(`/api/cases/${caseId}/folder`, { method: 'PATCH', body: JSON.stringify({ folderId }) })
+export const assignDocFolder = (caseId, docId, folderId) =>
+  mutate(`/api/cases/${caseId}/documents/structured/${docId}/folder`, { method: 'PATCH', body: JSON.stringify({ folderId }) })
