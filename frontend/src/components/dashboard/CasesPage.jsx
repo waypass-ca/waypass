@@ -1088,7 +1088,7 @@ function CasePreviewBody({ c, onViewCase, isStarred, userFolders = [], onMoveToF
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
-export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) {
+export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, onCasesChange }) {
   const [folder, setFolder] = useState('all')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
@@ -1107,6 +1107,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
   const [dragOverFolderId, setDragOverFolderId] = useState(null)
   const [gridFolderView, setGridFolderView] = useState(null) // null = top level, uuid = inside folder
   const [pendingDelete, setPendingDelete] = useState(null) // folder object awaiting delete confirmation
+  const [localDeletedCaseIds, setLocalDeletedCaseIds] = useState(new Set())
 
   useEffect(() => {
     fetchFolders('cases').then(setUserFolders).catch(() => {})
@@ -1142,13 +1143,13 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
     const { id } = pendingDelete
     setPendingDelete(null)
     try {
+      if (withContents) {
+        const toDelete = new Set(cases.filter(c => c.folderId === id).map(c => c.id))
+        setLocalDeletedCaseIds(prev => new Set([...prev, ...toDelete]))
+      }
       await deleteFolder(id, { withContents, type: 'cases' })
       setUserFolders(prev => prev.filter(f => f.id !== id))
       if (folder === id) setFolder('all')
-      if (withContents) {
-        // Remove deleted cases from local state
-        // (parent re-fetches on next load; local optimistic update not needed here)
-      }
     } catch (err) {
       console.error('Failed to delete folder:', err.message)
     }
@@ -1180,7 +1181,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
   const isUserFolder = (id) => !SMART_FOLDER_IDS.has(id) && userFolders.some(f => f.id === id)
 
   const filtered = useMemo(() => {
-    let rows = cases
+    let rows = cases.filter(c => !localDeletedCaseIds.has(c.id))
 
     if (viewMode === 'columns') {
       if (isUserFolder(folder)) rows = rows.filter(c => c.folderId === folder)
@@ -1237,7 +1238,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
     })
 
     return rows
-  }, [cases, folder, viewMode, search, filters, sortBy, starredIds, userFolders])
+  }, [cases, folder, viewMode, search, filters, sortBy, starredIds, userFolders, localDeletedCaseIds])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -1246,20 +1247,21 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
   const active = activeId ? cases.find(c => c.id === activeId) : null
 
   const folderCounts = useMemo(() => {
+    const visible = cases.filter(c => !localDeletedCaseIds.has(c.id))
     const base = {
-      all: cases.length,
-      starred: cases.filter(c => starredIds.has(c.id)).length,
-      recent: cases.filter(c => c.status !== 'complete').length,
-      unassigned: cases.filter(c => !c.crematorium).length,
-      'needs-attention': cases.filter(c => c.status === 'pending' && (c.documents || []).length === 0).length,
-      pending: cases.filter(c => c.status === 'pending').length,
-      transit: cases.filter(c => c.status === 'transit').length,
-      cremation: cases.filter(c => c.status === 'cremation').length,
-      complete: cases.filter(c => c.status === 'complete').length,
+      all: visible.length,
+      starred: visible.filter(c => starredIds.has(c.id)).length,
+      recent: visible.filter(c => c.status !== 'complete').length,
+      unassigned: visible.filter(c => !c.crematorium).length,
+      'needs-attention': visible.filter(c => c.status === 'pending' && (c.documents || []).length === 0).length,
+      pending: visible.filter(c => c.status === 'pending').length,
+      transit: visible.filter(c => c.status === 'transit').length,
+      cremation: visible.filter(c => c.status === 'cremation').length,
+      complete: visible.filter(c => c.status === 'complete').length,
     }
-    userFolders.forEach(f => { base[f.id] = cases.filter(c => c.folderId === f.id).length })
+    userFolders.forEach(f => { base[f.id] = visible.filter(c => c.folderId === f.id).length })
     return base
-  }, [cases, starredIds, userFolders])
+  }, [cases, starredIds, userFolders, localDeletedCaseIds])
 
   const toggleSelect = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
   const selectAll = () => setSelected(filtered.length === selected.size ? new Set() : new Set(filtered.map(c => c.id)))

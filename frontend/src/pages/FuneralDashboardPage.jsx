@@ -144,9 +144,9 @@ export function FuneralDashboardPage() {
       {view === 'inbox' ? (
         <InboxPage />
       ) : view === 'cases' ? (
-        <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} onCaseFolderAssign={handleCaseFolderAssign} />
+        <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} onCaseFolderAssign={handleCaseFolderAssign} onCasesChange={setCases} />
       ) : view === 'documents' ? (
-        <DocumentsPage cases={cases} />
+        <DocumentsPage cases={cases} onCasesChange={setCases} />
       ) : view === 'case-detail' && selectedCase ? (
         <CaseDetailPage
           caseData={selectedCase}

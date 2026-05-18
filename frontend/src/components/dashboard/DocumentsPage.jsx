@@ -1059,7 +1059,7 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders,
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
-export function DocumentsPage({ cases = [] }) {
+export function DocumentsPage({ cases = [], onCasesChange }) {
   const [category, setCategory]       = useState('all')
   const [search, setSearch]           = useState('')
   const [view, setView]               = useState('list')
@@ -1073,11 +1073,12 @@ export function DocumentsPage({ cases = [] }) {
 
   // Folder state
   const [docFolders, setDocFolders]               = useState([])
-  const [docFolderMap, setDocFolderMap]           = useState({}) // docId → folderId
+  const [docFolderMap, setDocFolderMap]           = useState({}) // docId → folderId (null = force-unfiled)
   const [activeDocFolder, setActiveDocFolder]     = useState(null)
   const [docDragOverId, setDocDragOverId]         = useState(null)
   const [gridDocFolderView, setGridDocFolderView] = useState(null) // null = top level, uuid = inside folder
   const [pendingDocDelete, setPendingDocDelete]   = useState(null) // folder object awaiting delete confirmation
+  const [localDeletedDocIds, setLocalDeletedDocIds] = useState(new Set())
 
   useEffect(() => {
     fetchFolders('documents').then(setDocFolders).catch(() => {})
@@ -1102,16 +1103,31 @@ export function DocumentsPage({ cases = [] }) {
     const { id } = pendingDocDelete
     setPendingDocDelete(null)
     try {
-      await deleteFolder(id, { withContents, type: 'documents' })
-      setDocFolders(prev => prev.filter(f => f.id !== id))
-      if (activeDocFolder === id) setActiveDocFolder(null)
+      // Snapshot docs in this folder before any state mutation
+      const docsInFolder = allDocsWithFolders.filter(d => d._folderId === id)
+
       if (withContents) {
+        // Hide deleted docs immediately
+        setLocalDeletedDocIds(prev => new Set([...prev, ...docsInFolder.map(d => d.id)]))
+        // Clean map entries pointing to this folder
         setDocFolderMap(prev => {
           const n = { ...prev }
           Object.keys(n).forEach(k => { if (n[k] === id) delete n[k] })
           return n
         })
+      } else {
+        // Unfile: override _folderId to null for all docs in this folder
+        setDocFolderMap(prev => {
+          const n = { ...prev }
+          docsInFolder.forEach(d => { n[d.id] = null })
+          return n
+        })
       }
+
+      await deleteFolder(id, { withContents, type: 'documents' })
+      setDocFolders(prev => prev.filter(f => f.id !== id))
+      if (activeDocFolder === id) setActiveDocFolder(null)
+      if (gridDocFolderView === id) setGridDocFolderView(null)
     } catch (err) {
       console.error('Failed to delete folder:', err.message)
     }
@@ -1119,13 +1135,15 @@ export function DocumentsPage({ cases = [] }) {
 
   const allDocs = useMemo(() => casesToDocs(cases), [cases])
 
-  // DB folder_id from doc, overridden by any in-session move
+  // DB folder_id from doc, overridden by any in-session move; locally deleted docs excluded
   const allDocsWithFolders = useMemo(() =>
-    allDocs.map(d => ({
-      ...d,
-      _folderId: d.id in docFolderMap ? docFolderMap[d.id] : d.dbFolderId,
-    }))
-  , [allDocs, docFolderMap])
+    allDocs
+      .filter(d => !localDeletedDocIds.has(d.id))
+      .map(d => ({
+        ...d,
+        _folderId: d.id in docFolderMap ? docFolderMap[d.id] : d.dbFolderId,
+      }))
+  , [allDocs, docFolderMap, localDeletedDocIds])
 
   async function handleDocMoveToFolder(docId, folderId) {
     if (folderId === null) {
