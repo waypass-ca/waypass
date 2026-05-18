@@ -7,6 +7,7 @@ import { PageTitle } from '../layout/PageTitle'
 import { supabase } from '../../lib/supabase.js'
 import { DocumentPreviewModal } from '../ui/DocumentPreviewModal'
 import { fetchFolders, createFolder, deleteFolder, assignDocFolder } from '../../lib/api.js'
+import { FolderDeleteModal } from '../ui/FolderDeleteModal.jsx'
 import { makeDocDragImage } from '../../lib/dragImage.js'
 
 // Track whether a genuine drag is in progress (prevents accidental drops on click)
@@ -1076,6 +1077,7 @@ export function DocumentsPage({ cases = [] }) {
   const [activeDocFolder, setActiveDocFolder]     = useState(null)
   const [docDragOverId, setDocDragOverId]         = useState(null)
   const [gridDocFolderView, setGridDocFolderView] = useState(null) // null = top level, uuid = inside folder
+  const [pendingDocDelete, setPendingDocDelete]   = useState(null) // folder object awaiting delete confirmation
 
   useEffect(() => {
     fetchFolders('documents').then(setDocFolders).catch(() => {})
@@ -1090,11 +1092,26 @@ export function DocumentsPage({ cases = [] }) {
     }
   }
 
-  async function handleDeleteDocFolder(folderId) {
+  function handleDeleteDocFolder(folderId) {
+    const f = docFolders.find(f => f.id === folderId)
+    if (f) setPendingDocDelete(f)
+  }
+
+  async function confirmDeleteDocFolder(withContents) {
+    if (!pendingDocDelete) return
+    const { id } = pendingDocDelete
+    setPendingDocDelete(null)
     try {
-      await deleteFolder(folderId)
-      setDocFolders(prev => prev.filter(f => f.id !== folderId))
-      if (activeDocFolder === folderId) setActiveDocFolder(null)
+      await deleteFolder(id, { withContents, type: 'documents' })
+      setDocFolders(prev => prev.filter(f => f.id !== id))
+      if (activeDocFolder === id) setActiveDocFolder(null)
+      if (withContents) {
+        setDocFolderMap(prev => {
+          const n = { ...prev }
+          Object.keys(n).forEach(k => { if (n[k] === id) delete n[k] })
+          return n
+        })
+      }
     } catch (err) {
       console.error('Failed to delete folder:', err.message)
     }
@@ -1284,6 +1301,16 @@ export function DocumentsPage({ cases = [] }) {
 
       {previewDoc && (
         <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
+      )}
+
+      {pendingDocDelete && (
+        <FolderDeleteModal
+          folder={pendingDocDelete}
+          itemLabel="documents"
+          onDeleteWithContents={() => confirmDeleteDocFolder(true)}
+          onDeleteFolder={() => confirmDeleteDocFolder(false)}
+          onCancel={() => setPendingDocDelete(null)}
+        />
       )}
     </div>
   )

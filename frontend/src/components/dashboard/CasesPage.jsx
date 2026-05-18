@@ -7,6 +7,7 @@ import {
 import { PageTitle } from '../layout/PageTitle'
 import { fetchFolders, createFolder, deleteFolder } from '../../lib/api.js'
 import { makeCaseDragImage } from '../../lib/dragImage.js'
+import { FolderDeleteModal } from '../ui/FolderDeleteModal.jsx'
 
 // ─── Filled star ──────────────────────────────────────────────────────────────
 const StarFilled = ({ size = 14, className = '' }) => (
@@ -1105,6 +1106,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
   const [userFolders, setUserFolders] = useState([])
   const [dragOverFolderId, setDragOverFolderId] = useState(null)
   const [gridFolderView, setGridFolderView] = useState(null) // null = top level, uuid = inside folder
+  const [pendingDelete, setPendingDelete] = useState(null) // folder object awaiting delete confirmation
 
   useEffect(() => {
     fetchFolders('cases').then(setUserFolders).catch(() => {})
@@ -1130,11 +1132,23 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
     }
   }
 
-  async function handleDeleteFolder(folderId) {
+  function handleDeleteFolder(folderId) {
+    const f = userFolders.find(f => f.id === folderId)
+    if (f) setPendingDelete(f)
+  }
+
+  async function confirmDeleteFolder(withContents) {
+    if (!pendingDelete) return
+    const { id } = pendingDelete
+    setPendingDelete(null)
     try {
-      await deleteFolder(folderId)
-      setUserFolders(prev => prev.filter(f => f.id !== folderId))
-      if (folder === folderId) setFolder('all')
+      await deleteFolder(id, { withContents, type: 'cases' })
+      setUserFolders(prev => prev.filter(f => f.id !== id))
+      if (folder === id) setFolder('all')
+      if (withContents) {
+        // Remove deleted cases from local state
+        // (parent re-fetches on next load; local optimistic update not needed here)
+      }
     } catch (err) {
       console.error('Failed to delete folder:', err.message)
     }
@@ -1333,6 +1347,16 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
         onNext={() => setPage(p => Math.min(totalPages, p + 1))}
         showPagination={viewMode !== 'columns'}
       />
+
+      {pendingDelete && (
+        <FolderDeleteModal
+          folder={pendingDelete}
+          itemLabel="cases"
+          onDeleteWithContents={() => confirmDeleteFolder(true)}
+          onDeleteFolder={() => confirmDeleteFolder(false)}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   )
 }
