@@ -5,8 +5,9 @@ import {
   Filter, Home, Phone, X, Check, Eye,
 } from 'lucide-react'
 import { PageTitle } from '../layout/PageTitle'
+import { fetchFolders, createFolder, deleteFolder } from '../../lib/api.js'
 
-// ─── Filled star (lucide Star forced-fill via CSS selector) ───────────────────
+// ─── Filled star ──────────────────────────────────────────────────────────────
 const StarFilled = ({ size = 14, className = '' }) => (
   <Star size={size} className={`[&_*]:fill-current [&_*]:stroke-current ${className}`} />
 )
@@ -93,7 +94,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
 
   return (
     <div className="border-b border-line bg-surface/80 backdrop-blur shrink-0 relative z-10">
-      {/* Row 1: breadcrumb + title + new case */}
       <div className="px-6 pt-5 pb-3 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 font-sans text-[11.5px] text-muted mb-1.5">
@@ -109,7 +109,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
         </button>
       </div>
 
-      {/* Row 2: search + sort + filter + view */}
       <div className="px-6 pb-3 flex items-end justify-between gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[180px] max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
@@ -150,7 +149,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                 </div>
 
                 <div className="overflow-auto flex-1 bg-white">
-                  {/* Status */}
                   <div className="px-4 pt-3 pb-2">
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Status</div>
                     <div className="flex flex-wrap gap-1.5">
@@ -173,7 +171,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                     </div>
                   </div>
 
-                  {/* Date opened */}
                   <div className="px-4 pb-3 border-t border-line/60 pt-3">
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Date Opened</div>
                     <div className="flex flex-wrap gap-1.5">
@@ -196,7 +193,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                     </div>
                   </div>
 
-                  {/* Package */}
                   <div className="px-4 pb-3 border-t border-line/60 pt-3">
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Package</div>
                     <div className="flex flex-wrap gap-1.5">
@@ -213,7 +209,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                     </div>
                   </div>
 
-                  {/* Crematorium */}
                   {crematoriumOptions.length > 0 && (
                     <div className="px-4 pb-3 border-t border-line/60 pt-3">
                       <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Crematorium</div>
@@ -234,7 +229,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                     </div>
                   )}
 
-                  {/* Other conditions */}
                   <div className="px-4 pb-3 border-t border-line/60 pt-3">
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-1">Other</div>
                     {[
@@ -279,8 +273,8 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
   )
 }
 
-// ─── Folder tabs (horizontal) ─────────────────────────────────────────────────
-const FOLDERS = [
+// ─── Smart folder definitions ─────────────────────────────────────────────────
+const SMART_FOLDERS = [
   { id: 'all', label: 'Cases', icon: <Home size={13} />, tint: null },
   { id: 'recent', label: 'Active', icon: <Clock size={13} />, tint: null },
   { id: 'starred', label: 'Starred', icon: <StarFilled size={13} />, tint: 'text-warning' },
@@ -292,6 +286,76 @@ const FOLDERS = [
   { id: 'complete', label: 'Complete', icon: <StatusDot cls="bg-primary" />, tint: null },
 ]
 
+const SMART_FOLDER_IDS = new Set(SMART_FOLDERS.map(f => f.id))
+
+// ─── Folders strip (grid view) ────────────────────────────────────────────────
+function FoldersStrip({ folders, activeFolder, setFolder, onDelete, onDrop, dragOverId, setDragOver, counts, onAddFolder }) {
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState('')
+  const inputRef = useRef(null)
+
+  useEffect(() => { if (adding) inputRef.current?.focus() }, [adding])
+
+  function submit() {
+    if (name.trim()) onAddFolder(name.trim())
+    setName('')
+    setAdding(false)
+  }
+
+  return (
+    <div className="px-4 pt-3 pb-2 border-b border-line/60 bg-canvas/30">
+      <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Folders</div>
+      <div className="flex items-center gap-2 flex-wrap">
+        {folders.map(f => (
+          <div
+            key={f.id}
+            onDragOver={e => { e.preventDefault(); setDragOver(f.id) }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={e => onDrop(e, f.id)}
+            onClick={() => setFolder(activeFolder === f.id ? 'all' : f.id)}
+            className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-all select-none
+              ${activeFolder === f.id
+                ? 'border-ink bg-ink text-surface'
+                : dragOverId === f.id
+                  ? 'border-primary bg-primary-light text-ink scale-105'
+                  : 'border-line bg-white text-ink hover:border-secondary/60 hover:shadow-sm'}`}>
+            <Folder size={13} className={activeFolder === f.id ? 'text-surface/80' : 'text-secondary'} />
+            <span className="font-sans text-[12.5px] font-medium">{f.name}</span>
+            <span className={`font-sans text-[11px] tabular-nums ${activeFolder === f.id ? 'text-surface/70' : 'text-muted'}`}>
+              {counts[f.id] ?? 0}
+            </span>
+            <button
+              onClick={e => { e.stopPropagation(); onDelete(f.id) }}
+              className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer
+                ${activeFolder === f.id ? 'bg-surface/20 text-surface hover:bg-surface/40' : 'bg-ink text-surface hover:bg-danger'}`}>
+              <X size={9} />
+            </button>
+          </div>
+        ))}
+
+        {adding ? (
+          <form onSubmit={e => { e.preventDefault(); submit() }} className="flex items-center">
+            <input
+              ref={inputRef}
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onBlur={submit}
+              onKeyDown={e => { if (e.key === 'Escape') { setAdding(false); setName('') } }}
+              placeholder="Folder name"
+              className="h-8 px-3 rounded-lg border border-ink/40 font-sans text-[12.5px] text-ink outline-none bg-white w-36"
+            />
+          </form>
+        ) : (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-dashed border-line text-muted hover:border-secondary hover:text-secondary font-sans text-[12px] cursor-pointer transition-colors">
+            <Plus size={12} /> New Folder
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
 
 // ─── Selection bar ────────────────────────────────────────────────────────────
 function SelectionBar({ count, clear }) {
@@ -318,13 +382,11 @@ function StatusFooter({ count, selected, pageSize, setPageSize, page, totalPages
   const end = Math.min(page * pageSize, count)
   return (
     <div className="px-4 h-9 border-t border-line bg-surface flex items-center justify-between gap-4 font-sans text-[11px] text-muted shrink-0">
-      {/* Left: case count */}
       <div className="shrink-0">
         {count} {count === 1 ? 'case' : 'cases'}
         {selected > 0 ? ` · ${selected} selected` : ''}
       </div>
 
-      {/* Centre: page size + navigation (list/grid only) */}
       {showPagination && (
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
@@ -354,7 +416,6 @@ function StatusFooter({ count, selected, pageSize, setPageSize, page, totalPages
         </div>
       )}
 
-      {/* Right: connection status */}
       <div className="flex items-center gap-1.5 shrink-0">
         <span className="w-1.5 h-1.5 rounded-full bg-primary" /> Connected
       </div>
@@ -372,7 +433,7 @@ function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActive
 
   return (
     <div>
-      <div className="bg-white  rounded-xl overflow-hidden">
+      <div className="bg-white rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full" style={{ minWidth: 760 }}>
             <colgroup>
@@ -480,9 +541,11 @@ function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarr
           const s = STATUS[c.status] || STATUS.pending
           return (
             <div key={c.id}
+              draggable
+              onDragStart={e => e.dataTransfer.setData('caseId', c.id)}
               onClick={() => onViewCase(c.id)}
               className={`group relative bg-white border rounded-lg overflow-hidden cursor-default transition
-                hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-transecondary-y-0.5
+                hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
                 ${activeId === c.id ? 'border-ink/40 ring-2 ring-ink/10' : 'border-line'}
                 ${selected.has(c.id) ? 'ring-2 ring-info/60' : ''}`}>
               <div className={`h-14 ${s.tint} relative border-b ${s.border} flex items-center justify-center`}>
@@ -534,9 +597,22 @@ function GridView({ rows, selected, toggleSelect, activeId, setActiveId, isStarr
 }
 
 // ─── Columns view (Finder-style 3-pane) ──────────────────────────────────────
-function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, cases, isStarred, onViewCase }) {
-  const folders = FOLDERS.map(f => ({ ...f, count: counts[f.id] }))
+function ColumnsView({
+  rows, activeId, setActiveId, folder, setFolder, counts, cases, isStarred, onViewCase,
+  userFolders, onAddFolder, onDeleteFolder, onFolderDrop, dragOverFolderId, setDragOverFolderId,
+}) {
+  const smartFolders = SMART_FOLDERS.map(f => ({ ...f, count: counts[f.id] }))
   const c = activeId ? (rows.find(r => r.id === activeId) || cases.find(r => r.id === activeId)) : null
+
+  const [adding, setAdding] = useState(false)
+  const [newName, setNewName] = useState('')
+  const inputRef = useRef(null)
+  useEffect(() => { if (adding) inputRef.current?.focus() }, [adding])
+
+  function submitAdd() {
+    if (newName.trim()) onAddFolder(newName.trim())
+    setNewName(''); setAdding(false)
+  }
 
   const wrapRef = useRef(null)
   const [col1, setCol1] = useState(() => Number(localStorage.getItem('cases-col1')) || 200)
@@ -552,7 +628,7 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
     const onMove = (ev) => {
       const dx = ev.clientX - startX
       if (which === 1) {
-        const next = Math.max(140, Math.min(340, start1 + dx))
+        const next = Math.max(160, Math.min(360, start1 + dx))
         if (totalW - next - col3 >= 180) setCol1(next)
       } else {
         const next = Math.max(240, Math.min(500, start3 - dx))
@@ -575,16 +651,18 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
     <div onMouseDown={onMouseDown}
       className="group relative w-px bg-line shrink-0 cursor-col-resize hover:bg-ink/30 transition-colors">
       <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
-      <div className="absolute top-1/2 -transecondary-y-1/2 -left-[3px] w-[7px] h-10 rounded-full opacity-0 group-hover:opacity-100 bg-ink/20 transition-opacity" />
+      <div className="absolute top-1/2 -translate-y-1/2 -left-[3px] w-[7px] h-10 rounded-full opacity-0 group-hover:opacity-100 bg-ink/20 transition-opacity" />
     </div>
   )
 
   return (
     <div className="h-full">
-      <div ref={wrapRef} className="bg-white  overflow-hidden flex h-full">
-        {/* Col 1: Smart folders */}
-        <div className="overflow-auto py-2 shrink-0" style={{ width: col1 }}>
-          {folders.map(f => (
+      <div ref={wrapRef} className="bg-white overflow-hidden flex h-full">
+        {/* Col 1: Folders */}
+        <div className="overflow-auto py-2 shrink-0 flex flex-col" style={{ width: col1 }}>
+          {/* Smart folders */}
+          <div className="px-3 pt-1 pb-0.5 font-sans text-[10px] uppercase tracking-[0.1em] text-muted/60">Smart</div>
+          {smartFolders.map(f => (
             <button key={f.id} onClick={() => { setFolder(f.id); setActiveId(null) }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-left cursor-pointer transition-colors
                 ${folder === f.id ? 'bg-ink/5 font-medium' : 'hover:bg-ink/5'}`}>
@@ -594,6 +672,52 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
               <ChevronRight size={12} className="text-muted shrink-0" />
             </button>
           ))}
+
+          {/* Divider + My Folders */}
+          <div className="mx-3 my-2 h-px bg-line shrink-0" />
+          <div className="px-3 pb-0.5 font-sans text-[10px] uppercase tracking-[0.1em] text-muted/60">My Folders</div>
+
+          {userFolders.map(f => (
+            <div
+              key={f.id}
+              onDragOver={e => { e.preventDefault(); setDragOverFolderId(f.id) }}
+              onDragLeave={() => setDragOverFolderId(null)}
+              onDrop={e => onFolderDrop(e, f.id)}
+              onClick={() => { setFolder(f.id); setActiveId(null) }}
+              className={`group w-full flex items-center gap-2.5 px-3 py-2 text-left cursor-pointer transition-colors
+                ${folder === f.id ? 'bg-ink/5 font-medium' : 'hover:bg-ink/5'}
+                ${dragOverFolderId === f.id ? 'bg-primary-light' : ''}`}>
+              <Folder size={13} className="text-secondary shrink-0" />
+              <span className="flex-1 font-sans text-[13px] text-ink truncate">{f.name}</span>
+              <span className="font-sans text-[11px] text-muted tabular-nums shrink-0">{counts[f.id] ?? 0}</span>
+              <button
+                onClick={e => { e.stopPropagation(); onDeleteFolder(f.id) }}
+                className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded flex items-center justify-center text-muted hover:bg-danger-tint hover:text-danger cursor-pointer transition-all shrink-0">
+                <X size={10} />
+              </button>
+            </div>
+          ))}
+
+          {adding ? (
+            <form onSubmit={e => { e.preventDefault(); submitAdd() }} className="px-3 py-1.5">
+              <input
+                ref={inputRef}
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onBlur={submitAdd}
+                onKeyDown={e => { if (e.key === 'Escape') { setAdding(false); setNewName('') } }}
+                placeholder="Folder name"
+                className="w-full px-2 py-1 text-[12.5px] font-sans rounded border border-ink/40 outline-none bg-white text-ink"
+              />
+            </form>
+          ) : (
+            <button
+              onClick={() => setAdding(true)}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-muted hover:text-secondary hover:bg-ink/5 cursor-pointer transition-colors">
+              <Plus size={12} className="shrink-0" />
+              <span className="font-sans text-[12px]">New Folder</span>
+            </button>
+          )}
         </div>
 
         <Handle onMouseDown={startDrag(1)} />
@@ -602,22 +726,25 @@ function ColumnsView({ rows, activeId, setActiveId, folder, setFolder, counts, c
         <div className="flex-1 overflow-auto min-w-0">
           {rows.length === 0 && <div className="p-6 text-center font-sans text-[12px] text-muted">Empty folder</div>}
           {rows.map(r => (
-            <button key={r.id} 
-              onDoubleClick={()=> onViewCase(r.id)}
+            <div
+              key={r.id}
+              draggable
+              onDragStart={e => e.dataTransfer.setData('caseId', r.id)}
+              onDoubleClick={() => onViewCase(r.id)}
               onClick={() => setActiveId(r.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 border-b border-line/60 text-left cursor-pointer transition-colors
                 ${activeId === r.id ? 'bg-canvas/60' : 'hover:bg-canvas/60'}`}>
               <div className="flex-1 min-w-0">
-                <div className={`font-sans text-[13px] truncate flex items-center gap-1.5 text-ink}`}>
+                <div className="font-sans text-[13px] truncate flex items-center gap-1.5 text-ink">
                   {r.deceased}
                   {isStarred(r.id) && <StarFilled size={10} className={activeId === r.id ? 'text-warning-light' : 'text-warning'} />}
                 </div>
-                <div className={`font-sans text-[11px] truncate text-muted}`}>
+                <div className="font-sans text-[11px] truncate text-muted">
                   {r.family} · {r.date}
                 </div>
               </div>
-              <ChevronRight size={12} className={'text-muted'} />
-            </button>
+              <ChevronRight size={12} className="text-muted shrink-0" />
+            </div>
           ))}
         </div>
 
@@ -743,7 +870,7 @@ function CasePreviewBody({ c, onViewCase, isStarred }) {
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
-export function CasesPage({ cases, onViewCase, onNewCase }) {
+export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) {
   const [folder, setFolder] = useState('all')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
@@ -757,11 +884,18 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
   const [pageSize, setPageSize] = useState(20)
   const [page, setPage] = useState(1)
 
+  // User-created folders
+  const [userFolders, setUserFolders] = useState([])
+  const [dragOverFolderId, setDragOverFolderId] = useState(null)
+
+  useEffect(() => {
+    fetchFolders('cases').then(setUserFolders).catch(() => {})
+  }, [])
+
   useEffect(() => {
     try { localStorage.setItem('cases-view-mode', viewMode) } catch { }
   }, [viewMode])
 
-  // Reset to page 1 whenever the result set changes
   useEffect(() => { setPage(1) }, [folder, search, filters, sortBy])
 
   const isStarred = (id) => starredIds.has(id)
@@ -769,15 +903,49 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
   const filtersActive = filters.packages.size + filters.statuses.size + filters.crematoriums.size +
     (filters.datePreset ? 1 : 0) + (filters.hasDocs ? 1 : 0) + (filters.starredOnly ? 1 : 0)
 
+  async function handleAddFolder(name) {
+    try {
+      const f = await createFolder({ name, type: 'cases' })
+      setUserFolders(prev => [...prev, f])
+    } catch (err) {
+      console.error('Failed to create folder:', err.message)
+    }
+  }
+
+  async function handleDeleteFolder(folderId) {
+    try {
+      await deleteFolder(folderId)
+      setUserFolders(prev => prev.filter(f => f.id !== folderId))
+      if (folder === folderId) setFolder('all')
+    } catch (err) {
+      console.error('Failed to delete folder:', err.message)
+    }
+  }
+
+  async function handleFolderDrop(e, folderId) {
+    e.preventDefault()
+    const caseId = e.dataTransfer.getData('caseId')
+    if (!caseId || !onCaseFolderAssign) return
+    setDragOverFolderId(null)
+    await onCaseFolderAssign(caseId, folderId)
+  }
+
+  const isUserFolder = (id) => !SMART_FOLDER_IDS.has(id) && userFolders.some(f => f.id === id)
+
   const filtered = useMemo(() => {
     let rows = cases
 
     if (viewMode === 'columns') {
-      if (folder === 'starred') rows = rows.filter(c => starredIds.has(c.id))
+      if (isUserFolder(folder)) rows = rows.filter(c => c.folderId === folder)
+      else if (folder === 'starred') rows = rows.filter(c => starredIds.has(c.id))
       else if (folder === 'recent') rows = rows.filter(c => c.status !== 'complete')
       else if (folder === 'unassigned') rows = rows.filter(c => !c.crematorium)
       else if (folder === 'needs-attention') rows = rows.filter(c => c.status === 'pending' && (c.documents || []).length === 0)
       else if (['pending', 'transit', 'cremation', 'complete'].includes(folder)) rows = rows.filter(c => c.status === folder)
+    }
+
+    if (viewMode === 'grid' && isUserFolder(folder)) {
+      rows = rows.filter(c => c.folderId === folder)
     }
 
     if (filters.starredOnly)      rows = rows.filter(c => starredIds.has(c.id))
@@ -819,7 +987,6 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
         if (b.amount == null) return -1
         return a.amount - b.amount
       }
-      // date
       if (a.dateOpened == null && b.dateOpened == null) return 0
       if (a.dateOpened == null) return 1
       if (b.dateOpened == null) return -1
@@ -827,7 +994,7 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
     })
 
     return rows
-  }, [cases, folder, viewMode, search, filters, sortBy, starredIds])
+  }, [cases, folder, viewMode, search, filters, sortBy, starredIds, userFolders])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, totalPages)
@@ -835,19 +1002,21 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
 
   const active = activeId ? cases.find(c => c.id === activeId) : null
 
-  const folderCounts = useMemo(() => ({
-    all: cases.length,
-    starred: cases.filter(c => starredIds.has(c.id)).length,
-    recent: cases.filter(c => c.status !== 'complete').length,
-    unassigned: cases.filter(c => !c.crematorium).length,
-    'needs-attention': cases.filter(c => c.status === 'pending' && (c.documents || []).length === 0).length,
-    pending: cases.filter(c => c.status === 'pending').length,
-    transit: cases.filter(c => c.status === 'transit').length,
-    cremation: cases.filter(c => c.status === 'cremation').length,
-    complete: cases.filter(c => c.status === 'complete').length,
-  }), [cases, starredIds])
-
-  
+  const folderCounts = useMemo(() => {
+    const base = {
+      all: cases.length,
+      starred: cases.filter(c => starredIds.has(c.id)).length,
+      recent: cases.filter(c => c.status !== 'complete').length,
+      unassigned: cases.filter(c => !c.crematorium).length,
+      'needs-attention': cases.filter(c => c.status === 'pending' && (c.documents || []).length === 0).length,
+      pending: cases.filter(c => c.status === 'pending').length,
+      transit: cases.filter(c => c.status === 'transit').length,
+      cremation: cases.filter(c => c.status === 'cremation').length,
+      complete: cases.filter(c => c.status === 'complete').length,
+    }
+    userFolders.forEach(f => { base[f.id] = cases.filter(c => c.folderId === f.id).length })
+    return base
+  }, [cases, starredIds, userFolders])
 
   const toggleSelect = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
   const selectAll = () => setSelected(filtered.length === selected.size ? new Set() : new Set(filtered.map(c => c.id)))
@@ -872,34 +1041,56 @@ export function CasesPage({ cases, onViewCase, onNewCase }) {
       {selected.size > 0 && <SelectionBar count={selected.size} clear={() => setSelected(new Set())} />}
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        <div className="flex-1 overflow-auto min-h-0">
-          {viewMode === 'list' && (
-            <ListView
-              rows={paginated} selected={selected}
-              toggleSelect={toggleSelect} selectAll={selectAll}
-              activeId={activeId} setActiveId={setActiveId}
-              isStarred={isStarred}
-              onViewCase={onViewCase}
-            />
-          )}
+        <div className="flex-1 overflow-auto min-h-0 flex flex-col">
           {viewMode === 'grid' && (
-            <GridView
-              rows={paginated} selected={selected}
-              toggleSelect={toggleSelect}
-              activeId={activeId} setActiveId={setActiveId}
-              isStarred={isStarred}
-              onViewCase={onViewCase}
+            <FoldersStrip
+              folders={userFolders}
+              activeFolder={folder}
+              setFolder={f => { setFolder(f); setPage(1) }}
+              onAddFolder={handleAddFolder}
+              onDelete={handleDeleteFolder}
+              onDrop={handleFolderDrop}
+              dragOverId={dragOverFolderId}
+              setDragOver={setDragOverFolderId}
+              counts={folderCounts}
             />
           )}
-          {viewMode === 'columns' && (
-            <ColumnsView
-              rows={paginated} activeId={activeId} setActiveId={setActiveId}
-              folder={folder} setFolder={setFolder}
-              counts={folderCounts} cases={cases}
-              isStarred={isStarred}
-              onViewCase={onViewCase}
-            />
-          )}
+
+          <div className="flex-1 overflow-auto min-h-0">
+            {viewMode === 'list' && (
+              <ListView
+                rows={paginated} selected={selected}
+                toggleSelect={toggleSelect} selectAll={selectAll}
+                activeId={activeId} setActiveId={setActiveId}
+                isStarred={isStarred}
+                onViewCase={onViewCase}
+              />
+            )}
+            {viewMode === 'grid' && (
+              <GridView
+                rows={paginated} selected={selected}
+                toggleSelect={toggleSelect}
+                activeId={activeId} setActiveId={setActiveId}
+                isStarred={isStarred}
+                onViewCase={onViewCase}
+              />
+            )}
+            {viewMode === 'columns' && (
+              <ColumnsView
+                rows={paginated} activeId={activeId} setActiveId={setActiveId}
+                folder={folder} setFolder={setFolder}
+                counts={folderCounts} cases={cases}
+                isStarred={isStarred}
+                onViewCase={onViewCase}
+                userFolders={userFolders}
+                onAddFolder={handleAddFolder}
+                onDeleteFolder={handleDeleteFolder}
+                onFolderDrop={handleFolderDrop}
+                dragOverFolderId={dragOverFolderId}
+                setDragOverFolderId={setDragOverFolderId}
+              />
+            )}
+          </div>
         </div>
 
         {viewMode !== 'columns' && active && (

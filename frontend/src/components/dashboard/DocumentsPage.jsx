@@ -1,11 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import {
   Search, Filter, List, Grid2x2, Columns2, Check, X, ChevronRight,
-  Upload, Download, MoreHorizontal, FileText, File,
+  Download, MoreHorizontal, FileText, File, Folder, Plus,
 } from 'lucide-react'
 import { PageTitle } from '../layout/PageTitle'
 import { supabase } from '../../lib/supabase.js'
 import { DocumentPreviewModal } from '../ui/DocumentPreviewModal'
+import { fetchFolders, createFolder, deleteFolder } from '../../lib/api.js'
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
@@ -66,7 +67,7 @@ function casesToDocs(cases = []) {
   )
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Status badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
   const s = STATUS_CONFIG[status] || STATUS_CONFIG.pending
   return (
@@ -101,6 +102,73 @@ function filterByDate(docs, preset) {
   return docs.filter(d => new Date(d.uploadedAt) >= cutoff)
 }
 
+// ─── Folders strip (grid view) ────────────────────────────────────────────────
+function DocFoldersStrip({ folders, activeFolder, setFolder, onDelete, onDrop, dragOverId, setDragOver, counts, onAddFolder }) {
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState('')
+  const inputRef = useRef(null)
+  useEffect(() => { if (adding) inputRef.current?.focus() }, [adding])
+
+  function submit() {
+    if (name.trim()) onAddFolder(name.trim())
+    setName(''); setAdding(false)
+  }
+
+  return (
+    <div className="px-4 pt-3 pb-2 border-b border-line/60 bg-canvas/30">
+      <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Folders</div>
+      <div className="flex items-center gap-2 flex-wrap">
+        {folders.map(f => (
+          <div
+            key={f.id}
+            onDragOver={e => { e.preventDefault(); setDragOver(f.id) }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={e => onDrop(e, f.id)}
+            onClick={() => setFolder(activeFolder === f.id ? null : f.id)}
+            className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-lg border cursor-pointer transition-all select-none
+              ${activeFolder === f.id
+                ? 'border-ink bg-ink text-surface'
+                : dragOverId === f.id
+                  ? 'border-primary bg-primary-light text-ink scale-105'
+                  : 'border-line bg-white text-ink hover:border-secondary/60 hover:shadow-sm'}`}>
+            <Folder size={13} className={activeFolder === f.id ? 'text-surface/80' : 'text-secondary'} />
+            <span className="font-sans text-[12.5px] font-medium">{f.name}</span>
+            <span className={`font-sans text-[11px] tabular-nums ${activeFolder === f.id ? 'text-surface/70' : 'text-muted'}`}>
+              {counts[f.id] ?? 0}
+            </span>
+            <button
+              onClick={e => { e.stopPropagation(); onDelete(f.id) }}
+              className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer
+                ${activeFolder === f.id ? 'bg-surface/20 text-surface hover:bg-surface/40' : 'bg-ink text-surface hover:bg-danger'}`}>
+              <X size={9} />
+            </button>
+          </div>
+        ))}
+
+        {adding ? (
+          <form onSubmit={e => { e.preventDefault(); submit() }}>
+            <input
+              ref={inputRef}
+              value={name}
+              onChange={e => setName(e.target.value)}
+              onBlur={submit}
+              onKeyDown={e => { if (e.key === 'Escape') { setAdding(false); setName('') } }}
+              placeholder="Folder name"
+              className="h-8 px-3 rounded-lg border border-ink/40 font-sans text-[12.5px] text-ink outline-none bg-white w-36"
+            />
+          </form>
+        ) : (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-dashed border-line text-muted hover:border-secondary hover:text-secondary font-sans text-[12px] cursor-pointer transition-colors">
+            <Plus size={12} /> New Folder
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── TopBar ───────────────────────────────────────────────────────────────────
 function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
   count, total, filters, setFilters, filtersActive }) {
@@ -123,7 +191,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
 
   return (
     <div className="border-b border-line bg-surface/80 backdrop-blur shrink-0 relative z-10">
-      {/* Row 1: title + upload */}
       <div className="px-6 pt-6 pb-3 flex items-start justify-between gap-4">
         <div className="flex items-baseline gap-3">
           <PageTitle className="leading-none">Documents</PageTitle>
@@ -131,7 +198,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
         </div>
       </div>
 
-      {/* Row 2: search + sort + filter + view */}
       <div className="px-6 pb-3 flex items-center justify-between gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[180px] max-w-sm">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
@@ -142,7 +208,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {/* Sort */}
           <div className="flex items-center gap-1 px-2 h-9 rounded-lg border border-line bg-white">
             <span className="font-sans text-[11.5px] text-muted">Sort</span>
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
@@ -154,7 +219,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
             </select>
           </div>
 
-          {/* Filter */}
           <div ref={filterRef} className="relative">
             <button onClick={() => setFilterOpen(o => !o)}
               className={`relative h-9 w-9 rounded-lg border bg-white hover:bg-surface flex items-center justify-center cursor-pointer
@@ -175,7 +239,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                 </div>
 
                 <div className="overflow-auto flex-1 bg-white">
-                  {/* Status */}
                   <div className="px-4 pt-3 pb-3">
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Status</div>
                     <div className="flex flex-wrap gap-1.5">
@@ -197,7 +260,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                     </div>
                   </div>
 
-                  {/* Document type */}
                   <div className="px-4 pb-3 border-t border-line/60 pt-3">
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Document Type</div>
                     <div className="flex flex-col gap-0.5">
@@ -216,7 +278,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
                     </div>
                   </div>
 
-                  {/* Date */}
                   <div className="px-4 pb-3 border-t border-line/60 pt-3">
                     <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-2">Date Uploaded</div>
                     <div className="flex flex-wrap gap-1.5">
@@ -248,7 +309,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
             )}
           </div>
 
-          {/* View toggle */}
           <div className="flex bg-canvas border border-line rounded-lg p-0.5 h-9">
             {[
               ['list',    <List size={15} />,    'List'],
@@ -268,8 +328,6 @@ function TopBar({ search, setSearch, view, setView, sortBy, setSortBy,
   )
 }
 
-
-
 // ─── Doc context menu ─────────────────────────────────────────────────────────
 function DocMenu({ doc, onPreview, up = false }) {
   const [open, setOpen] = useState(false)
@@ -284,8 +342,6 @@ function DocMenu({ doc, onPreview, up = false }) {
 
   return (
     <div ref={ref} className="relative">
-      
-      
       <button
         onClick={e => { e.stopPropagation(); setOpen(o => !o) }}
         className={`w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors
@@ -296,8 +352,7 @@ function DocMenu({ doc, onPreview, up = false }) {
       {open && (
         <div
           onClick={e => e.stopPropagation()}
-          className={`absolute ${up ? 'bottom-[calc(100%+12px)]' : 'top-[calc(100%+4px)]'} z-50 w-36 bg-white border border-line rounded-xl shadow-[0_8px_24px_-4px_rgba(28,28,30,0.14)] overflow-hidden
-            right-0`}>
+          className={`absolute ${up ? 'bottom-[calc(100%+12px)]' : 'top-[calc(100%+4px)]'} z-50 w-36 bg-white border border-line rounded-xl shadow-[0_8px_24px_-4px_rgba(28,28,30,0.14)] overflow-hidden right-0`}>
           <button
             onClick={() => { setOpen(false); onPreview(doc) }}
             className="w-full px-3 py-2.5 text-left font-sans text-[12.5px] text-ink hover:bg-canvas flex items-center gap-2.5 cursor-pointer transition-colors">
@@ -443,6 +498,8 @@ function ListView({ rows, selected, toggleSelect, selectAll, onPreview }) {
               </tr>
             ) : rows.map(d => (
               <tr key={d.id}
+                draggable
+                onDragStart={e => e.dataTransfer.setData('docId', d.id)}
                 onClick={() => onPreview(d)}
                 className={`border-b border-line last:border-b-0 group transition-colors cursor-pointer
                   ${selected.has(d.id) ? 'bg-info-tint/40' : 'hover:bg-canvas/40'}`}>
@@ -495,10 +552,11 @@ function GridView({ rows, selected, toggleSelect, onPreview }) {
     <div className="grid gap-3 p-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
       {rows.map(d => (
         <div key={d.id}
+          draggable
+          onDragStart={e => e.dataTransfer.setData('docId', d.id)}
           onClick={() => onPreview(d)}
           className={`relative bg-white rounded-xl border p-4 cursor-pointer group transition-all
             ${selected.has(d.id) ? 'border-ink ring-1 ring-ink' : 'border-line hover:border-secondary/50 hover:shadow-sm'}`}>
-          {/* Select checkbox */}
           <div
             onClick={e => { e.stopPropagation(); toggleSelect(d.id) }}
             className={`absolute top-3 left-3 w-4 h-4 rounded border flex items-center justify-center transition cursor-pointer
@@ -520,13 +578,11 @@ function GridView({ rows, selected, toggleSelect, onPreview }) {
             <span className="font-sans text-[10.5px] text-muted">{d.uploadedAt}</span>
           </div>
 
-          {/* Hover actions */}
           <div className="absolute top-3 right-3 flex opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={e => { e.stopPropagation(); openDoc(d.path) }}
               title="Download"
-              className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors
-          hover:bg-canvas">
+              className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-canvas text-muted cursor-pointer transition-colors">
               <Download size={12} />
             </button>
             <DocMenu doc={d} onPreview={onPreview} />
@@ -553,7 +609,6 @@ function DocDetailPanel({ doc, onPreview }) {
   const s = STATUS_CONFIG[doc.status] || STATUS_CONFIG.pending
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className={`px-5 pt-5 pb-4 border-b ${s.border} ${s.tint}`}>
         <div className="flex items-start gap-3">
           <div className="w-11 h-14 relative flex-shrink-0 mt-0.5">
@@ -571,7 +626,6 @@ function DocDetailPanel({ doc, onPreview }) {
         </div>
       </div>
 
-      {/* Meta */}
       <div className="flex-1 overflow-auto">
         <div className="px-5 py-4 space-y-3.5">
           {[
@@ -593,7 +647,6 @@ function DocDetailPanel({ doc, onPreview }) {
         </div>
       </div>
 
-      {/* Actions */}
       <div className="px-5 py-3 border-t border-line flex gap-2 shrink-0">
         <button
           onClick={() => onPreview(doc)}
@@ -606,7 +659,17 @@ function DocDetailPanel({ doc, onPreview }) {
   )
 }
 
-function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview }) {
+function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview, docFolders, activeDocFolder, setActiveDocFolder, onAddDocFolder, onDeleteDocFolder, onDocFolderDrop, docDragOverId, setDocDragOverId, docFolderCounts }) {
+  const [adding, setAdding] = useState(false)
+  const [newName, setNewName] = useState('')
+  const inputRef = useRef(null)
+  useEffect(() => { if (adding) inputRef.current?.focus() }, [adding])
+
+  function submitAdd() {
+    if (newName.trim()) onAddDocFolder(newName.trim())
+    setNewName(''); setAdding(false)
+  }
+
   const [colType, setColType] = useState('all')
   const wrapRef = useRef(null)
   const [col1, setCol1] = useState(() => Number(localStorage.getItem('docs-col1')) || 190)
@@ -622,7 +685,7 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview }) {
     const onMove = (ev) => {
       const dx = ev.clientX - startX
       if (which === 1) {
-        const next = Math.max(140, Math.min(300, start1 + dx))
+        const next = Math.max(160, Math.min(320, start1 + dx))
         if (totalW - next - col3 >= 200) setCol1(next)
       } else {
         const next = Math.max(260, Math.min(480, start3 - dx))
@@ -649,25 +712,82 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview }) {
     </div>
   )
 
-  // Type counts from the full filtered set
   const typeCounts = useMemo(() => {
     const map = { all: docs.length }
     DOC_TYPES.forEach(t => { map[t] = docs.filter(d => d.type === t).length })
     return map
   }, [docs])
 
-  const colDocs = colType === 'all' ? docs : docs.filter(d => d.type === colType)
+  // Col2 items: if a folder is selected show only those docs; otherwise filter by type
+  const colDocs = useMemo(() => {
+    if (activeDocFolder) return docs.filter(d => d._folderId === activeDocFolder)
+    if (colType === 'all') return docs
+    return docs.filter(d => d.type === colType)
+  }, [docs, activeDocFolder, colType])
+
   const activeDoc = activeDocId ? docs.find(d => d.id === activeDocId) : null
 
   return (
     <div className="h-full">
       <div ref={wrapRef} className="bg-white overflow-hidden flex h-full">
-        {/* Col 1: Type sidebar */}
+        {/* Col 1: Folders + Type sidebar */}
         <div className="overflow-auto py-2 shrink-0" style={{ width: col1 }}>
+          {/* My Folders section */}
+          {docFolders.length > 0 && (
+            <>
+              <div className="px-3 pt-1 pb-0.5 font-sans text-[10px] uppercase tracking-[0.1em] text-muted/60">Folders</div>
+              {docFolders.map(f => (
+                <div
+                  key={f.id}
+                  onDragOver={e => { e.preventDefault(); setDocDragOverId(f.id) }}
+                  onDragLeave={() => setDocDragOverId(null)}
+                  onDrop={e => onDocFolderDrop(e, f.id)}
+                  onClick={() => { setActiveDocFolder(activeDocFolder === f.id ? null : f.id); setActiveDocId(null) }}
+                  className={`group w-full flex items-center gap-2 px-3 py-2 text-left cursor-pointer transition-colors
+                    ${activeDocFolder === f.id ? 'bg-ink/5 font-medium' : 'hover:bg-ink/5'}
+                    ${docDragOverId === f.id ? 'bg-primary-light' : ''}`}>
+                  <Folder size={13} className="text-secondary shrink-0" />
+                  <span className="flex-1 font-sans text-[13px] text-ink truncate">{f.name}</span>
+                  <span className="font-sans text-[11px] text-muted tabular-nums shrink-0">{docFolderCounts[f.id] ?? 0}</span>
+                  <button
+                    onClick={e => { e.stopPropagation(); onDeleteDocFolder(f.id) }}
+                    className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded flex items-center justify-center text-muted hover:bg-danger-tint hover:text-danger cursor-pointer transition-all shrink-0">
+                    <X size={10} />
+                  </button>
+                </div>
+              ))}
+              <div className="mx-3 my-2 h-px bg-line" />
+            </>
+          )}
+
+          {adding ? (
+            <form onSubmit={e => { e.preventDefault(); submitAdd() }} className="px-3 py-1.5">
+              <input
+                ref={inputRef}
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                onBlur={submitAdd}
+                onKeyDown={e => { if (e.key === 'Escape') { setAdding(false); setNewName('') } }}
+                placeholder="Folder name"
+                className="w-full px-2 py-1 text-[12.5px] font-sans rounded border border-ink/40 outline-none bg-white text-ink"
+              />
+            </form>
+          ) : (
+            <button
+              onClick={() => setAdding(true)}
+              className="w-full flex items-center gap-2 px-3 py-1 mb-1 text-muted hover:text-secondary hover:bg-ink/5 cursor-pointer transition-colors">
+              <Plus size={12} className="shrink-0" />
+              <span className="font-sans text-[12px]">New Folder</span>
+            </button>
+          )}
+
+          {/* Types section */}
+          <div className="px-3 pt-1 pb-0.5 font-sans text-[10px] uppercase tracking-[0.1em] text-muted/60">Types</div>
           {COL1_TYPES.map(({ id, label }) => (
-            <button key={id} onClick={() => { setColType(id); setActiveDocId(null) }}
+            <button key={id}
+              onClick={() => { setColType(id); setActiveDocFolder(null); setActiveDocId(null) }}
               className={`w-full flex items-center gap-2 px-3 py-2 text-left cursor-pointer transition-colors
-                ${colType === id ? 'bg-ink/5 font-medium' : 'hover:bg-ink/5'}`}>
+                ${colType === id && !activeDocFolder ? 'bg-ink/5 font-medium' : 'hover:bg-ink/5'}`}>
               <FileText size={13} className="text-muted shrink-0" />
               <span className="flex-1 font-sans text-[13px] text-ink truncate">{label}</span>
               <span className="font-sans text-[11px] text-muted tabular-nums shrink-0">{typeCounts[id] ?? 0}</span>
@@ -681,10 +801,13 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview }) {
         {/* Col 2: Document list */}
         <div className="flex-1 overflow-auto min-w-0">
           {colDocs.length === 0 && (
-            <div className="p-6 text-center font-sans text-[12px] text-muted">No documents in this type</div>
+            <div className="p-6 text-center font-sans text-[12px] text-muted">No documents in this view</div>
           )}
           {colDocs.map(d => (
-            <button key={d.id}
+            <div
+              key={d.id}
+              draggable
+              onDragStart={e => e.dataTransfer.setData('docId', d.id)}
               onClick={() => setActiveDocId(d.id === activeDocId ? null : d.id)}
               className={`w-full flex items-center gap-3 px-4 py-2.5 border-b border-line/60 text-left cursor-pointer transition-colors
                 ${activeDocId === d.id ? 'bg-canvas/60' : 'hover:bg-canvas/40'}`}>
@@ -697,7 +820,7 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview }) {
                 <span className={`w-1.5 h-1.5 rounded-full ${STATUS_CONFIG[d.status]?.dot ?? 'bg-muted'}`} />
                 <ChevronRight size={12} className="text-muted" />
               </div>
-            </button>
+            </div>
           ))}
         </div>
 
@@ -714,28 +837,68 @@ function ColumnsView({ docs, activeDocId, setActiveDocId, onPreview }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export function DocumentsPage({ cases = [] }) {
-  const [category, setCategory]         = useState('all')
-  const [search, setSearch]             = useState('')
-  const [view, setView]                 = useState('list')
-  const [sortBy, setSortBy]             = useState('date')
-  const [selected, setSelected]         = useState(new Set())
+  const [category, setCategory]       = useState('all')
+  const [search, setSearch]           = useState('')
+  const [view, setView]               = useState('list')
+  const [sortBy, setSortBy]           = useState('date')
+  const [selected, setSelected]       = useState(new Set())
   const [activeDocId, setActiveDocId] = useState(null)
   const [previewDoc, setPreviewDoc]   = useState(null)
-  const [page, setPage]                 = useState(1)
-  const [pageSize, setPageSize]         = useState(20)
-  const [filters, setFilters]           = useState({ types: new Set(), statuses: new Set(), datePreset: '' })
+  const [page, setPage]               = useState(1)
+  const [pageSize, setPageSize]       = useState(20)
+  const [filters, setFilters]         = useState({ types: new Set(), statuses: new Set(), datePreset: '' })
+
+  // Folder state
+  const [docFolders, setDocFolders]           = useState([])
+  const [docFolderMap, setDocFolderMap]       = useState({}) // docId → folderId
+  const [activeDocFolder, setActiveDocFolder] = useState(null)
+  const [docDragOverId, setDocDragOverId]     = useState(null)
+
+  useEffect(() => {
+    fetchFolders('documents').then(setDocFolders).catch(() => {})
+  }, [])
+
+  async function handleAddDocFolder(name) {
+    try {
+      const f = await createFolder({ name, type: 'documents' })
+      setDocFolders(prev => [...prev, f])
+    } catch (err) {
+      console.error('Failed to create folder:', err.message)
+    }
+  }
+
+  async function handleDeleteDocFolder(folderId) {
+    try {
+      await deleteFolder(folderId)
+      setDocFolders(prev => prev.filter(f => f.id !== folderId))
+      if (activeDocFolder === folderId) setActiveDocFolder(null)
+    } catch (err) {
+      console.error('Failed to delete folder:', err.message)
+    }
+  }
+
+  function handleDocFolderDrop(e, folderId) {
+    e.preventDefault()
+    const docId = e.dataTransfer.getData('docId')
+    if (!docId) return
+    setDocFolderMap(prev => ({ ...prev, [docId]: folderId }))
+    setDocDragOverId(null)
+  }
 
   const allDocs = useMemo(() => casesToDocs(cases), [cases])
 
+  // Attach in-session folder assignments to docs
+  const allDocsWithFolders = useMemo(() =>
+    allDocs.map(d => ({ ...d, _folderId: docFolderMap[d.id] ?? null }))
+  , [allDocs, docFolderMap])
+
   const filtersActive = filters.types.size + filters.statuses.size + (filters.datePreset ? 1 : 0)
 
-  // Category → status filter
   const categoryFiltered = useMemo(() => {
-    if (category === 'all') return allDocs
-    return allDocs.filter(d => d.status === category)
-  }, [allDocs, category])
+    if (category === 'all') return allDocsWithFolders
+    return allDocsWithFolders.filter(d => d.status === category)
+  }, [allDocsWithFolders, category])
 
-  // Search
   const searched = useMemo(() => {
     const q = search.toLowerCase().trim()
     if (!q) return categoryFiltered
@@ -746,16 +909,16 @@ export function DocumentsPage({ cases = [] }) {
     )
   }, [categoryFiltered, search])
 
-  // Filters
   const filterApplied = useMemo(() => {
     let docs = searched
     if (filters.statuses.size) docs = docs.filter(d => filters.statuses.has(d.status))
     if (filters.types.size)    docs = docs.filter(d => filters.types.has(d.type))
     docs = filterByDate(docs, filters.datePreset)
+    // Folder filter
+    if (activeDocFolder) docs = docs.filter(d => d._folderId === activeDocFolder)
     return docs
-  }, [searched, filters])
+  }, [searched, filters, activeDocFolder])
 
-  // Sort
   const sorted = useMemo(() => {
     return [...filterApplied].sort((a, b) => {
       if (sortBy === 'name') return a.name.localeCompare(b.name)
@@ -765,9 +928,16 @@ export function DocumentsPage({ cases = [] }) {
     })
   }, [filterApplied, sortBy])
 
-  // Pagination
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize))
   const paginated  = sorted.slice((page - 1) * pageSize, page * pageSize)
+
+  const docFolderCounts = useMemo(() => {
+    const map = {}
+    docFolders.forEach(f => {
+      map[f.id] = Object.values(docFolderMap).filter(v => v === f.id).length
+    })
+    return map
+  }, [docFolders, docFolderMap])
 
   const toggleSelect = id => setSelected(s => {
     const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n
@@ -776,16 +946,14 @@ export function DocumentsPage({ cases = [] }) {
     setSelected(s => s.size === paginated.length ? new Set() : new Set(paginated.map(d => d.id)))
   }
 
-  // Category counts (always from full set)
   const counts = useMemo(() => ({
-    all:         allDocs.length,
-    pending:     allDocs.filter(d => d.status === 'pending').length,
-    in_progress: allDocs.filter(d => d.status === 'in_progress').length,
-    complete:    allDocs.filter(d => d.status === 'complete').length,
-  }), [allDocs])
+    all:         allDocsWithFolders.length,
+    pending:     allDocsWithFolders.filter(d => d.status === 'pending').length,
+    in_progress: allDocsWithFolders.filter(d => d.status === 'in_progress').length,
+    complete:    allDocsWithFolders.filter(d => d.status === 'complete').length,
+  }), [allDocsWithFolders])
 
-  // Reset page when filters change
-  useEffect(() => { setPage(1) }, [category, search, filters, sortBy])
+  useEffect(() => { setPage(1) }, [category, search, filters, sortBy, activeDocFolder])
 
   const handlePreview = async (doc) => {
     if (!doc.path) return
@@ -799,7 +967,7 @@ export function DocumentsPage({ cases = [] }) {
         search={search} setSearch={setSearch}
         view={view} setView={setView}
         sortBy={sortBy} setSortBy={setSortBy}
-        count={sorted.length} total={allDocs.length}
+        count={sorted.length} total={allDocsWithFolders.length}
         filters={filters} setFilters={setFilters}
         filtersActive={filtersActive}
       />
@@ -808,14 +976,43 @@ export function DocumentsPage({ cases = [] }) {
 
       {view === 'columns' ? (
         <div className="flex-1 overflow-hidden">
-          <ColumnsView docs={sorted} activeDocId={activeDocId} setActiveDocId={setActiveDocId} onPreview={handlePreview} />
+          <ColumnsView
+            docs={sorted}
+            activeDocId={activeDocId}
+            setActiveDocId={setActiveDocId}
+            onPreview={handlePreview}
+            docFolders={docFolders}
+            activeDocFolder={activeDocFolder}
+            setActiveDocFolder={setActiveDocFolder}
+            onAddDocFolder={handleAddDocFolder}
+            onDeleteDocFolder={handleDeleteDocFolder}
+            onDocFolderDrop={handleDocFolderDrop}
+            docDragOverId={docDragOverId}
+            setDocDragOverId={setDocDragOverId}
+            docFolderCounts={docFolderCounts}
+          />
         </div>
       ) : (
-        <div className="flex-1 overflow-auto">
-          {view === 'list'
-            ? <ListView rows={paginated} selected={selected} toggleSelect={toggleSelect} selectAll={selectAll} onPreview={handlePreview} />
-            : <GridView rows={paginated} selected={selected} toggleSelect={toggleSelect} onPreview={handlePreview} />
-          }
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {view === 'grid' && (
+            <DocFoldersStrip
+              folders={docFolders}
+              activeFolder={activeDocFolder}
+              setFolder={f => { setActiveDocFolder(f); setPage(1) }}
+              onAddFolder={handleAddDocFolder}
+              onDelete={handleDeleteDocFolder}
+              onDrop={handleDocFolderDrop}
+              dragOverId={docDragOverId}
+              setDragOver={setDocDragOverId}
+              counts={docFolderCounts}
+            />
+          )}
+          <div className="flex-1 overflow-auto">
+            {view === 'list'
+              ? <ListView rows={paginated} selected={selected} toggleSelect={toggleSelect} selectAll={selectAll} onPreview={handlePreview} />
+              : <GridView rows={paginated} selected={selected} toggleSelect={toggleSelect} onPreview={handlePreview} />
+            }
+          </div>
         </div>
       )}
 

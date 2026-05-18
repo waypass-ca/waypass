@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchCases, updateCaseStatus } from '../lib/api.js'
+import { fetchCases, updateCaseStatus, assignCaseFolder } from '../lib/api.js'
 import { Sidebar } from '../components/layout/Sidebar'
 import { PageHeader } from '../components/layout/PageHeader'
 import { HomeDashboard } from '../components/dashboard/HomeDashboard'
@@ -102,6 +102,15 @@ export function FuneralDashboardPage() {
     }
   }
 
+  async function handleCaseFolderAssign(caseId, folderId) {
+    try {
+      await assignCaseFolder(caseId, folderId)
+      setCases(prev => prev.map(c => c.id === caseId ? { ...c, folderId } : c))
+    } catch (err) {
+      console.error('Failed to assign folder:', err.message)
+    }
+  }
+
   function handleNewCase(newCase) {
     setCases(prev => [newCase, ...prev])
   }
@@ -135,7 +144,7 @@ export function FuneralDashboardPage() {
       {view === 'inbox' ? (
         <InboxPage />
       ) : view === 'cases' ? (
-        <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} />
+        <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} onCaseFolderAssign={handleCaseFolderAssign} />
       ) : view === 'documents' ? (
         <DocumentsPage cases={cases} />
       ) : view === 'case-detail' && selectedCase ? (
