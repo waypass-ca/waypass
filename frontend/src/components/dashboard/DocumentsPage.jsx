@@ -702,7 +702,7 @@ function GridView({ docs, docFolders, docFolderCounts, gridDocFolderView, setGri
           {hasUnfiled && (
             <div className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-3">Folders</div>
           )}
-          <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+          <div className="grid gap-3 mb-5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
             {docFolders.map(f => (
               <DocFolderCard
                 key={f.id}
@@ -737,7 +737,7 @@ function GridView({ docs, docFolders, docFolderCounts, gridDocFolderView, setGri
           </p>
         </div>
       ) : (
-        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
           {displayDocs.map(d => (
             <DocCard key={d.id} d={d} selected={selected} toggleSelect={toggleSelect} onPreview={onPreview} docFolders={docFolders} onMoveToFolder={onMoveToFolder} onCreateAndMove={onCreateAndMove} />
           ))}
