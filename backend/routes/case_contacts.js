@@ -25,6 +25,7 @@ router.get('/', requireAuth, async (req, res, next) => {
       .from('case_contacts')
       .select('*')
       .eq('case_id', req.params.caseId)
+      .is('deleted_at', null)
       .order('created_at')
     if (error) throw error
     res.json(data.map(shapeRow))
@@ -105,7 +106,7 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
     const { error } = await supabase
       .from('case_contacts')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', req.params.id)
       .eq('case_id', req.params.caseId)
     if (error) throw error

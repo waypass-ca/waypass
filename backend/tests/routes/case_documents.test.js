@@ -149,7 +149,7 @@ describe('PATCH /api/cases/:caseId/documents/structured/:id', () => {
 describe('DELETE /api/cases/:caseId/documents/structured/:id', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    chain.delete.mockReturnThis()
+    chain.update.mockReturnThis()
     // Two .eq() calls: first returns this, second resolves
     chain.eq
       .mockReturnValueOnce(chain)
@@ -162,11 +162,12 @@ describe('DELETE /api/cases/:caseId/documents/structured/:id', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns 204 with auth', async () => {
+  it('returns 204 — soft deletes via deleted_at', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     const res = await request(app)
       .delete(`/api/cases/${CASE_ID}/documents/structured/doc-uuid-1`)
       .set(authHeader)
     expect(res.status).toBe(204)
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ deleted_at: expect.any(String) }))
   })
 })
