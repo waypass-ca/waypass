@@ -114,13 +114,8 @@ function DocFolderCard({ folder, count, onClick, onDelete, onDragOver, onDragLea
       className={`group relative bg-white border rounded-xl overflow-hidden cursor-pointer transition
         hover:shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)] hover:-translate-y-0.5
         ${isDragOver ? 'border-primary ring-2 ring-primary/20 -translate-y-0.5 shadow-[0_6px_18px_-10px_rgba(28,28,30,0.15)]' : 'border-line'}`}>
-      <div className="h-[72px] bg-primary-light/50 flex items-center justify-center relative">
-        <div className="absolute top-0 left-4 w-9 h-3 bg-primary/25 rounded-t-[5px]" />
-        <div className="absolute top-[11px] inset-x-4 bottom-2.5 bg-primary/20 rounded-[6px] border border-primary/15 flex items-center justify-center">
-          {count > 0 && (
-            <span className="font-display text-[20px] text-primary/40 leading-none select-none">{count}</span>
-          )}
-        </div>
+      <div className="h-[72px] bg-canvas flex items-center justify-center">
+        <Folder size={40} className="text-primary/40" strokeWidth={1.5} />
       </div>
       <div className="px-3 py-2.5">
         <div className="font-sans text-[12.5px] font-medium text-ink truncate">{folder.name}</div>
@@ -149,9 +144,8 @@ function DocNewFolderCard({ onAdd }) {
   if (adding) {
     return (
       <div className="bg-white border border-dashed border-ink/25 rounded-xl overflow-hidden">
-        <div className="h-[72px] bg-canvas/60 flex items-center justify-center relative">
-          <div className="absolute top-0 left-4 w-9 h-3 bg-muted/20 rounded-t-[5px]" />
-          <div className="absolute top-[11px] inset-x-4 bottom-2.5 bg-muted/10 rounded-[6px] border border-muted/15" />
+        <div className="h-[72px] bg-canvas flex items-center justify-center">
+          <Folder size={40} className="text-muted/30" strokeWidth={1.5} />
         </div>
         <div className="px-3 py-2.5">
           <input
