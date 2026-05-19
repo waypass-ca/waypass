@@ -49,13 +49,88 @@ export const addCaseDocument = (id, doc) =>
   mutate(`/api/cases/${id}/documents`, { method: 'POST', body: JSON.stringify(doc) })
 
 // ── Crematoriums ──────────────────────────────────────
-export const fetchCrematoriums = () => request('/api/crematoriums')
+export const fetchCrematoriums = () => mutate('/api/crematoriums')
 export const createCrematorium = (payload) =>
   mutate('/api/crematoriums', { method: 'POST', body: JSON.stringify(payload) })
 export const updateCrematorium = (id, payload) =>
   mutate(`/api/crematoriums/${id}`, { method: 'PATCH', body: JSON.stringify(payload) })
 export const deleteCrematorium = (id) =>
   mutate(`/api/crematoriums/${id}`, { method: 'DELETE' })
+export const connectCrematorium = (id) =>
+  mutate(`/api/crematoriums/${id}/connect`, { method: 'POST' })
+export const disconnectCrematorium = (id) =>
+  mutate(`/api/crematoriums/${id}/connect`, { method: 'DELETE' })
+const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+
+// Bootstrap the Maps JS SDK once using the async+callback pattern
+let placesLibPromise = null
+function loadPlacesLib() {
+  if (placesLibPromise) return placesLibPromise
+  placesLibPromise = new Promise((resolve, reject) => {
+    if (window.google?.maps?.places?.Place) {
+      resolve(window.google.maps.places)
+      return
+    }
+    window.__mapsReady = () => {
+      delete window.__mapsReady
+      resolve(window.google.maps.places)
+    }
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_KEY}&libraries=places&loading=async&callback=__mapsReady`
+    script.async = true
+    script.onerror = () => reject(new Error('Failed to load Google Maps'))
+    document.head.appendChild(script)
+  })
+  return placesLibPromise
+}
+
+async function fetchGooglePlaces(lat, lng, query, passageNames) {
+  if (!GOOGLE_KEY) {
+    console.warn('[Places] VITE_GOOGLE_MAPS_API_KEY not set')
+    return []
+  }
+  const { Place } = await loadPlacesLib()
+  const hasCoords = lat !== 0 || lng !== 0
+
+  const request = {
+    textQuery: query ? `${query} crematorium` : 'crematorium',
+    fields: ['id', 'displayName', 'formattedAddress'],
+    maxResultCount: 20,
+    ...(hasCoords ? {
+      locationBias: {
+        center: new window.google.maps.LatLng(lat, lng),
+        radius: 50000, // max allowed by Places API v1
+      },
+    } : {}),
+  }
+
+  const { places } = await Place.searchByText(request)
+  console.log(`[Places] results=${places?.length ?? 0}`)
+
+  return (places ?? [])
+    .filter(p => !passageNames.has((p.displayName ?? '').toLowerCase()))
+    .map(p => ({
+      id: p.id,
+      name: p.displayName ?? '',
+      location: p.formattedAddress ?? '',
+      streetAddress: p.formattedAddress ?? null,
+      distance: null,
+      status: 'active',
+      phone: null,
+      contactName: null,
+      onPassage: false,
+    }))
+}
+
+export async function fetchNearbyCrematoriums(lat, lng, query = '') {
+  const passageResults = await mutate(`/api/crematoriums/nearby?lat=${lat}&lng=${lng}&radius=50&query=${encodeURIComponent(query)}`)
+  const passageNames = new Set(passageResults.map(r => r.name.toLowerCase()))
+  const googleResults = await fetchGooglePlaces(lat, lng, query, passageNames).catch(err => {
+    console.error('[Places] failed:', err.message)
+    return []
+  })
+  return [...passageResults, ...googleResults]
+}
 
 // ── Orders ────────────────────────────────────────────
 export const fetchOrders = () => request('/api/orders')

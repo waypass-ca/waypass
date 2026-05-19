@@ -28,18 +28,47 @@ function shapeRow(row) {
     partnerSince: row.partner_since ?? row.since,
     licenseNumber: row.license_number,
     vettingNotes: row.vetting_notes,
+    connectedFuneralHomeIds: row.connected_funeral_home_ids ?? [],
   }
 }
 
-router.get('/', async (_req, res, next) => {
+// GET / — returns only crematoriums connected to the current user
+router.get('/', requireAuth, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('crematoriums')
       .select('*')
       .is('deleted_at', null)
+      .contains('connected_funeral_home_ids', [req.user.id])
       .order('name')
     if (error) throw error
     res.json(data.map(shapeRow))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// GET /nearby — discovery: Passage DB (unconnected) + Google Places
+router.get('/nearby', requireAuth, async (req, res, next) => {
+  try {
+    const { lat = 0, lng = 0, radius = 50, query = '' } = req.query
+
+    // Passage DB: non-deleted crematoriums the user is NOT already connected to
+    const { data: dbRows, error: dbError } = await supabase
+      .from('crematoriums')
+      .select('*')
+      .is('deleted_at', null)
+      .not('connected_funeral_home_ids', 'cs', `{${req.user.id}}`)
+      .order('name')
+    if (dbError) throw dbError
+
+    const passageResults = dbRows.map(row => ({
+      ...shapeRow(row),
+      onPassage: true,
+    }))
+
+    // Google Places is called client-side (browser key with referrer restrictions)
+    res.json(passageResults)
   } catch (err) {
     next(err)
   }
@@ -79,11 +108,69 @@ router.post('/', requireAuth, async (req, res, next) => {
         since: partnerSince,
         license_number: body.licenseNumber ?? null,
         vetting_notes: body.vettingNotes ?? null,
+        connected_funeral_home_ids: [req.user.id],
       })
       .select()
       .single()
     if (error) throw error
     res.status(201).json(shapeRow(data))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /:id/connect — add current user to connected_funeral_home_ids
+router.post('/:id/connect', requireAuth, async (req, res, next) => {
+  try {
+    const { data: current, error: fetchErr } = await supabase
+      .from('crematoriums')
+      .select('connected_funeral_home_ids')
+      .eq('id', req.params.id)
+      .is('deleted_at', null)
+      .single()
+    if (fetchErr) throw fetchErr
+    if (!current) return res.status(404).json({ error: 'Crematorium not found' })
+
+    const ids = current.connected_funeral_home_ids ?? []
+    if (!ids.includes(req.user.id)) {
+      ids.push(req.user.id)
+    }
+
+    const { data, error } = await supabase
+      .from('crematoriums')
+      .update({ connected_funeral_home_ids: ids })
+      .eq('id', req.params.id)
+      .select()
+      .single()
+    if (error) throw error
+    res.json(shapeRow(data))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// DELETE /:id/connect — remove current user from connected_funeral_home_ids
+router.delete('/:id/connect', requireAuth, async (req, res, next) => {
+  try {
+    const { data: current, error: fetchErr } = await supabase
+      .from('crematoriums')
+      .select('connected_funeral_home_ids')
+      .eq('id', req.params.id)
+      .is('deleted_at', null)
+      .single()
+    if (fetchErr) throw fetchErr
+    if (!current) return res.status(404).json({ error: 'Crematorium not found' })
+
+    const ids = (current.connected_funeral_home_ids ?? []).filter(id => id !== req.user.id)
+
+    const { data, error } = await supabase
+      .from('crematoriums')
+      .update({ connected_funeral_home_ids: ids })
+      .eq('id', req.params.id)
+      .select()
+      .single()
+    if (error) throw error
+    res.json(shapeRow(data))
   } catch (err) {
     next(err)
   }
