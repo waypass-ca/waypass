@@ -11,41 +11,55 @@ import { Button } from '../ui/Button'
 // ── Passage map style ─────────────────────────────────────────────────────────
 
 const PASSAGE_MAP_STYLE = [
-  { elementType: 'geometry', stylers: [{ color: '#f5f0ea' }] },
-  { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#3d3530' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#f5f0ea' }] },
+  // Declutter — keep Google's base colors, strip noise
   { featureType: 'administrative', elementType: 'geometry', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#5a4e48' }] },
+  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
   { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#e8e0d4' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#ddd5c8' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9e8e82' }] },
-  { featureType: 'road.arterial', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#d8c8b0' }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#c8b89e' }] },
-  { featureType: 'road.highway', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-  { featureType: 'road.local', stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c4d4de' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#8aaabb' }] },
+  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road.local', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  // Slightly lighten roads for a cleaner, modern feel
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ lightness: 20 }, { saturation: -30 }] },
+  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ lightness: 10 }] },
+  // Refine water to a cooler, more modern blue
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#a0c4d8' }, { lightness: 5 }] },
+  // Subtle label tone to match DM Sans weight — charcoal-adjacent
+  { elementType: 'labels.text.fill', stylers: [{ color: '#3a3a3a' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }, { weight: 2 }] },
 ]
 
 function makeMarkerIcon(onPassage, active = false) {
-  const body = active ? '#1a1210' : (onPassage ? '#5a7060' : '#2c2522')
-  const dot = onPassage ? '#ddeedd' : '#f5f0ea'
-  const w = active ? 34 : 28
-  const h = active ? 44 : 36
+  const fill  = active
+    ? (onPassage ? '#2e4a35' : '#1e3a6e')
+    : (onPassage ? '#5a7060' : '#4A72B8')
+  const ring  = 'white'
+
+  // Normal 28×38, active 34×46
+  const w  = active ? 34 : 28
+  const h  = active ? 46 : 38
   const cx = w / 2
-  const cy = w / 2
-  const r = active ? 6.5 : 5.5
+
+  // Paths hand-tuned for clean modern proportions
+  const path = active
+    ? `M17 1C8.72 1 2 7.72 2 16c0 10.8 15 29 15 29S32 26.8 32 16C32 7.72 25.28 1 17 1z`
+    : `M14 1C7.37 1 2 6.37 2 13c0 8.8 12 24 12 24S26 21.8 26 13C26 6.37 20.63 1 14 1z`
+
+  // Donut: white outer ring + fill-colored inner dot
+  const [ringCy, ringR, dotR] = active
+    ? [15, 6.5, 3]
+    : [12.5, 5.5, 2.5]
+
   const svg = encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-      <path d="M${cx} 0C${cx * 0.448} 0 0 ${cy * 0.448} 0 ${cy}c0 ${cy * 0.69} ${cx} ${h - cy} ${cx} ${h - cy}S${w} ${cy + cy * 0.69} ${w} ${cy}C${w} ${cy * 0.448} ${cx + cx * 0.552} 0 ${cx} 0z" fill="${body}"/>
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="${dot}" fill-opacity="0.92"/>
+      <path d="${path}" fill="${fill}"/>
+      <circle cx="${cx}" cy="${ringCy}" r="${ringR}" fill="${ring}"/>
+      <circle cx="${cx}" cy="${ringCy}" r="${dotR}" fill="${fill}"/>
     </svg>`
   )
+
   return {
     url: `data:image/svg+xml;charset=utf-8,${svg}`,
     scaledSize: new window.google.maps.Size(w, h),
@@ -516,7 +530,6 @@ export function CrematoriumsPage({ onAddPartner }) {
       <PageHeader
         title="Crematoriums"
         subtitle="Manage your cremation service partners"
-        rightSlot={<Button variant="primary" onClick={onAddPartner}>+ Add Partner</Button>}
       />
 
       {/* Section 1 — Your Crematoriums */}
