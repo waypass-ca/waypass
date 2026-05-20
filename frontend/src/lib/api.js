@@ -84,6 +84,20 @@ function loadPlacesLib() {
   return placesLibPromise
 }
 
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function formatDistance(km) {
+  if (km < 1) return `${Math.round(km * 1000)} m`
+  return `${km.toFixed(1)} km`
+}
+
 async function fetchGooglePlaces(lat, lng, query, passageNames) {
   if (!GOOGLE_KEY) {
     console.warn('[Places] VITE_GOOGLE_MAPS_API_KEY not set')
@@ -94,12 +108,17 @@ async function fetchGooglePlaces(lat, lng, query, passageNames) {
 
   const request = {
     textQuery: query ? `${query} crematorium` : 'crematorium',
-    fields: ['id', 'displayName', 'formattedAddress', 'location'],
+    fields: [
+      'id', 'displayName', 'formattedAddress', 'location',
+      'nationalPhoneNumber', 'internationalPhoneNumber',
+      'websiteURI', 'regularOpeningHours', 'businessStatus',
+      'rating', 'userRatingCount', 'primaryType', 'photos',
+    ],
     maxResultCount: 20,
     ...(hasCoords ? {
       locationBias: {
         center: new window.google.maps.LatLng(lat, lng),
-        radius: 50000, // max allowed by Places API v1
+        radius: 50000,
       },
     } : {}),
   }
@@ -112,21 +131,48 @@ async function fetchGooglePlaces(lat, lng, query, passageNames) {
     return typeof val === 'function' ? val() : (typeof val === 'number' ? val : null)
   }
 
+  function formatType(type) {
+    if (!type) return null
+    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  }
+
   return (places ?? [])
     .filter(p => !passageNames.has((p.displayName ?? '').toLowerCase()))
-    .map(p => ({
-      id: p.id,
-      name: p.displayName ?? '',
-      location: p.formattedAddress ?? '',
-      streetAddress: p.formattedAddress ?? null,
-      lat: extractCoord(p.location, 'lat'),
-      lng: extractCoord(p.location, 'lng'),
-      distance: null,
-      status: 'active',
-      phone: null,
-      contactName: null,
-      onPassage: false,
-    }))
+    .map(p => {
+      const placeLat = extractCoord(p.location, 'lat')
+      const placeLng = extractCoord(p.location, 'lng')
+      const distance = (hasCoords && placeLat && placeLng)
+        ? formatDistance(haversineKm(lat, lng, placeLat, placeLng))
+        : null
+
+      let openNow = null
+      try { openNow = p.regularOpeningHours?.isOpen() ?? null } catch {}
+
+      const photos = (p.photos ?? []).slice(0, 6).map(photo => {
+        try { return photo.getURI({ maxWidth: 800, maxHeight: 500 }) } catch { return null }
+      }).filter(Boolean)
+
+      return {
+        id: p.id,
+        name: p.displayName ?? '',
+        location: p.formattedAddress ?? '',
+        streetAddress: p.formattedAddress ?? null,
+        lat: placeLat,
+        lng: placeLng,
+        distance,
+        phone: p.nationalPhoneNumber ?? p.internationalPhoneNumber ?? null,
+        website: p.websiteURI ?? null,
+        rating: p.rating ?? null,
+        userRatingCount: p.userRatingCount ?? null,
+        primaryType: formatType(p.primaryType),
+        weekdayDescriptions: p.regularOpeningHours?.weekdayDescriptions ?? null,
+        openNow,
+        photos,
+        status: 'active',
+        contactName: null,
+        onPassage: false,
+      }
+    })
 }
 
 export async function fetchNearbyCrematoriums(lat, lng, query = '') {

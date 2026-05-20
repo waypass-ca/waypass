@@ -216,14 +216,13 @@ function CompactCrematoriumCard({ crm, onEdit, onRemove }) {
 
 // ── MapView ───────────────────────────────────────────────────────────────────
 
-function MapView({ nearby, userLocation, activeId, onMarkerClick }) {
+function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerClick, onMapClick }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markerMapRef = useRef({})
   const infoWindowRef = useRef(null)
   const [mapReady, setMapReady] = useState(false)
 
-  // Init map — poll until google.maps is available
   useEffect(() => {
     let interval
     function tryInit() {
@@ -237,6 +236,7 @@ function MapView({ nearby, userLocation, activeId, onMarkerClick }) {
         zoomControlOptions: { position: window.google.maps.ControlPosition.RIGHT_BOTTOM },
         gestureHandling: 'cooperative',
       })
+      mapRef.current.addListener('click', () => onMapClick?.())
       setMapReady(true)
       clearInterval(interval)
     }
@@ -245,15 +245,13 @@ function MapView({ nearby, userLocation, activeId, onMarkerClick }) {
     return () => clearInterval(interval)
   }, [])
 
-  // Pan to user location
   useEffect(() => {
     if (mapRef.current && userLocation) mapRef.current.panTo(userLocation)
   }, [userLocation])
 
-  // Rebuild markers when nearby changes
   useEffect(() => {
     if (!mapReady || !window.google?.maps) return
-    Object.values(markerMapRef.current).forEach(m => m.setMap(null))
+    Object.values(markerMapRef.current).forEach(({ marker }) => marker.setMap(null))
     markerMapRef.current = {}
     if (infoWindowRef.current) infoWindowRef.current.close()
 
@@ -269,26 +267,44 @@ function MapView({ nearby, userLocation, activeId, onMarkerClick }) {
       const marker = new window.google.maps.Marker({
         position: pos,
         map: mapRef.current,
-        title: crm.name,
         icon: makeMarkerIcon(crm.onPassage, false),
       })
 
-      marker.addListener('click', () => {
+      const photoHtml = crm.photos?.[0]
+        ? `<img src="${crm.photos[0]}" alt="" style="width:230px;height:120px;object-fit:cover;border-radius:6px;display:block;margin-bottom:8px;">`
+        : ''
+      const ratingHtml = crm.rating
+        ? `<div style="display:flex;align-items:center;gap:4px;margin-top:3px">
+            <span style="font-size:11px;font-weight:700;color:#2c2522">${crm.rating.toFixed(1)}</span>
+            <span style="color:#F4B942;font-size:12px;letter-spacing:-1px">${'★'.repeat(Math.round(crm.rating))}${'☆'.repeat(5 - Math.round(crm.rating))}</span>
+            ${crm.userRatingCount ? `<span style="font-size:10px;color:#9e8e82">(${crm.userRatingCount.toLocaleString()})</span>` : ''}
+           </div>`
+        : ''
+      const iwContent = `<div style="font-family:'DM Sans',sans-serif;padding:2px;max-width:230px">
+        ${photoHtml}
+        <p style="font-weight:600;font-size:13px;margin:0 0 2px;color:#2c2522;line-height:1.3">${crm.name}</p>
+        <p style="font-size:11px;color:#9e8e82;margin:0;line-height:1.4">${crm.location}</p>
+        ${ratingHtml}
+        ${crm.onPassage ? '<span style="display:inline-flex;align-items:center;margin-top:6px;font-size:10px;font-weight:700;color:#5a7060;background:#edf2ee;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:0.06em">On Passage</span>' : ''}
+      </div>`
+
+      function openIW() {
         if (infoWindowRef.current) infoWindowRef.current.close()
         const iw = new window.google.maps.InfoWindow({
-          content: `<div style="font-family:'DM Sans',sans-serif;padding:6px 2px 2px;min-width:160px">
-            <p style="font-weight:600;font-size:13px;margin:0 0 3px;color:#2c2522;line-height:1.3">${crm.name}</p>
-            <p style="font-size:11px;color:#9e8e82;margin:0;line-height:1.4">${crm.location}</p>
-            ${crm.onPassage ? '<span style="display:inline-flex;align-items:center;margin-top:6px;font-size:10px;font-weight:700;color:#5a7060;background:#edf2ee;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:0.06em">On Passage</span>' : ''}
-          </div>`,
+          content: iwContent,
+          headerDisabled: true,
           pixelOffset: new window.google.maps.Size(0, -4),
         })
         iw.open({ map: mapRef.current, anchor: marker })
         infoWindowRef.current = iw
+      }
+
+      marker.addListener('click', () => {
+        openIW()
         onMarkerClick?.(crm.id)
       })
 
-      markerMapRef.current[crm.id] = marker
+      markerMapRef.current[crm.id] = { marker, openIW, onPassage: crm.onPassage }
     })
 
     if (hasPoints) {
@@ -301,36 +317,200 @@ function MapView({ nearby, userLocation, activeId, onMarkerClick }) {
     }
   }, [nearby, mapReady])
 
-  // Update active marker icon when activeId changes
+  // Hover — update icons only
   useEffect(() => {
-    if (!mapReady || !window.google?.maps) return
-    nearby.forEach(crm => {
-      const marker = markerMapRef.current[crm.id]
-      if (!marker) return
-      const isActive = crm.id === activeId
-      marker.setIcon(makeMarkerIcon(crm.onPassage, isActive))
-      marker.setZIndex(isActive ? 999 : 1)
+    if (!mapReady) return
+    Object.entries(markerMapRef.current).forEach(([id, { marker, onPassage }]) => {
+      const highlighted = id === hoveredId || id === selectedId
+      marker.setIcon(makeMarkerIcon(onPassage, highlighted))
+      marker.setZIndex(highlighted ? 999 : 1)
     })
-  }, [activeId, mapReady])
+  }, [hoveredId, selectedId, mapReady])
+
+  // Click — open info window + pan
+  useEffect(() => {
+    if (!mapReady) return
+    if (selectedId != null) {
+      const entry = markerMapRef.current[selectedId]
+      if (entry) {
+        entry.openIW()
+        mapRef.current?.panTo(entry.marker.getPosition())
+      }
+    } else {
+      infoWindowRef.current?.close()
+    }
+  }, [selectedId, mapReady])
 
   return <div ref={containerRef} className="w-full h-full" />
+}
+
+// ── StarRating ────────────────────────────────────────────────────────────────
+
+function StarRating({ rating, small = false }) {
+  const size = small ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'
+  return (
+    <span className="flex items-center gap-px">
+      {[1, 2, 3, 4, 5].map(i => {
+        const filled = i <= Math.floor(rating)
+        const half = !filled && i - 0.5 <= rating
+        return (
+          <svg key={i} className={`${size} flex-shrink-0`} viewBox="0 0 20 20">
+            <defs>
+              <linearGradient id={`h${i}`}><stop offset="50%" stopColor="#F4B942" /><stop offset="50%" stopColor="#d1d5db" /></linearGradient>
+            </defs>
+            <path fill={filled ? '#F4B942' : half ? `url(#h${i})` : '#d1d5db'}
+              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+        )
+      })}
+    </span>
+  )
+}
+
+// ── DetailModal ───────────────────────────────────────────────────────────────
+
+function DetailModal({ crm, onAdd, addingId, onClose }) {
+  const [photoIdx, setPhotoIdx] = useState(0)
+  const hasPhotos = crm.photos?.length > 0
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink/50 backdrop-blur-sm px-0 sm:px-4" onClick={onClose}>
+      <div className="bg-surface rounded-t-2xl sm:rounded-2xl border border-line w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+
+        {hasPhotos ? (
+          <div className="relative flex-shrink-0 bg-canvas" style={{ height: 220 }}>
+            <img src={crm.photos[photoIdx]} alt={crm.name} className="w-full h-full object-cover" />
+            {crm.photos.length > 1 && (
+              <>
+                <button onClick={() => setPhotoIdx(i => (i - 1 + crm.photos.length) % crm.photos.length)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-ink/40 hover:bg-ink/60 text-white flex items-center justify-center transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <button onClick={() => setPhotoIdx(i => (i + 1) % crm.photos.length)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-ink/40 hover:bg-ink/60 text-white flex items-center justify-center transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                </button>
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {crm.photos.map((_, i) => (
+                    <button key={i} onClick={() => setPhotoIdx(i)}
+                      className={`w-1.5 h-1.5 rounded-full transition-colors ${i === photoIdx ? 'bg-white' : 'bg-white/40'}`} />
+                  ))}
+                </div>
+            </>
+            )}
+            <button onClick={onClose}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-ink/40 hover:bg-ink/60 text-white flex items-center justify-center transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between px-6 pt-5">
+            <div />
+            <button onClick={onClose} className="text-muted hover:text-ink transition-colors">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        )}
+
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <h2 className="font-display text-2xl text-ink leading-tight">{crm.name}</h2>
+            {crm.rating && (
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className="font-sans text-sm font-bold text-ink">{crm.rating.toFixed(1)}</span>
+                <StarRating rating={crm.rating} />
+                {crm.userRatingCount && <span className="font-sans text-xs text-muted">({crm.userRatingCount.toLocaleString()} reviews)</span>}
+                {crm.primaryType && <span className="font-sans text-xs text-muted">· {crm.primaryType}</span>}
+              </div>
+            )}
+            {crm.openNow !== null && (
+              <p className={`font-sans text-xs font-medium mt-1 ${crm.openNow ? 'text-sage' : 'text-danger'}`}>
+                {crm.openNow ? 'Open now' : 'Closed'}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-3 border-t border-line pt-4">
+            {crm.location && (
+              <div className="flex items-start gap-3">
+                <svg className="w-4 h-4 text-muted flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <div>
+                  <p className="font-sans text-sm text-ink">{crm.location}</p>
+                  {crm.distance && <p className="font-sans text-xs text-muted mt-0.5">{crm.distance} away</p>}
+                </div>
+              </div>
+            )}
+            {crm.phone && (
+              <div className="flex items-center gap-3">
+                <svg className="w-4 h-4 text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                <a href={`tel:${crm.phone}`} className="font-sans text-sm text-primary hover:underline">{crm.phone}</a>
+              </div>
+            )}
+            {crm.website && (
+              <div className="flex items-center gap-3">
+                <svg className="w-4 h-4 text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                <a href={crm.website} target="_blank" rel="noopener noreferrer" className="font-sans text-sm text-primary hover:underline truncate">
+                  {crm.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+                </a>
+              </div>
+            )}
+            {crm.weekdayDescriptions?.length > 0 && (
+              <div className="flex items-start gap-3">
+                <svg className="w-4 h-4 text-muted flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <div className="space-y-0.5">
+                  {crm.weekdayDescriptions.map((d, i) => <p key={i} className="font-sans text-xs text-muted">{d}</p>)}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-line bg-canvas">
+          <button onClick={() => { onAdd(crm); onClose() }} disabled={addingId === crm.id}
+            className="w-full bg-primary text-white font-sans text-sm font-semibold rounded-xl py-3 hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer">
+            {addingId === crm.id ? 'Adding…' : '+ Add to Partners'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── NearbyDiscovery — split panel ─────────────────────────────────────────────
 
 function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearch, onAdd, addingId }) {
-  const [activeId, setActiveId] = useState(null)
+  const [hoveredId, setHoveredId] = useState(null)
+  const [selectedId, setSelectedId] = useState(null)
+  const [detailCrm, setDetailCrm] = useState(null)
   const listRef = useRef(null)
   const itemRefs = useRef({})
+  const clickTimerRef = useRef(null)
+
+  function handleItemClick(crm) {
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current)
+      clickTimerRef.current = null
+      setDetailCrm(crm)
+    } else {
+      clickTimerRef.current = setTimeout(() => {
+        clickTimerRef.current = null
+        setSelectedId(crm.id)
+      }, 280)
+    }
+  }
 
   function handleMarkerClick(id) {
-    setActiveId(id)
+    setSelectedId(id)
     const el = itemRefs.current[id]
     if (el && listRef.current) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 
   return (
     <div>
+      {detailCrm && (
+        <DetailModal crm={detailCrm} onAdd={onAdd} addingId={addingId} onClose={() => setDetailCrm(null)} />
+      )}
+
       {/* Section heading */}
       <div className="flex items-center gap-2.5 mb-4">
         <h2 className="font-display text-xl text-ink">Top crematoriums nearby</h2>
@@ -348,19 +528,12 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearc
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <input
-                type="text"
-                placeholder="Search nearby…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full bg-canvas border border-line rounded-lg pl-8 pr-7 py-2 font-sans text-xs text-ink placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-ink/20"
-              />
+              <input type="text" placeholder="Search nearby…" value={search} onChange={e => setSearch(e.target.value)}
+                className="w-full bg-canvas border border-line rounded-lg pl-8 pr-7 py-2 font-sans text-xs text-ink placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-ink/20" />
               {search && (
                 <button onClick={() => setSearch('')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-muted hover:text-ink transition-colors">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               )}
             </div>
@@ -378,49 +551,49 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearc
                 <p className="font-sans text-xs text-muted mt-1 opacity-70">Try searching by name or city.</p>
               </div>
             ) : (
-              nearby.map((crm, i) => {
-                const isActive = crm.id === activeId
-                return (
-                  <div
-                    key={crm.id}
-                    ref={el => { itemRefs.current[crm.id] = el }}
-                    onMouseEnter={() => setActiveId(crm.id)}
-                    onMouseLeave={() => setActiveId(null)}
-                    className={`flex items-start gap-3 px-4 py-3.5 border-b border-line transition-colors cursor-default border-l-2 ${
-                      isActive ? 'bg-canvas border-l-ink' : 'border-l-transparent hover:bg-canvas/40'
-                    }`}
-                  >
-                    {/* Index number */}
-                    <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 text-[10px] font-bold transition-colors ${
-                      isActive ? 'bg-ink text-surface' : 'bg-canvas border border-line text-muted'
-                    }`}>
-                      {i + 1}
-                    </div>
+              nearby.map((crm, i) => (
+                <div key={crm.id}
+                  ref={el => { itemRefs.current[crm.id] = el }}
+                  onMouseEnter={() => setHoveredId(crm.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                  onClick={() => handleItemClick(crm)}
+                  className={`flex items-start gap-3 px-4 py-3.5 border-b border-line transition-colors cursor-pointer border-l-2 ${
+                    selectedId === crm.id ? 'bg-canvas border-l-ink' : 'border-l-transparent hover:bg-canvas/40'
+                  }`}
+                >
+                  <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 text-[10px] font-bold transition-colors ${
+                    selectedId === crm.id ? 'bg-ink text-surface' : 'bg-canvas border border-line text-muted'
+                  }`}>
+                    {i + 1}
+                  </div>
 
-                    {/* Info */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-1.5">
-                        <div className="min-w-0">
-                          <p className="font-sans font-semibold text-xs text-ink leading-snug">{crm.name}</p>
-                          <p className="font-sans text-[11px] text-muted mt-0.5 leading-relaxed line-clamp-2">{crm.location || '—'}</p>
-                          {crm.onPassage && (
-                            <span className="inline-flex items-center mt-1.5 px-1.5 py-0.5 rounded bg-sage-light font-sans text-[9px] font-bold text-sage uppercase tracking-wider">
-                              On Passage
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => onAdd(crm)}
-                          disabled={addingId === crm.id}
-                          className="flex-shrink-0 px-2 py-1 rounded border border-line font-sans text-[10px] font-medium text-ink hover:bg-surface hover:border-ink/20 transition-colors disabled:opacity-40 cursor-pointer"
-                        >
-                          {addingId === crm.id ? '…' : '+ Add'}
-                        </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-sans font-semibold text-xs text-ink leading-snug">{crm.name}</p>
+                    {crm.rating ? (
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="font-sans text-[11px] font-bold text-ink">{crm.rating.toFixed(1)}</span>
+                        <StarRating rating={crm.rating} small />
+                        {crm.userRatingCount && <span className="font-sans text-[10px] text-muted">({crm.userRatingCount.toLocaleString()})</span>}
+                        {crm.primaryType && <span className="font-sans text-[10px] text-muted">· {crm.primaryType}</span>}
                       </div>
+                    ) : null}
+                    <p className="font-sans text-[11px] text-muted mt-0.5 line-clamp-1">{crm.location || '—'}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {crm.openNow !== null && (
+                        <span className={`font-sans text-[10px] font-medium ${crm.openNow ? 'text-sage' : 'text-danger'}`}>
+                          {crm.openNow ? 'Open' : 'Closed'}
+                        </span>
+                      )}
+                      {crm.distance && <span className="font-sans text-[10px] text-muted">{crm.distance} away</span>}
+                      {crm.onPassage && (
+                        <span className="inline-flex items-center px-1 py-0.5 rounded bg-sage-light font-sans text-[9px] font-bold text-sage uppercase tracking-wider">
+                          On Passage
+                        </span>
+                      )}
                     </div>
                   </div>
-                )
-              })
+                </div>
+              ))
             )}
           </div>
 
@@ -429,12 +602,8 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearc
             <div className="flex-shrink-0 px-4 py-2 border-t border-line bg-canvas flex items-center justify-between">
               <p className="font-sans text-[11px] text-muted">{nearby.length} result{nearby.length !== 1 ? 's' : ''}</p>
               <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1 font-sans text-[10px] text-muted">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sage inline-block" />On Passage
-                </span>
-                <span className="flex items-center gap-1 font-sans text-[10px] text-muted">
-                  <span className="w-1.5 h-1.5 rounded-full bg-ink/30 inline-block" />Google
-                </span>
+                <span className="flex items-center gap-1 font-sans text-[10px] text-muted"><span className="w-1.5 h-1.5 rounded-full bg-sage inline-block" />On Passage</span>
+                <span className="flex items-center gap-1 font-sans text-[10px] text-muted"><span className="w-1.5 h-1.5 rounded-full bg-ink/30 inline-block" />Google</span>
               </div>
             </div>
           )}
@@ -445,8 +614,10 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearc
           <MapView
             nearby={nearby}
             userLocation={userLocation}
-            activeId={activeId}
+            hoveredId={hoveredId}
+            selectedId={selectedId}
             onMarkerClick={handleMarkerClick}
+            onMapClick={() => setSelectedId(null)}
           />
         </div>
       </div>
