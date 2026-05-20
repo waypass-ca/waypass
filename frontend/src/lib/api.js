@@ -94,7 +94,7 @@ async function fetchGooglePlaces(lat, lng, query, passageNames) {
 
   const request = {
     textQuery: query ? `${query} crematorium` : 'crematorium',
-    fields: ['id', 'displayName', 'formattedAddress'],
+    fields: ['id', 'displayName', 'formattedAddress', 'location'],
     maxResultCount: 20,
     ...(hasCoords ? {
       locationBias: {
@@ -105,7 +105,12 @@ async function fetchGooglePlaces(lat, lng, query, passageNames) {
   }
 
   const { places } = await Place.searchByText(request)
-  console.log(`[Places] results=${places?.length ?? 0}`)
+
+  function extractCoord(loc, key) {
+    if (!loc) return null
+    const val = loc[key]
+    return typeof val === 'function' ? val() : (typeof val === 'number' ? val : null)
+  }
 
   return (places ?? [])
     .filter(p => !passageNames.has((p.displayName ?? '').toLowerCase()))
@@ -114,6 +119,8 @@ async function fetchGooglePlaces(lat, lng, query, passageNames) {
       name: p.displayName ?? '',
       location: p.formattedAddress ?? '',
       streetAddress: p.formattedAddress ?? null,
+      lat: extractCoord(p.location, 'lat'),
+      lng: extractCoord(p.location, 'lng'),
       distance: null,
       status: 'active',
       phone: null,

@@ -54,12 +54,19 @@ router.get('/nearby', requireAuth, async (req, res, next) => {
     const { lat = 0, lng = 0, radius = 50, query = '' } = req.query
 
     // Passage DB: non-deleted crematoriums the user is NOT already connected to
-    const { data: dbRows, error: dbError } = await supabase
+    // When a query is present, filter by name or location
+    let dbQuery = supabase
       .from('crematoriums')
       .select('*')
       .is('deleted_at', null)
       .not('connected_funeral_home_ids', 'cs', `{${req.user.id}}`)
       .order('name')
+
+    if (query) {
+      dbQuery = dbQuery.or(`name.ilike.%${query}%,location.ilike.%${query}%,city.ilike.%${query}%`)
+    }
+
+    const { data: dbRows, error: dbError } = await dbQuery
     if (dbError) throw dbError
 
     const passageResults = dbRows.map(row => ({
