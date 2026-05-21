@@ -60,13 +60,12 @@ router.get('/nearby', requireAuth, async (req, res, next) => {
       .select('*')
       .is('deleted_at', null)
       .not('connected_funeral_home_ids', 'cs', `{${req.user.id}}`)
-      .order('name')
 
     if (query) {
       dbQuery = dbQuery.or(`name.ilike.%${query}%,location.ilike.%${query}%,city.ilike.%${query}%`)
     }
 
-    const { data: dbRows, error: dbError } = await dbQuery
+    const { data: dbRows, error: dbError } = await dbQuery.order('name')
     if (dbError) throw dbError
 
     const passageResults = dbRows.map(row => ({
