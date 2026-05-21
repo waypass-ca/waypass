@@ -234,4 +234,65 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
   }
 })
 
+// ── crematoriums_db routes (canonical Google-sourced DB) ──────────────────────
+
+// GET /api/crematoriums/db — query the crematoriums_db table (separate from legacy table)
+router.get('/db', async (req, res, next) => {
+  try {
+    const { state, city, is_passage_network, tier } = req.query
+    let q = supabase.from('crematoriums_db').select('*').eq('needs_review', false)
+    if (state) q = q.eq('state', state)
+    if (city) q = q.ilike('city', `%${city}%`)
+    if (is_passage_network !== undefined) q = q.eq('is_passage_network', is_passage_network === 'true')
+    if (tier) q = q.eq('passage_tier', tier)
+    const { data, error } = await q.order('name')
+    if (error) throw error
+    res.json(data)
+  } catch (err) { next(err) }
+})
+
+// GET /api/crematoriums/nearby-db — PostGIS distance search
+router.get('/nearby-db', async (req, res, next) => {
+  try {
+    const { lat, lng, radius_miles = 50 } = req.query
+    if (!lat || !lng) return res.status(400).json({ error: 'lat and lng required' })
+    const radiusMeters = Number(radius_miles) * 1609.34
+    const { data, error } = await supabase.rpc('nearby_crematoriums', {
+      user_lat: Number(lat),
+      user_lng: Number(lng),
+      radius_m: radiusMeters,
+    })
+    if (error) throw error
+    res.json(data)
+  } catch (err) { next(err) }
+})
+
+// GET /api/crematoriums/db/:id
+router.get('/db/:id', async (req, res, next) => {
+  try {
+    const { data, error } = await supabase.from('crematoriums_db').select('*').eq('id', req.params.id).single()
+    if (error) throw error
+    if (!data) return res.status(404).json({ error: 'Not found' })
+    res.json(data)
+  } catch (err) { next(err) }
+})
+
+// PATCH /api/crematoriums/db/:id/network — admin only
+router.patch('/db/:id/network', async (req, res, next) => {
+  try {
+    if (req.headers['x-admin-key'] !== process.env.ADMIN_API_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+    const { is_passage_network, passage_tier } = req.body
+    const { data, error } = await supabase
+      .from('crematoriums_db')
+      .update({ is_passage_network, passage_tier })
+      .eq('id', req.params.id)
+      .select()
+      .single()
+    if (error) throw error
+    res.json(data)
+  } catch (err) { next(err) }
+})
+
 export default router
