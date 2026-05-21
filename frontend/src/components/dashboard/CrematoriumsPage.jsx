@@ -193,22 +193,166 @@ function DisconnectModal({ crm, onConfirm, onClose }) {
   )
 }
 
-// ── CompactCrematoriumCard ────────────────────────────────────────────────────
+// ── PartnerListRow ────────────────────────────────────────────────────────────
 
-function CompactCrematoriumCard({ crm, onEdit, onRemove }) {
+function PartnerListRow({ crm, selected, onClick }) {
+  const isActive = crm.status === 'active'
   return (
-    <div className="bg-surface border border-line rounded-xl p-4 flex flex-col gap-3 min-w-[220px] w-[220px] flex-shrink-0">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-sans font-semibold text-sm text-ink leading-tight truncate">{crm.name}</p>
-          <p className="font-sans text-xs text-muted mt-0.5 truncate">{crm.location}{crm.distance ? ` · ${crm.distance}` : ''}</p>
-        </div>
-        <Badge variant={crm.status === 'active' ? 'primary' : 'red'}>{crm.status === 'active' ? 'Active' : 'Inactive'}</Badge>
+    <button
+      onClick={onClick}
+      className={`w-full text-left px-4 py-3.5 border-b border-line transition-colors border-l-2 ${
+        selected ? 'bg-canvas border-l-ink' : 'border-l-transparent hover:bg-canvas/50'
+      }`}
+    >
+      <div className="flex items-center gap-2 mb-0.5">
+        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-primary' : 'bg-muted'}`} />
+        <p className="font-sans font-semibold text-xs text-ink leading-snug truncate">{crm.name}</p>
       </div>
-      {crm.phone && <p className="font-sans text-xs text-muted truncate">{crm.phone}</p>}
-      <div className="flex gap-2 mt-auto">
-        <button onClick={() => onEdit(crm)} className="flex-1 px-2 py-1.5 rounded-lg border border-line font-sans text-xs text-ink hover:bg-canvas transition-colors text-center">Edit</button>
-        <button onClick={() => onRemove(crm)} className="flex-1 px-2 py-1.5 rounded-lg border border-line font-sans text-xs text-danger hover:bg-danger-tint transition-colors text-center">Remove</button>
+      <p className="font-sans text-[11px] text-muted truncate pl-3.5">{crm.location || '—'}</p>
+      {crm.activeOrders > 0 && (
+        <p className="font-sans text-[10px] text-primary mt-0.5 pl-3.5">{crm.activeOrders} active order{crm.activeOrders !== 1 ? 's' : ''}</p>
+      )}
+    </button>
+  )
+}
+
+// ── PartnerPreview ────────────────────────────────────────────────────────────
+
+function InfoRow({ label, value }) {
+  if (!value) return null
+  return (
+    <div>
+      <p className="font-sans text-[10px] uppercase tracking-widest text-muted mb-0.5">{label}</p>
+      <p className="font-sans text-sm text-ink">{value}</p>
+    </div>
+  )
+}
+
+function PartnerPreview({ crm, onEdit, onRemove }) {
+  const isActive = crm.status === 'active'
+  const stats = [
+    { label: 'Active Orders', value: crm.activeOrders ?? '—' },
+    { label: 'Completed YTD', value: crm.completedYTD ?? '—' },
+    { label: 'Avg Turnaround', value: crm.avgTurnaround ?? '—' },
+    { label: 'Avg Fee', value: crm.avgFee ?? '—' },
+  ]
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className={`px-8 py-7 border-b border-line ${isActive ? 'bg-primary-light/30' : 'bg-canvas'}`}>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-sans text-[10px] uppercase tracking-widest text-muted mb-2">
+              {crm.networkStatus ?? 'private'} · Partner since {crm.partnerSince ?? '—'}
+            </p>
+            <h2 className="font-display text-3xl text-ink leading-tight">{crm.name}</h2>
+            <p className="font-sans text-sm text-muted mt-1">{crm.location || '—'}</p>
+          </div>
+          <Badge variant={isActive ? 'primary' : 'red'}>{isActive ? 'Active' : 'Inactive'}</Badge>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-4 divide-x divide-line border-b border-line flex-shrink-0">
+        {stats.map(s => (
+          <div key={s.label} className="px-6 py-4 text-center">
+            <p className="font-display text-2xl text-ink">{s.value}</p>
+            <p className="font-sans text-[10px] text-muted mt-0.5 uppercase tracking-wide">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Details */}
+      <div className="flex-1 overflow-y-auto px-8 py-6 grid grid-cols-2 gap-6 content-start">
+        <InfoRow label="Contact Name" value={crm.contactName} />
+        <InfoRow label="Phone" value={crm.phone} />
+        <InfoRow label="Email" value={crm.contactEmail} />
+        <InfoRow label="License Number" value={crm.licenseNumber} />
+        <InfoRow label="Base Fee" value={crm.baseFee} />
+        <InfoRow label="Revenue Share" value={crm.passageRevenueShare ? `${crm.passageRevenueShare}%` : null} />
+        {crm.vettingNotes && (
+          <div className="col-span-2">
+            <InfoRow label="Vetting Notes" value={crm.vettingNotes} />
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex-shrink-0 px-8 py-5 border-t border-line bg-canvas flex items-center gap-3">
+        <button onClick={() => onEdit(crm)}
+          className="px-4 py-2 rounded-lg border border-line font-sans text-sm text-ink hover:bg-surface transition-colors">
+          Edit Partner
+        </button>
+        <button onClick={() => onRemove(crm)}
+          className="px-4 py-2 rounded-lg border border-line font-sans text-sm text-danger hover:bg-danger-tint transition-colors">
+          Remove
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── YourPartnersTab ───────────────────────────────────────────────────────────
+
+function YourPartnersTab({ crematoriums, onEdit, onRemove }) {
+  const [selectedId, setSelectedId] = useState(null)
+  const [search, setSearch] = useState('')
+
+  const filtered = crematoriums.filter(c =>
+    !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.location ?? '').toLowerCase().includes(search.toLowerCase())
+  )
+  const selected = crematoriums.find(c => c.id === selectedId) ?? null
+
+  return (
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-surface border-t border-line -mx-8 -mb-7">
+      {/* Left list */}
+      <div className="w-72 flex-shrink-0 flex flex-col border-r border-line h-full">
+        <div className="flex-shrink-0 p-3 border-b border-line">
+          <div className="relative">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" placeholder="Search partners…" value={search} onChange={e => setSearch(e.target.value)}
+              className="w-full bg-canvas border border-line rounded-lg pl-8 pr-3 py-2 font-sans text-xs text-ink placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-ink/20" />
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <div className="flex items-center justify-center h-full px-6 text-center">
+              <p className="font-sans text-sm text-muted">{crematoriums.length === 0 ? 'No partners yet.' : 'No results.'}</p>
+            </div>
+          ) : (
+            filtered.map(crm => (
+              <PartnerListRow
+                key={crm.id}
+                crm={crm}
+                selected={selectedId === crm.id}
+                onClick={() => setSelectedId(crm.id)}
+              />
+            ))
+          )}
+        </div>
+        <div className="flex-shrink-0 px-4 py-2 border-t border-line bg-canvas">
+          <p className="font-sans text-[11px] text-muted">{crematoriums.length} partner{crematoriums.length !== 1 ? 's' : ''}</p>
+        </div>
+      </div>
+
+      {/* Right preview */}
+      <div className="flex-1 min-w-0 overflow-hidden">
+        {selected ? (
+          <PartnerPreview crm={selected} onEdit={onEdit} onRemove={onRemove} />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-center px-8">
+            <div className="w-12 h-12 rounded-full bg-canvas border border-line flex items-center justify-center mb-4">
+              <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+            </div>
+            <p className="font-sans text-sm font-medium text-ink">Select a partner</p>
+            <p className="font-sans text-xs text-muted mt-1">Choose a crematorium from the list to view its details</p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -506,18 +650,13 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearc
   }
 
   return (
-    <div>
+    <div className="flex flex-col flex-1 min-h-0">
       {detailCrm && (
         <DetailModal crm={detailCrm} onAdd={onAdd} addingId={addingId} onClose={() => setDetailCrm(null)} />
       )}
 
-      {/* Section heading */}
-      <div className="flex items-center gap-2.5 mb-4">
-        <h2 className="font-display text-xl text-ink">Top crematoriums nearby</h2>
-      </div>
-
-      {/* Split panel */}
-      <div className="flex rounded-xl overflow-hidden border border-line" style={{ height: 540 }}>
+      {/* Split panel — fills remaining height */}
+      <div className="flex flex-1 min-h-0 overflow-hidden border-y border-line -mx-8">
 
         {/* ── Left: list ─────────────────────────────────────────────────── */}
         <div className="w-[300px] flex-shrink-0 flex flex-col bg-surface border-r border-line">
@@ -629,6 +768,7 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearc
 
 export function CrematoriumsPage({ onAddPartner }) {
   const { user } = useAuth()
+  const [tab, setTab] = useState('partners')
   const [crematoriums, setCrematoriums] = useState([])
   const [nearby, setNearby] = useState([])
   const [loading, setLoading] = useState(true)
@@ -693,56 +833,70 @@ export function CrematoriumsPage({ onAddPartner }) {
     </div>
   )
 
+  const TABS = [
+    { id: 'partners', label: 'Your Partners', count: crematoriums.length },
+    { id: 'find', label: 'Find a Partner' },
+  ]
+
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col h-full min-h-0">
       {editing && <EditModal crm={editing} onSave={handleSaved} onClose={() => setEditing(null)} />}
       {disconnecting && <DisconnectModal crm={disconnecting} onConfirm={handleDisconnected} onClose={() => setDisconnecting(null)} />}
 
-      <PageHeader
-        title="Crematoriums"
-        subtitle="Manage your cremation service partners"
-      />
-
-      {/* Section 1 — Your Crematoriums */}
-      <section>
-        <div className="flex items-center gap-2.5 mb-4">
-          <h2 className="font-display text-xl text-ink">Your crematoriums</h2>
-          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-canvas border border-line font-sans text-[11px] font-semibold text-muted">
-            {crematoriums.length}
-          </span>
+      {/* Header + tabs */}
+      <div className="flex-shrink-0">
+        <PageHeader title="Partners"/>
+        <div className="flex items-center gap-0">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-2.5 font-sans text-sm transition-colors border-b-2 -mb-1px ${
+                tab === t.id
+                  ? 'border-ink text-ink font-medium'
+                  : 'border-transparent text-muted hover:text-ink'
+              }`}
+            >
+              {t.label}
+              {t.count != null && (
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-canvas border border-line font-sans text-[10px] font-semibold text-muted">
+                  {t.count}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
-        {crematoriums.length === 0 ? (
-          <div className="bg-surface border border-line rounded-xl px-6 py-10 text-center">
-            <p className="font-sans text-sm text-muted">No connected crematoriums yet. Add one below.</p>
-          </div>
-        ) : (
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-            {crematoriums.map(crm => (
-              <CompactCrematoriumCard key={crm.id} crm={crm} onEdit={setEditing} onRemove={setDisconnecting} />
-            ))}
-          </div>
-        )}
-      </section>
+      </div>
 
-      {/* Section 2 — Nearby discovery */}
-      <NearbyDiscovery
-        nearby={nearby}
-        nearbyLoading={nearbyLoading}
-        userLocation={userLocation}
-        search={search}
-        setSearch={setSearch}
-        onAdd={handleAdd}
-        addingId={addingId}
-      />
+      {/* Tab content — fills remaining height */}
+      {tab === 'partners' && (
+        <YourPartnersTab
+          crematoriums={crematoriums}
+          onEdit={setEditing}
+          onRemove={setDisconnecting}
+        />
+      )}
 
-      {/* Section 3 — CTA */}
-      <section className="bg-surface border border-line rounded-xl px-6 py-5 flex items-center justify-between gap-4">
-        <div>
-          <p className="font-sans text-sm font-medium text-ink">Don&rsquo;t see yours?</p>
-          <p className="font-sans text-xs text-muted mt-0.5">Manually add a crematorium that isn&rsquo;t in our directory.</p>
+      {tab === 'find' && (
+        <div className="flex flex-col flex-1 min-h-0">
+          <NearbyDiscovery
+            nearby={nearby}
+            nearbyLoading={nearbyLoading}
+            userLocation={userLocation}
+            search={search}
+            setSearch={setSearch}
+            onAdd={handleAdd}
+            addingId={addingId}
+          />
+          <footer className="flex-shrink-0 bg-surface border-t border-line px-8 py-5 flex items-center justify-between gap-4 -mx-8 -mb-7">
+            <div>
+              <p className="font-sans text-sm font-medium text-ink">Don&rsquo;t see yours?</p>
+              <p className="font-sans text-xs text-muted mt-0.5">Manually add a crematorium that isn&rsquo;t in our directory.</p>
+            </div>
+            <Button variant="primary" onClick={onAddPartner}>+ Add New</Button>
+          </footer>
         </div>
-        <Button variant="primary" onClick={onAddPartner}>+ Add New</Button>
-      </section>
+      )}
     </div>
   )
 }
