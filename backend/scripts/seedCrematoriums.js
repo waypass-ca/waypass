@@ -69,7 +69,7 @@ function tileBounds(provinces) {
 
 async function searchPlaces(lat, lng, radius, pageToken = null) {
   const url = pageToken
-    ? `https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken=${pageToken}&key=${GOOGLE_KEY}`
+    ? `https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken=${encodeURIComponent(pageToken)}&key=${GOOGLE_KEY}`
     : `https://maps.googleapis.com/maps/api/place/textsearch/json?query=crematorium+OR+cremation+services&location=${lat},${lng}&radius=${radius}&key=${GOOGLE_KEY}`
   const res = await fetch(url)
   return res.json()
