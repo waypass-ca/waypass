@@ -80,6 +80,12 @@ const dbRecord = {
   website: 'https://vcc.example.ca',
   lat: 49.2827,
   lng: -123.1207,
+  rating: 4.3,
+  user_ratings_total: 112,
+  opening_hours: {
+    periods: [{ open: { day: 1, time: '0900' }, close: { day: 1, time: '1700' } }],
+    weekday_text: ['Monday: 9:00 AM – 5:00 PM'],
+  },
   is_passage_network: false,
   passage_tier: null,
   needs_review: false,
@@ -394,6 +400,29 @@ describe('GET /api/crematoriums/db', () => {
     expect(chain.eq).toHaveBeenCalledWith('passage_tier', 'preferred')
   })
 
+  it('returns rating and user_ratings_total in response', async () => {
+    const res = await request(app).get('/api/crematoriums/db')
+    expect(res.body[0]).toHaveProperty('rating', 4.3)
+    expect(res.body[0]).toHaveProperty('user_ratings_total', 112)
+  })
+
+  it('returns opening_hours with periods and weekday_text in response', async () => {
+    const res = await request(app).get('/api/crematoriums/db')
+    expect(res.body[0].opening_hours).toHaveProperty('periods')
+    expect(res.body[0].opening_hours.periods).toHaveLength(1)
+    expect(res.body[0].opening_hours).toHaveProperty('weekday_text')
+  })
+
+  it('returns null rating and opening_hours when not set', async () => {
+    chain.order.mockResolvedValue({
+      data: [{ ...dbRecord, rating: null, user_ratings_total: null, opening_hours: null }],
+      error: null,
+    })
+    const res = await request(app).get('/api/crematoriums/db')
+    expect(res.body[0].rating).toBeNull()
+    expect(res.body[0].opening_hours).toBeNull()
+  })
+
   it('returns 500 on DB error', async () => {
     chain.order.mockResolvedValue({ data: null, error: new Error('fail') })
     const res = await request(app).get('/api/crematoriums/db')
@@ -437,6 +466,13 @@ describe('GET /api/crematoriums/nearby-db', () => {
     expect(supabase.rpc).toHaveBeenCalledWith('nearby_crematoriums', expect.objectContaining({
       radius_m: 50 * 1609.34,
     }))
+  })
+
+  it('returns rating and opening_hours from RPC results', async () => {
+    const res = await request(app).get('/api/crematoriums/nearby-db?lat=49.28&lng=-123.12')
+    expect(res.body[0]).toHaveProperty('rating', 4.3)
+    expect(res.body[0]).toHaveProperty('user_ratings_total', 112)
+    expect(res.body[0].opening_hours).toHaveProperty('periods')
   })
 
   it('returns 500 on RPC error', async () => {
