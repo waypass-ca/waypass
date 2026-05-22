@@ -603,6 +603,7 @@ function DetailModal({ crm, onAdd, addingId, onClose }) {
                 <svg className="w-4 h-4 text-muted flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <div className="space-y-0.5">
                   {crm.weekdayDescriptions.map((d, i) => <p key={i} className="font-sans text-xs text-muted">{d}</p>)}
+                  <p className="font-sans text-[10px] text-muted/60 mt-1 italic">Hours may vary on holidays or special occasions.</p>
                 </div>
               </div>
             )}

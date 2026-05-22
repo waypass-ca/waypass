@@ -78,13 +78,15 @@ async function searchPlaces(lat, lng, radius, pageToken = null) {
 }
 
 async function fetchDetails(placeId) {
-  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_phone_number,website&key=${GOOGLE_KEY}`
+  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_phone_number,website,opening_hours&key=${GOOGLE_KEY}`
   const res = await fetch(url)
   const data = await res.json()
   if (data.status !== 'OK') return {}
+  const oh = data.result?.opening_hours
   return {
     phone:   data.result?.formatted_phone_number ?? null,
     website: data.result?.website ?? null,
+    openingHours: oh ? { periods: oh.periods ?? [], weekday_text: oh.weekday_text ?? [] } : null,
   }
 }
 
@@ -124,24 +126,33 @@ async function main() {
             .single()
 
           if (existing) {
+            // Update rating + last_verified (rating can drift; hours fetched for new records only)
             await supabase.from('crematoriums_db')
-              .update({ last_verified_at: new Date().toISOString(), needs_review: false })
+              .update({
+                last_verified_at:   new Date().toISOString(),
+                needs_review:       false,
+                rating:             place.rating ?? null,
+                user_ratings_total: place.user_ratings_total ?? null,
+              })
               .eq('google_place_id', place.place_id)
             updated++
           } else {
-            // New record — fetch phone + website from Place Details
+            // New record — fetch phone + website + hours from Place Details
             await sleep(DELAY_MS)
             const details = await fetchDetails(place.place_id)
             await supabase.from('crematoriums_db').insert({
-              google_place_id: place.place_id,
-              name:    place.name,
-              address: place.formatted_address ?? null,
-              state:   province,
-              lat:     loc.lat,
-              lng:     loc.lng,
-              phone:   details.phone ?? null,
-              website: details.website ?? null,
-              last_verified_at: new Date().toISOString(),
+              google_place_id:    place.place_id,
+              name:               place.name,
+              address:            place.formatted_address ?? null,
+              state:              province,
+              lat:                loc.lat,
+              lng:                loc.lng,
+              rating:             place.rating ?? null,
+              user_ratings_total: place.user_ratings_total ?? null,
+              phone:              details.phone ?? null,
+              website:            details.website ?? null,
+              opening_hours:      details.openingHours ?? null,
+              last_verified_at:   new Date().toISOString(),
             })
             added++
           }

@@ -76,13 +76,15 @@ async function searchPlaces(lat, lng, radius, pageToken = null) {
 }
 
 async function fetchDetails(placeId) {
-  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_phone_number,website&key=${GOOGLE_KEY}`
+  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_phone_number,website,opening_hours&key=${GOOGLE_KEY}`
   const res = await fetch(url)
   const data = await res.json()
   if (data.status !== 'OK') return {}
+  const oh = data.result?.opening_hours
   return {
     phone:   data.result?.formatted_phone_number ?? null,
     website: data.result?.website ?? null,
+    openingHours: oh ? { periods: oh.periods ?? [], weekday_text: oh.weekday_text ?? [] } : null,
   }
 }
 
@@ -110,16 +112,19 @@ async function upsertResults(results) {
 
     const parsed = place.formatted_address ? parseCanadianAddress(place.formatted_address) : {}
     const row = {
-      google_place_id: place.place_id,
-      name:    place.name,
-      address: place.formatted_address ?? null,
-      city:    parsed.city ?? null,
-      state:   parsed.province ?? null,
-      zip:     parsed.postal ?? null,
-      lat:     loc.lat,
-      lng:     loc.lng,
-      phone:   details.phone ?? null,
-      website: details.website ?? null,
+      google_place_id:    place.place_id,
+      name:               place.name,
+      address:            place.formatted_address ?? null,
+      city:               parsed.city ?? null,
+      state:              parsed.province ?? null,
+      zip:                parsed.postal ?? null,
+      lat:                loc.lat,
+      lng:                loc.lng,
+      rating:             place.rating ?? null,
+      user_ratings_total: place.user_ratings_total ?? null,
+      phone:              details.phone ?? null,
+      website:            details.website ?? null,
+      opening_hours:      details.openingHours ?? null,
     }
 
     // ignoreDuplicates: false so re-runs fill in phone/website for existing records

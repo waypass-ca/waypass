@@ -18,6 +18,9 @@ create table if not exists crematoriums_db (
   lat                 double precision not null,
   lng                 double precision not null,
   location            geography(Point, 4326),
+  rating              float,
+  user_ratings_total  int,
+  opening_hours       jsonb,
   is_passage_network  boolean default false,
   passage_tier        text,
   needs_review        boolean default false,
@@ -49,11 +52,13 @@ returns table (
   id uuid, google_place_id text, name text, address text, city text, state text,
   zip text, phone text, website text, lat float, lng float,
   is_passage_network boolean, passage_tier text, last_verified_at timestamptz,
+  rating float, user_ratings_total int, opening_hours jsonb,
   distance_miles float
 ) language sql stable as $$
   select
     id, google_place_id, name, address, city, state, zip, phone, website, lat, lng,
     is_passage_network, passage_tier, last_verified_at,
+    rating, user_ratings_total, opening_hours,
     round((st_distance(location, st_point(user_lng, user_lat)::geography) / 1609.34)::numeric, 2)::float as distance_miles
   from crematoriums_db
   where
