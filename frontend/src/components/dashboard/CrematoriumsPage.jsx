@@ -622,7 +622,7 @@ function DetailModal({ crm, onAdd, addingId, onClose }) {
 
 // ── NearbyDiscovery — split panel ─────────────────────────────────────────────
 
-function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearch, onAdd, addingId }) {
+function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, search, setSearch, onAdd, addingId }) {
   const [hoveredId, setHoveredId] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [detailCrm, setDetailCrm] = useState(null)
@@ -694,6 +694,20 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearc
             {nearbyLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="w-5 h-5 border-2 border-line border-t-ink rounded-full animate-spin" />
+              </div>
+            ) : !userLocation && !locationError ? (
+              <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                <div className="w-5 h-5 border-2 border-line border-t-ink rounded-full animate-spin mb-3" />
+                <p className="font-sans text-sm text-muted">Getting your location…</p>
+              </div>
+            ) : locationError ? (
+              <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                <svg className="w-8 h-8 text-muted mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+                <p className="font-sans text-sm font-medium text-ink">Location access required</p>
+                <p className="font-sans text-xs text-muted mt-1">Enable location in your browser to find nearby crematoriums.</p>
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center px-6">
@@ -786,6 +800,7 @@ export function CrematoriumsPage({ onAddPartner }) {
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [userLocation, setUserLocation] = useState(null)
+  const [locationError, setLocationError] = useState(false)
   const [editing, setEditing] = useState(null)
   const [disconnecting, setDisconnecting] = useState(null)
   const [addingId, setAddingId] = useState(null)
@@ -797,13 +812,14 @@ export function CrematoriumsPage({ onAddPartner }) {
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {},
+      () => setLocationError(true),
     )
   }, [])
 
   useEffect(() => {
+    if (!userLocation) return
     setNearbyLoading(true)
-    fetchNearbyCrematoriums(userLocation?.lat ?? 0, userLocation?.lng ?? 0)
+    fetchNearbyCrematoriums(userLocation.lat, userLocation.lng)
       .then(setNearby).catch(console.error).finally(() => setNearbyLoading(false))
   }, [userLocation])
 
@@ -895,6 +911,7 @@ export function CrematoriumsPage({ onAddPartner }) {
             nearby={nearby}
             nearbyLoading={nearbyLoading}
             userLocation={userLocation}
+            locationError={locationError}
             search={search}
             setSearch={setSearch}
             onAdd={handleAdd}
