@@ -218,76 +218,178 @@ function PartnerListRow({ crm, selected, onClick }) {
 
 // ── PartnerPreview ────────────────────────────────────────────────────────────
 
-function InfoRow({ label, value }) {
-  if (!value) return null
+function PreviewSection({ title, children }) {
   return (
-    <div>
-      <p className="font-sans text-[10px] uppercase tracking-widest text-muted mb-0.5">{label}</p>
-      <p className="font-sans text-sm text-ink">{value}</p>
+    <div className="px-6 py-5 border-b border-line last:border-b-0">
+      <p className="font-sans text-[9px] uppercase tracking-widest text-muted mb-3">{title}</p>
+      {children}
     </div>
   )
 }
 
+function ContactLine({ icon, value, href }) {
+  if (!value) return null
+  const content = (
+    <div className="flex items-center gap-2.5">
+      <span className="flex-shrink-0 w-6 h-6 rounded-md bg-canvas border border-line flex items-center justify-center text-muted">
+        {icon}
+      </span>
+      <span className="font-sans text-xs text-ink truncate">{value}</span>
+    </div>
+  )
+  return href
+    ? <a href={href} className="block hover:opacity-70 transition-opacity">{content}</a>
+    : <div>{content}</div>
+}
+
 function PartnerPreview({ crm, onEdit, onRemove }) {
   const isActive = crm.status === 'active'
-  const stats = [
-    { label: 'Active Orders', value: crm.activeOrders ?? '—' },
-    { label: 'Completed YTD', value: crm.completedYTD ?? '—' },
-    { label: 'Avg Turnaround', value: crm.avgTurnaround ?? '—' },
-    { label: 'Avg Fee', value: crm.avgFee ?? '—' },
-  ]
+  const mapQuery = encodeURIComponent(
+    [crm.streetAddress, crm.city, crm.state].filter(Boolean).join(', ') || crm.location || ''
+  )
 
   return (
     <div className="flex flex-col h-full">
+
       {/* Header */}
-      <div className={`px-8 py-7 border-b border-line ${isActive ? 'bg-primary-light/30' : 'bg-canvas'}`}>
-        <div className="flex items-start justify-between gap-4">
+      <div className={`flex-shrink-0 px-7 py-5 border-b border-line ${isActive ? 'bg-primary-light/20' : 'bg-canvas'}`}>
+        <div className="flex items-start justify-between gap-4 mb-3">
           <div className="min-w-0">
-            <p className="font-sans text-[10px] uppercase tracking-widest text-muted mb-2">
+            <p className="font-sans text-[9px] uppercase tracking-widest text-muted mb-1.5">
               {crm.networkStatus ?? 'private'} · Partner since {crm.partnerSince ?? '—'}
             </p>
-            <h2 className="font-display text-3xl text-ink leading-tight">{crm.name}</h2>
-            <p className="font-sans text-sm text-muted mt-1">{crm.location || '—'}</p>
+            <div className="flex items-baseline gap-2.5 flex-wrap">
+              <h2 className="font-display text-2xl text-ink leading-tight">{crm.name}</h2>
+              {crm.rating != null && (
+                <div className="flex items-center gap-1.5 flex-shrink-0 pb-0.5">
+                  <span className="font-sans text-xs font-bold text-ink">{crm.rating.toFixed(1)}</span>
+                  <StarRating rating={crm.rating} small />
+                </div>
+              )}
+            </div>
           </div>
           <Badge variant={isActive ? 'primary' : 'red'}>{isActive ? 'Active' : 'Inactive'}</Badge>
         </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => onEdit(crm)}
+            className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-ink hover:bg-surface transition-colors">
+            Edit
+          </button>
+          <button onClick={() => onRemove(crm)}
+            className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-danger hover:bg-danger-tint transition-colors">
+            Remove
+          </button>
+        </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-4 divide-x divide-line border-b border-line flex-shrink-0">
-        {stats.map(s => (
-          <div key={s.label} className="px-6 py-4 text-center">
-            <p className="font-display text-2xl text-ink">{s.value}</p>
-            <p className="font-sans text-[10px] text-muted mt-0.5 uppercase tracking-wide">{s.label}</p>
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto">
+
+        {/* Details — performance + contact */}
+        <div className="px-6 py-5">
+          <p className="font-sans text-[9px] uppercase tracking-widest text-muted mb-4">Details</p>
+          <div className="grid grid-cols-4 gap-3 mb-5">
+            {[
+              { label: 'Active Orders', value: crm.activeOrders },
+              { label: 'Completed YTD', value: crm.completedYTD },
+              { label: 'Avg Turnaround', value: crm.avgTurnaround },
+              { label: 'Avg Fee', value: crm.avgFee },
+            ].map(s => (
+              <div key={s.label} className="bg-surface rounded-xl border border-line px-4 py-3">
+                <p className="font-sans text-[9px] uppercase tracking-wide text-muted">{s.label}</p>
+                <p className="font-display text-xl text-ink mt-1.5 leading-none">{s.value ?? '—'}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+          <p className="font-sans text-[9px] uppercase tracking-widest text-muted mb-3">Contact</p>
+          <div className="space-y-2">
+            <ContactLine
+              icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
+              value={crm.contactName}
+            />
+            <ContactLine
+              icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>}
+              value={crm.phone}
+              href={crm.phone ? `tel:${crm.phone}` : null}
+            />
+            <ContactLine
+              icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+              value={crm.contactEmail}
+              href={crm.contactEmail ? `mailto:${crm.contactEmail}` : null}
+            />
+            <ContactLine
+              icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>}
+              value={crm.website ? crm.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') : null}
+              href={crm.website ?? null}
+            />
+            {!crm.contactName && !crm.phone && !crm.contactEmail && !crm.website && (
+              <p className="font-sans text-xs text-muted/60 italic">No contact on file</p>
+            )}
+          </div>
+        </div>
 
-      {/* Details */}
-      <div className="flex-1 overflow-y-auto px-8 py-6 grid grid-cols-2 gap-6 content-start">
-        <InfoRow label="Contact Name" value={crm.contactName} />
-        <InfoRow label="Phone" value={crm.phone} />
-        <InfoRow label="Email" value={crm.contactEmail} />
-        <InfoRow label="License Number" value={crm.licenseNumber} />
-        <InfoRow label="Base Fee" value={crm.baseFee} />
-        <InfoRow label="Revenue Share" value={crm.passageRevenueShare ? `${crm.passageRevenueShare}%` : null} />
-        {crm.vettingNotes && (
-          <div className="col-span-2">
-            <InfoRow label="Vetting Notes" value={crm.vettingNotes} />
+        {/* Hours (plain) + Location+Map card side by side */}
+        <div className="px-6 py-5 flex gap-5">
+
+          {/* Hours — plain, no card */}
+          <div className="w-44 flex-shrink-0">
+            <p className="font-sans text-[9px] uppercase tracking-wide text-muted mb-2.5">Hours</p>
+            {crm.weekdayDescriptions?.length > 0 ? (
+              <div className="space-y-0.5">
+                {crm.weekdayDescriptions.map((d, i) => (
+                  <p key={i} className="font-sans text-[11px] text-muted leading-relaxed">{d}</p>
+                ))}
+                <p className="font-sans text-[10px] text-muted/50 italic mt-2">Hours may vary on holidays.</p>
+              </div>
+            ) : (
+              <p className="font-sans text-xs text-muted/60 italic">No hours on file</p>
+            )}
+          </div>
+
+          {/* Location + Map card — fills remaining space */}
+          <div className="flex-1 bg-surface rounded-xl border border-line overflow-hidden">
+            <div className="px-4 py-3 border-b border-line">
+              <p className="font-sans text-[9px] uppercase tracking-wide text-muted mb-1">Location</p>
+              {(crm.streetAddress || crm.location) ? (
+                <p className="font-sans text-xs text-ink leading-snug">{crm.streetAddress || crm.location}</p>
+              ) : (
+                <p className="font-sans text-xs text-muted/60 italic">No address on file</p>
+              )}
+            </div>
+            <div className="aspect-square w-full">
+              {mapQuery ? (
+                <iframe
+                  title={`Map — ${crm.name}`}
+                  src={`https://maps.google.com/maps?q=${mapQuery}&output=embed&hl=en`}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {(crm.licenseNumber || crm.vettingNotes) && (
+          <div className="px-6 pb-5">
+            <div className="bg-surface rounded-xl border border-line p-4">
+              <p className="font-sans text-[9px] uppercase tracking-wide text-muted mb-2">Notes</p>
+              {crm.licenseNumber && (
+                <p className="font-sans text-xs text-muted mb-1">License: {crm.licenseNumber}</p>
+              )}
+              {crm.vettingNotes && (
+                <p className="font-sans text-xs text-muted leading-relaxed">{crm.vettingNotes}</p>
+              )}
+            </div>
           </div>
         )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex-shrink-0 px-8 py-5 border-t border-line bg-canvas flex items-center gap-3">
-        <button onClick={() => onEdit(crm)}
-          className="px-4 py-2 rounded-lg border border-line font-sans text-sm text-ink hover:bg-surface transition-colors">
-          Edit Partner
-        </button>
-        <button onClick={() => onRemove(crm)}
-          className="px-4 py-2 rounded-lg border border-line font-sans text-sm text-danger hover:bg-danger-tint transition-colors">
-          Remove
-        </button>
       </div>
     </div>
   )
@@ -846,6 +948,9 @@ export function CrematoriumsPage({ onAddPartner }) {
         zip: crm.zip,
         phone: crm.phone,
         website: crm.website,
+        rating: crm.rating,
+        userRatingCount: crm.userRatingCount,
+        weekdayDescriptions: crm.weekdayDescriptions,
       })
       setCrematoriums(prev => [...prev, created])
       setNearby(prev => prev.filter(n => n.id !== crm.id))
