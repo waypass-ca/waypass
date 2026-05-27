@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js'
+import { normalizeDbRecord } from './crematoriumUtils.js'
 
 const BASE = import.meta.env.VITE_API_URL
 
@@ -60,129 +61,37 @@ export const connectCrematorium = (id) =>
   mutate(`/api/crematoriums/${id}/connect`, { method: 'POST' })
 export const disconnectCrematorium = (id) =>
   mutate(`/api/crematoriums/${id}/connect`, { method: 'DELETE' })
+
 const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
-// Bootstrap the Maps JS SDK once using the async+callback pattern
-let placesLibPromise = null
-function loadPlacesLib() {
-  if (placesLibPromise) return placesLibPromise
-  placesLibPromise = new Promise((resolve, reject) => {
-    if (window.google?.maps?.places?.Place) {
-      resolve(window.google.maps.places)
+// Bootstrap the Maps JS SDK once (no Places library needed — discovery is DB-backed)
+let mapsLibPromise = null
+export function loadMapsLib() {
+  if (mapsLibPromise) return mapsLibPromise
+  mapsLibPromise = new Promise((resolve, reject) => {
+    if (window.google?.maps) {
+      resolve(window.google.maps)
       return
     }
     window.__mapsReady = () => {
       delete window.__mapsReady
-      resolve(window.google.maps.places)
+      resolve(window.google.maps)
     }
     const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_KEY}&libraries=places&loading=async&callback=__mapsReady`
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_KEY}&loading=async&callback=__mapsReady`
     script.async = true
     script.onerror = () => reject(new Error('Failed to load Google Maps'))
     document.head.appendChild(script)
   })
-  return placesLibPromise
+  return mapsLibPromise
 }
 
-function haversineKm(lat1, lng1, lat2, lng2) {
-  const R = 6371
-  const dLat = (lat2 - lat1) * Math.PI / 180
-  const dLng = (lng2 - lng1) * Math.PI / 180
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-function formatDistance(km) {
-  if (km < 1) return `${Math.round(km * 1000)} m`
-  return `${km.toFixed(1)} km`
-}
-
-async function fetchGooglePlaces(lat, lng, query, passageNames) {
-  if (!GOOGLE_KEY) {
-    console.warn('[Places] VITE_GOOGLE_MAPS_API_KEY not set')
-    return []
-  }
-  const { Place } = await loadPlacesLib()
+export async function fetchNearbyCrematoriums(lat, lng) {
   const hasCoords = lat !== 0 || lng !== 0
-
-  const request = {
-    textQuery: query ? `${query} crematorium` : 'crematorium',
-    fields: [
-      'id', 'displayName', 'formattedAddress', 'location',
-      'nationalPhoneNumber', 'internationalPhoneNumber',
-      'websiteURI', 'regularOpeningHours', 'businessStatus',
-      'rating', 'userRatingCount', 'primaryType', 'photos',
-    ],
-    maxResultCount: 20,
-    ...(hasCoords ? {
-      locationBias: {
-        center: new window.google.maps.LatLng(lat, lng),
-        radius: 50000,
-      },
-    } : {}),
-  }
-
-  const { places } = await Place.searchByText(request)
-
-  function extractCoord(loc, key) {
-    if (!loc) return null
-    const val = loc[key]
-    return typeof val === 'function' ? val() : (typeof val === 'number' ? val : null)
-  }
-
-  function formatType(type) {
-    if (!type) return null
-    return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
-
-  return (places ?? [])
-    .filter(p => !passageNames.has((p.displayName ?? '').toLowerCase()))
-    .map(p => {
-      const placeLat = extractCoord(p.location, 'lat')
-      const placeLng = extractCoord(p.location, 'lng')
-      const distance = (hasCoords && placeLat && placeLng)
-        ? formatDistance(haversineKm(lat, lng, placeLat, placeLng))
-        : null
-
-      let openNow = null
-      try { openNow = p.regularOpeningHours?.isOpen() ?? null } catch {}
-
-      const photos = (p.photos ?? []).slice(0, 6).map(photo => {
-        try { return photo.getURI({ maxWidth: 800, maxHeight: 500 }) } catch { return null }
-      }).filter(Boolean)
-
-      return {
-        id: p.id,
-        name: p.displayName ?? '',
-        location: p.formattedAddress ?? '',
-        streetAddress: p.formattedAddress ?? null,
-        lat: placeLat,
-        lng: placeLng,
-        distance,
-        phone: p.nationalPhoneNumber ?? p.internationalPhoneNumber ?? null,
-        website: p.websiteURI ?? null,
-        rating: p.rating ?? null,
-        userRatingCount: p.userRatingCount ?? null,
-        primaryType: formatType(p.primaryType),
-        weekdayDescriptions: p.regularOpeningHours?.weekdayDescriptions ?? null,
-        openNow,
-        photos,
-        status: 'active',
-        contactName: null,
-        onPassage: false,
-      }
-    })
-}
-
-export async function fetchNearbyCrematoriums(lat, lng, query = '') {
-  const passageResults = await mutate(`/api/crematoriums/nearby?lat=${lat}&lng=${lng}&radius=50&query=${encodeURIComponent(query)}`)
-  const passageNames = new Set(passageResults.map(r => r.name.toLowerCase()))
-  const googleResults = await fetchGooglePlaces(lat, lng, query, passageNames).catch(err => {
-    console.error('[Places] failed:', err.message)
-    return []
-  })
-  return [...passageResults, ...googleResults]
+  const rows = hasCoords
+    ? await request(`/api/crematoriums/nearby-db?lat=${lat}&lng=${lng}&radius_miles=100`)
+    : await request('/api/crematoriums/db')
+  return (rows ?? []).map(normalizeDbRecord)
 }
 
 // ── Orders ────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import {
   fetchCrematoriums, createCrematorium, updateCrematorium,
-  connectCrematorium, disconnectCrematorium, fetchNearbyCrematoriums,
+  disconnectCrematorium, fetchNearbyCrematoriums, loadMapsLib,
 } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { PageHeader } from '../layout/PageHeader'
@@ -603,6 +603,7 @@ function DetailModal({ crm, onAdd, addingId, onClose }) {
                 <svg className="w-4 h-4 text-muted flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <div className="space-y-0.5">
                   {crm.weekdayDescriptions.map((d, i) => <p key={i} className="font-sans text-xs text-muted">{d}</p>)}
+                  <p className="font-sans text-[10px] text-muted/60 mt-1 italic">Hours may vary on holidays or special occasions.</p>
                 </div>
               </div>
             )}
@@ -622,13 +623,24 @@ function DetailModal({ crm, onAdd, addingId, onClose }) {
 
 // ── NearbyDiscovery — split panel ─────────────────────────────────────────────
 
-function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearch, onAdd, addingId }) {
+function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, search, setSearch, onAdd, addingId }) {
   const [hoveredId, setHoveredId] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [detailCrm, setDetailCrm] = useState(null)
   const listRef = useRef(null)
   const itemRefs = useRef({})
   const clickTimerRef = useRef(null)
+
+  // Trigger Maps SDK load as soon as this panel mounts
+  useEffect(() => { loadMapsLib().catch(() => {}) }, [])
+
+  const filtered = search
+    ? nearby.filter(c =>
+        c.name.toLowerCase().includes(search.toLowerCase()) ||
+        (c.location ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.city ?? '').toLowerCase().includes(search.toLowerCase())
+      )
+    : nearby
 
   function handleItemClick(crm) {
     if (clickTimerRef.current) {
@@ -684,13 +696,27 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearc
               <div className="flex items-center justify-center h-full">
                 <div className="w-5 h-5 border-2 border-line border-t-ink rounded-full animate-spin" />
               </div>
-            ) : nearby.length === 0 ? (
+            ) : !userLocation && !locationError ? (
+              <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                <div className="w-5 h-5 border-2 border-line border-t-ink rounded-full animate-spin mb-3" />
+                <p className="font-sans text-sm text-muted">Getting your location…</p>
+              </div>
+            ) : locationError ? (
+              <div className="flex flex-col items-center justify-center h-full text-center px-6">
+                <svg className="w-8 h-8 text-muted mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+                <p className="font-sans text-sm font-medium text-ink">Location access required</p>
+                <p className="font-sans text-xs text-muted mt-1">Enable location in your browser to find nearby crematoriums.</p>
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center px-6">
                 <p className="font-sans text-sm text-muted">No crematoriums found nearby.</p>
                 <p className="font-sans text-xs text-muted mt-1 opacity-70">Try searching by name or city.</p>
               </div>
             ) : (
-              nearby.map((crm, i) => (
+              filtered.map((crm, i) => (
                 <div key={crm.id}
                   ref={el => { itemRefs.current[crm.id] = el }}
                   onMouseEnter={() => setHoveredId(crm.id)}
@@ -737,12 +763,12 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearc
           </div>
 
           {/* Footer */}
-          {!nearbyLoading && nearby.length > 0 && (
+          {!nearbyLoading && filtered.length > 0 && (
             <div className="flex-shrink-0 px-4 py-2 border-t border-line bg-canvas flex items-center justify-between">
-              <p className="font-sans text-[11px] text-muted">{nearby.length} result{nearby.length !== 1 ? 's' : ''}</p>
+              <p className="font-sans text-[11px] text-muted">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</p>
               <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1 font-sans text-[10px] text-muted"><span className="w-1.5 h-1.5 rounded-full bg-sage inline-block" />On Passage</span>
-                <span className="flex items-center gap-1 font-sans text-[10px] text-muted"><span className="w-1.5 h-1.5 rounded-full bg-ink/30 inline-block" />Google</span>
+                <span className="flex items-center gap-1 font-sans text-[10px] text-muted"><span className="w-1.5 h-1.5 rounded-full bg-sage inline-block" />Passage Network</span>
+                <span className="flex items-center gap-1 font-sans text-[10px] text-muted"><span className="w-1.5 h-1.5 rounded-full bg-ink/30 inline-block" />Directory</span>
               </div>
             </div>
           )}
@@ -751,7 +777,7 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, search, setSearc
         {/* ── Right: map ─────────────────────────────────────────────────── */}
         <div className="flex-1 min-w-0 bg-canvas">
           <MapView
-            nearby={nearby}
+            nearby={filtered}
             userLocation={userLocation}
             hoveredId={hoveredId}
             selectedId={selectedId}
@@ -775,6 +801,7 @@ export function CrematoriumsPage({ onAddPartner }) {
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [userLocation, setUserLocation] = useState(null)
+  const [locationError, setLocationError] = useState(false)
   const [editing, setEditing] = useState(null)
   const [disconnecting, setDisconnecting] = useState(null)
   const [addingId, setAddingId] = useState(null)
@@ -786,18 +813,16 @@ export function CrematoriumsPage({ onAddPartner }) {
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => {},
+      () => setLocationError(true),
     )
   }, [])
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setNearbyLoading(true)
-      fetchNearbyCrematoriums(userLocation?.lat ?? 0, userLocation?.lng ?? 0, search)
-        .then(setNearby).catch(console.error).finally(() => setNearbyLoading(false))
-    }, 400)
-    return () => clearTimeout(t)
-  }, [search, userLocation])
+    if (!userLocation) return
+    setNearbyLoading(true)
+    fetchNearbyCrematoriums(userLocation.lat, userLocation.lng)
+      .then(setNearby).catch(console.error).finally(() => setNearbyLoading(false))
+  }, [userLocation])
 
   function handleSaved(updated) {
     setCrematoriums(prev => prev.map(c => c.id === updated.id ? updated : c))
@@ -812,13 +837,17 @@ export function CrematoriumsPage({ onAddPartner }) {
   async function handleAdd(crm) {
     setAddingId(crm.id)
     try {
-      if (crm.onPassage) {
-        const connected = await connectCrematorium(crm.id)
-        setCrematoriums(prev => [...prev, connected])
-      } else {
-        const created = await createCrematorium({ name: crm.name, location: crm.location, streetAddress: crm.streetAddress })
-        setCrematoriums(prev => [...prev, created])
-      }
+      const created = await createCrematorium({
+        name: crm.name,
+        location: crm.location,
+        streetAddress: crm.streetAddress,
+        city: crm.city,
+        state: crm.state,
+        zip: crm.zip,
+        phone: crm.phone,
+        website: crm.website,
+      })
+      setCrematoriums(prev => [...prev, created])
       setNearby(prev => prev.filter(n => n.id !== crm.id))
     } catch (err) {
       console.error(err)
@@ -883,6 +912,7 @@ export function CrematoriumsPage({ onAddPartner }) {
             nearby={nearby}
             nearbyLoading={nearbyLoading}
             userLocation={userLocation}
+            locationError={locationError}
             search={search}
             setSearch={setSearch}
             onAdd={handleAdd}
