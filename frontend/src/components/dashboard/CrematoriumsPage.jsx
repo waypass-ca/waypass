@@ -4,7 +4,7 @@ import {
   disconnectCrematorium, fetchNearbyCrematoriums, loadMapsLib,
 } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { PageHeader } from '../layout/PageHeader'
+import { PageTitle } from '../layout/PageTitle'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 
@@ -331,31 +331,21 @@ function PartnerPreview({ crm, onEdit, onRemove }) {
         {/* Hours (plain) + Location+Map card side by side */}
         <div className="px-6 py-5 flex gap-5">
 
-          {/* Hours — plain, no card */}
-          <div className="w-44 flex-shrink-0">
-            <p className="font-sans text-[9px] uppercase tracking-wide text-muted mb-2.5">Hours</p>
-            {crm.weekdayDescriptions?.length > 0 ? (
+          {/* Hours — plain, no card; hidden when no data */}
+          {crm.weekdayDescriptions?.length > 0 && (
+            <div className="w-44 flex-shrink-0">
+              <p className="font-sans text-[9px] uppercase tracking-wide text-muted mb-2.5">Hours</p>
               <div className="space-y-0.5">
                 {crm.weekdayDescriptions.map((d, i) => (
                   <p key={i} className="font-sans text-[11px] text-muted leading-relaxed">{d}</p>
                 ))}
                 <p className="font-sans text-[10px] text-muted/50 italic mt-2">Hours may vary on holidays.</p>
               </div>
-            ) : (
-              <p className="font-sans text-xs text-muted/60 italic">No hours on file</p>
-            )}
-          </div>
-
-          {/* Location + Map card — fills remaining space */}
-          <div className="flex-1 bg-surface rounded-xl border border-line overflow-hidden">
-            <div className="px-4 py-3 border-b border-line">
-              <p className="font-sans text-[9px] uppercase tracking-wide text-muted mb-1">Location</p>
-              {(crm.streetAddress || crm.location) ? (
-                <p className="font-sans text-xs text-ink leading-snug">{crm.streetAddress || crm.location}</p>
-              ) : (
-                <p className="font-sans text-xs text-muted/60 italic">No address on file</p>
-              )}
             </div>
+          )}
+
+          {/* Map card — fills remaining space */}
+          <div className="flex-1 bg-surface rounded-xl border border-line overflow-hidden">
             <div className="aspect-square w-full">
               {mapQuery ? (
                 <iframe
@@ -407,7 +397,7 @@ function YourPartnersTab({ crematoriums, onEdit, onRemove }) {
   const selected = crematoriums.find(c => c.id === selectedId) ?? null
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden bg-surface border-t border-line -mx-8 -mb-7">
+    <div className="flex flex-1 min-h-0 overflow-hidden bg-surface">
       {/* Left list */}
       <div className="w-72 flex-shrink-0 flex flex-col border-r border-line h-full">
         <div className="flex-shrink-0 p-3 border-b border-line">
@@ -770,7 +760,7 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, s
       )}
 
       {/* Split panel — fills remaining height */}
-      <div className="flex flex-1 min-h-0 overflow-hidden border-y border-line -mx-8">
+      <div className="flex flex-1 min-h-0 overflow-hidden border-b border-line">
 
         {/* ── Left: list ─────────────────────────────────────────────────── */}
         <div className="w-[300px] flex-shrink-0 flex flex-col bg-surface border-r border-line">
@@ -962,7 +952,7 @@ export function CrematoriumsPage({ onAddPartner }) {
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[200px]">
+    <div className="flex-1 flex items-center justify-center">
       <p className="font-sans text-sm text-muted">Loading…</p>
     </div>
   )
@@ -973,19 +963,21 @@ export function CrematoriumsPage({ onAddPartner }) {
   ]
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex-1 flex flex-col overflow-hidden">
       {editing && <EditModal crm={editing} onSave={handleSaved} onClose={() => setEditing(null)} />}
       {disconnecting && <DisconnectModal crm={disconnecting} onConfirm={handleDisconnected} onClose={() => setDisconnecting(null)} />}
 
       {/* Header + tabs */}
-      <div className="flex-shrink-0">
-        <PageHeader title="Partners"/>
-        <div className="flex items-center gap-0">
+      <div className="flex-shrink-0 bg-surface/80 backdrop-blur border-b border-line relative z-10">
+        <div className="px-6 pt-5 pb-3">
+          <PageTitle className="leading-none">Partners</PageTitle>
+        </div>
+        <div className="flex items-center gap-0 px-2">
           {TABS.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 font-sans text-sm transition-colors border-b-2 -mb-1px ${
+              className={`flex items-center gap-2 px-4 py-2.5 font-sans text-sm transition-colors border-b-2 -mb-px ${
                 tab === t.id
                   ? 'border-ink text-ink font-medium'
                   : 'border-transparent text-muted hover:text-ink'
@@ -1023,7 +1015,7 @@ export function CrematoriumsPage({ onAddPartner }) {
             onAdd={handleAdd}
             addingId={addingId}
           />
-          <footer className="flex-shrink-0 bg-surface border-t border-line px-8 py-5 flex items-center justify-between gap-4 -mx-8 -mb-7">
+          <footer className="flex-shrink-0 bg-surface border-t border-line px-6 py-5 flex items-center justify-between gap-4">
             <div>
               <p className="font-sans text-sm font-medium text-ink">Don&rsquo;t see yours?</p>
               <p className="font-sans text-xs text-muted mt-0.5">Manually add a crematorium that isn&rsquo;t in our directory.</p>
