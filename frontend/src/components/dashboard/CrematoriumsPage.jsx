@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import { PageTitle } from '../layout/PageTitle'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
-import { Search, ChevronLeft, ChevronDown } from 'lucide-react'
+import { Search, ChevronLeft, ChevronDown, Pencil, TriangleAlert } from 'lucide-react'
 
 function makeMarkerIcon(onPassage, active = false) {
   const fill  = active
@@ -194,7 +194,20 @@ function StarRating({ rating, small = false }) {
 
 // ── Detail info primitives (CaseDetailPage style) ────────────────────────────
 
-function InfoField({ label, value, href }) {
+function InfoField({ label, value, href, editing, onChange, type = 'text' }) {
+  if (editing) {
+    return (
+      <div className="py-1.5 border-b border-line last:border-0">
+        <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-1">{label}</p>
+        <input
+          type={type}
+          value={value ?? ''}
+          onChange={e => onChange(e.target.value)}
+          className="w-full font-sans text-[13px] text-ink bg-white/60 border border-line/60 rounded-md px-2 py-1 outline-none focus:border-ink/30 transition-colors"
+        />
+      </div>
+    )
+  }
   const content = (
     <div className="py-1.5 border-b border-line last:border-0">
       <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-0.5">{label}</p>
@@ -237,8 +250,61 @@ const STATUS_LABEL = {
   complete:  'Complete',
 }
 
-function PartnerDetailPage({ crm, cases = [], onBack, onEdit, onRemove, onViewCase }) {
-  const isActive = crm.status === 'active'
+function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCase, onSave }) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const [form, setForm] = useState({
+    name: crm.name ?? '',
+    location: crm.location ?? '',
+    contactName: crm.contactName ?? '',
+    phone: crm.phone ?? '',
+    contactEmail: crm.contactEmail ?? '',
+    website: crm.website ?? '',
+    hoursText: crm.weekdayDescriptions?.join('\n') ?? '',
+    status: crm.status ?? 'active',
+  })
+
+  const set = key => val => setForm(p => ({ ...p, [key]: val }))
+
+  async function handleSave() {
+    setSaving(true); setError(null)
+    try {
+      const updated = await updateCrematorium(crm.id, {
+        name: form.name,
+        location: form.location || null,
+        contactName: form.contactName || null,
+        phone: form.phone || null,
+        contactEmail: form.contactEmail || null,
+        website: form.website || null,
+        weekdayDescriptions: form.hoursText ? form.hoursText.split('\n').filter(Boolean) : null,
+        status: form.status,
+      })
+      onSave(updated)
+      setIsEditing(false)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function handleCancel() {
+    setForm({
+      name: crm.name ?? '',
+      location: crm.location ?? '',
+      contactName: crm.contactName ?? '',
+      phone: crm.phone ?? '',
+      contactEmail: crm.contactEmail ?? '',
+      website: crm.website ?? '',
+      hoursText: crm.weekdayDescriptions?.join('\n') ?? '',
+      status: crm.status ?? 'active',
+    })
+    setIsEditing(false)
+    setError(null)
+  }
+
+  const isActive = form.status === 'active'
   const address = [crm.streetAddress, crm.city, crm.state, crm.zip].filter(Boolean).join(', ') || crm.location || ''
   const mapQuery = encodeURIComponent(address ? `${crm.name} ${address}` : crm.name)
 
@@ -260,20 +326,38 @@ function PartnerDetailPage({ crm, cases = [], onBack, onEdit, onRemove, onViewCa
         </button>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
-            <h1 className="font-display text-3xl text-ink leading-tight">{crm.name}</h1>
+            {isEditing ? (
+              <input
+                value={form.name}
+                onChange={e => set('name')(e.target.value)}
+                className="font-display text-3xl text-ink leading-tight bg-white/60 border border-line/60 rounded-md px-2 py-0.5 outline-none focus:border-ink/30 transition-colors min-w-0 w-full"
+              />
+            ) : (
+              <h1 className="font-display text-3xl text-ink leading-tight">{crm.name}</h1>
+            )}
             <Badge variant={isActive ? 'primary' : 'red'}>{isActive ? 'Active' : 'Inactive'}</Badge>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 mt-1">
-            <button onClick={() => onEdit(crm)}
-              className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-ink hover:bg-surface transition-colors cursor-pointer">
-              Edit
-            </button>
-            <button onClick={() => onRemove(crm)}
-              className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-danger hover:bg-danger-tint transition-colors cursor-pointer">
-              Remove
-            </button>
+            {isEditing ? (
+              <>
+                <button onClick={handleCancel}
+                  className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer">
+                  Cancel
+                </button>
+                <button onClick={handleSave} disabled={saving}
+                  className="px-3 py-1.5 rounded-lg bg-ink text-surface font-sans text-xs font-medium hover:bg-ink/90 transition-colors cursor-pointer disabled:opacity-50">
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setIsEditing(true)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-line text-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer">
+                <Pencil size={14} />
+              </button>
+            )}
           </div>
         </div>
+        {error && <p className="font-sans text-xs text-danger mt-2">{error}</p>}
       </div>
 
       {/* Body: left info + right map */}
@@ -283,7 +367,7 @@ function PartnerDetailPage({ crm, cases = [], onBack, onEdit, onRemove, onViewCa
         <div className="flex-1 bg-white border-r border-line flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto">
 
-            <InfoSection title="Recent Cases" flush>
+            {!isEditing && <InfoSection title="Recent Cases" flush>
               {recentCases.length === 0 ? (
                 <p className="font-sans text-[13px] text-muted px-5 py-2">No cases with this partner yet.</p>
               ) : (
@@ -302,31 +386,64 @@ function PartnerDetailPage({ crm, cases = [], onBack, onEdit, onRemove, onViewCa
                   ))}
                 </div>
               )}
-            </InfoSection>
+            </InfoSection>}
 
-            <InfoSection title="Contact">
-              <InfoField label="Contact Name" value={crm.contactName} />
-              <InfoField label="Phone" value={crm.phone} href={crm.phone ? `tel:${crm.phone}` : null} />
-              <InfoField label="Email" value={crm.contactEmail} href={crm.contactEmail ? `mailto:${crm.contactEmail}` : null} />
-              <InfoField
-                label="Website"
-                value={crm.website ? crm.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') : null}
-                href={crm.website ?? null}
-              />
-            </InfoSection>
-
-            {crm.weekdayDescriptions?.length > 0 && (
-              <InfoSection title="Hours">
-                <div className="space-y-0.5 py-1">
-                  {crm.weekdayDescriptions.map((d, i) => (
-                    <p key={i} className="font-sans text-[12px] text-ink leading-relaxed">{d}</p>
-                  ))}
-                  <p className="font-sans text-[10px] text-muted/60 italic mt-2">Hours may vary on holidays.</p>
+            {isEditing && (
+              <InfoSection title="Status">
+                <div className="flex items-center justify-between py-2">
+                  <span className="font-sans text-[13px] text-ink">Active Partner</span>
+                  <button type="button"
+                    onClick={() => set('status')(form.status === 'active' ? 'inactive' : 'active')}
+                    className={`w-11 h-6 rounded-full transition-all cursor-pointer flex-shrink-0 relative border-0 outline-none ${form.status === 'active' ? 'bg-primary' : 'bg-line'}`}>
+                    <span className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-all ${form.status === 'active' ? 'left-6' : 'left-1'}`} />
+                  </button>
                 </div>
               </InfoSection>
             )}
 
-            {(crm.licenseNumber || crm.vettingNotes) && (
+            <InfoSection title="Contact">
+              {isEditing && (
+                <InfoField label="Location" value={form.location} editing onChange={set('location')} />
+              )}
+              <InfoField label="Contact Name" value={isEditing ? form.contactName : crm.contactName}
+                editing={isEditing} onChange={set('contactName')} />
+              <InfoField label="Phone" value={isEditing ? form.phone : crm.phone}
+                href={!isEditing && crm.phone ? `tel:${crm.phone}` : null}
+                editing={isEditing} onChange={set('phone')} type="tel" />
+              <InfoField label="Email" value={isEditing ? form.contactEmail : crm.contactEmail}
+                href={!isEditing && crm.contactEmail ? `mailto:${crm.contactEmail}` : null}
+                editing={isEditing} onChange={set('contactEmail')} type="email" />
+              <InfoField label="Website"
+                value={isEditing ? form.website : (crm.website ? crm.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') : null)}
+                href={!isEditing ? crm.website ?? null : null}
+                editing={isEditing} onChange={set('website')} />
+            </InfoSection>
+
+            {(isEditing || crm.weekdayDescriptions?.length > 0) && (
+              <InfoSection title="Hours">
+                {isEditing ? (
+                  <div className="py-1.5">
+                    <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-1">One entry per line</p>
+                    <textarea
+                      value={form.hoursText}
+                      onChange={e => set('hoursText')(e.target.value)}
+                      rows={7}
+                      placeholder={"Monday: 8:00 AM – 5:00 PM\nTuesday: 8:00 AM – 5:00 PM\n…"}
+                      className="w-full font-sans text-[13px] text-ink bg-white/60 border border-line/60 rounded-md px-2 py-1 outline-none focus:border-ink/30 transition-colors resize-none leading-relaxed"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-0.5 py-1">
+                    {crm.weekdayDescriptions.map((d, i) => (
+                      <p key={i} className="font-sans text-[12px] text-ink leading-relaxed">{d}</p>
+                    ))}
+                    <p className="font-sans text-[10px] text-muted/60 italic mt-2">Hours may vary on holidays.</p>
+                  </div>
+                )}
+              </InfoSection>
+            )}
+
+            {!isEditing && (crm.licenseNumber || crm.vettingNotes) && (
               <InfoSection title="Notes">
                 {crm.licenseNumber && <InfoField label="License Number" value={crm.licenseNumber} />}
                 {crm.vettingNotes && (
@@ -336,6 +453,23 @@ function PartnerDetailPage({ crm, cases = [], onBack, onEdit, onRemove, onViewCa
             )}
 
           </div>
+
+          {/* Remove footer */}
+          {!isEditing && <div className="flex-shrink-0 px-5 py-4">
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-danger/30 bg-danger-tint/40">
+              <TriangleAlert size={14} className="text-danger flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-sans text-[12.5px] font-medium text-danger">Remove Partner</p>
+                <p className="font-sans text-[11px] text-danger/70 mt-0.5">This will disconnect the partner from your account.</p>
+              </div>
+              <button
+                onClick={() => onRemove(crm)}
+                className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-danger text-white font-sans text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>}
         </div>
 
         {/* Right — map */}
@@ -951,7 +1085,7 @@ export function CrematoriumsPage({ onAddPartner, cases = [], onViewCase }) {
           crm={selectedPartner}
           cases={cases}
           onBack={() => setSelectedPartner(null)}
-          onEdit={setEditing}
+          onSave={handleSaved}
           onRemove={crm => { setDisconnecting(crm) }}
           onViewCase={onViewCase}
         />
