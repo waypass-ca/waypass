@@ -204,13 +204,10 @@ function PartnerListRow({ crm, selected, onClick }) {
         selected ? 'bg-canvas border-l-ink' : 'border-l-transparent hover:bg-canvas/50'
       }`}
     >
-      <div className="flex items-center gap-2 mb-0.5">
-        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isActive ? 'bg-primary' : 'bg-muted'}`} />
-        <p className="font-sans font-semibold text-xs text-ink leading-snug truncate">{crm.name}</p>
-      </div>
-      <p className="font-sans text-[11px] text-muted truncate pl-3.5">{crm.location || '—'}</p>
+      <p className="font-sans font-semibold text-xs text-ink leading-snug truncate mb-0.5">{crm.name}</p>
+      <p className="font-sans text-[11px] text-muted truncate">{crm.location || '—'}</p>
       {crm.activeOrders > 0 && (
-        <p className="font-sans text-[10px] text-primary mt-0.5 pl-3.5">{crm.activeOrders} active order{crm.activeOrders !== 1 ? 's' : ''}</p>
+        <p className="font-sans text-[10px] text-primary mt-0.5">{crm.activeOrders} active order{crm.activeOrders !== 1 ? 's' : ''}</p>
       )}
     </button>
   )
@@ -253,32 +250,29 @@ function PartnerPreview({ crm, onEdit, onRemove }) {
 
       {/* Header */}
       <div className={`flex-shrink-0 px-7 py-5 border-b border-line ${isActive ? 'bg-primary-light/20' : 'bg-canvas'}`}>
-        <div className="flex items-start justify-between gap-4 mb-3">
+        <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="font-sans text-[9px] uppercase tracking-widest text-muted mb-1.5">
-              {crm.networkStatus ?? 'private'} · Partner since {crm.partnerSince ?? '—'}
-            </p>
-            <div className="flex items-baseline gap-2.5 flex-wrap">
-              <h2 className="font-display text-2xl text-ink leading-tight">{crm.name}</h2>
+            <h2 className="font-display text-2xl text-ink leading-tight">{crm.name}</h2>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant={isActive ? 'primary' : 'red'}>{isActive ? 'Active' : 'Inactive'}</Badge>
               {crm.rating != null && (
-                <div className="flex items-center gap-1.5 flex-shrink-0 pb-0.5">
+                <>
                   <span className="font-sans text-xs font-bold text-ink">{crm.rating.toFixed(1)}</span>
                   <StarRating rating={crm.rating} small />
-                </div>
+                </>
               )}
             </div>
           </div>
-          <Badge variant={isActive ? 'primary' : 'red'}>{isActive ? 'Active' : 'Inactive'}</Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => onEdit(crm)}
-            className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-ink hover:bg-surface transition-colors">
-            Edit
-          </button>
-          <button onClick={() => onRemove(crm)}
-            className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-danger hover:bg-danger-tint transition-colors">
-            Remove
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button onClick={() => onEdit(crm)}
+              className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-ink hover:bg-surface transition-colors">
+              Edit
+            </button>
+            <button onClick={() => onRemove(crm)}
+              className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-danger hover:bg-danger-tint transition-colors">
+              Remove
+            </button>
+          </div>
         </div>
       </div>
 
@@ -287,7 +281,6 @@ function PartnerPreview({ crm, onEdit, onRemove }) {
 
         {/* Details — performance + contact */}
         <div className="px-6 py-5">
-          <p className="font-sans text-[9px] uppercase tracking-widest text-muted mb-4">Details</p>
           <div className="grid grid-cols-4 gap-3 mb-5">
             {[
               { label: 'Active Orders', value: crm.activeOrders },
@@ -295,9 +288,9 @@ function PartnerPreview({ crm, onEdit, onRemove }) {
               { label: 'Avg Turnaround', value: crm.avgTurnaround },
               { label: 'Avg Fee', value: crm.avgFee },
             ].map(s => (
-              <div key={s.label} className="bg-surface rounded-xl border border-line px-4 py-3">
+              <div key={s.label} className="bg-canvas rounded-xl border border-line px-4 py-3.5">
+                <p className="font-display text-2xl text-ink leading-none mb-1.5">{s.value ?? '—'}</p>
                 <p className="font-sans text-[9px] uppercase tracking-wide text-muted">{s.label}</p>
-                <p className="font-display text-xl text-ink mt-1.5 leading-none">{s.value ?? '—'}</p>
               </div>
             ))}
           </div>
@@ -388,7 +381,7 @@ function PartnerPreview({ crm, onEdit, onRemove }) {
 // ── YourPartnersTab ───────────────────────────────────────────────────────────
 
 function YourPartnersTab({ crematoriums, onEdit, onRemove }) {
-  const [selectedId, setSelectedId] = useState(null)
+  const [selectedId, setSelectedId] = useState(() => crematoriums[0]?.id ?? null)
   const [search, setSearch] = useState('')
 
   const filtered = crematoriums.filter(c =>
