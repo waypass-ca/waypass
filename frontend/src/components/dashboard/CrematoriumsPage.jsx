@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import { PageTitle } from '../layout/PageTitle'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
-import { Search, ChevronLeft } from 'lucide-react'
+import { Search, ChevronLeft, ChevronDown } from 'lucide-react'
 
 function makeMarkerIcon(onPassage, active = false) {
   const fill  = active
@@ -192,163 +192,185 @@ function StarRating({ rating, small = false }) {
   )
 }
 
-// ── Contact line (used in detail page) ───────────────────────────────────────
+// ── Detail info primitives (CaseDetailPage style) ────────────────────────────
 
-function ContactLine({ icon, value, href }) {
-  if (!value) return null
+function InfoField({ label, value, href }) {
   const content = (
-    <div className="flex items-center gap-2.5">
-      <span className="flex-shrink-0 w-6 h-6 rounded-md bg-canvas border border-line flex items-center justify-center text-muted">
-        {icon}
-      </span>
-      <span className="font-sans text-xs text-ink truncate">{value}</span>
+    <div className="py-1.5 border-b border-line last:border-0">
+      <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-0.5">{label}</p>
+      <p className="font-sans text-[13px] text-ink">{value || '—'}</p>
     </div>
   )
-  return href
+  return href && value
     ? <a href={href} className="block hover:opacity-70 transition-opacity">{content}</a>
-    : <div>{content}</div>
+    : content
+}
+
+function InfoSection({ title, children, defaultOpen = true, flush = false }) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <div className="border-b border-line">
+      <button
+        onClick={() => setOpen(p => !p)}
+        className="w-full flex items-center justify-between px-5 pt-3 pb-2 hover:bg-ink/[0.02] transition-colors cursor-pointer border-0 bg-transparent outline-none"
+      >
+        <span className="font-sans text-[11px] font-semibold text-muted uppercase tracking-wider">{title}</span>
+        <ChevronDown size={12} className={`text-muted transition-transform duration-150 ${open ? '' : '-rotate-90'}`} strokeWidth={2} />
+      </button>
+      {open && <div className={flush ? '' : 'px-5 pb-3'}>{children}</div>}
+    </div>
+  )
 }
 
 // ── PartnerDetailPage ─────────────────────────────────────────────────────────
 
-function PartnerDetailPage({ crm, onBack, onEdit, onRemove }) {
+const STATUS_DOT = {
+  pending:   'bg-warning',
+  transit:   'bg-info',
+  cremation: 'bg-danger',
+  complete:  'bg-primary',
+}
+const STATUS_LABEL = {
+  pending:   'Pending',
+  transit:   'In Transit',
+  cremation: 'At Cremation',
+  complete:  'Complete',
+}
+
+function PartnerDetailPage({ crm, cases = [], onBack, onEdit, onRemove, onViewCase }) {
   const isActive = crm.status === 'active'
-  const mapQuery = encodeURIComponent(
-    [crm.streetAddress, crm.city, crm.state].filter(Boolean).join(', ') || crm.location || ''
-  )
+  const address = [crm.streetAddress, crm.city, crm.state, crm.zip].filter(Boolean).join(', ') || crm.location || ''
+  const mapQuery = encodeURIComponent(address ? `${crm.name} ${address}` : crm.name)
+
+  const recentCases = cases
+    .filter(c => c.crematorium === crm.name)
+    .slice(0, 5)
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+
       {/* Header */}
       <div className="flex-shrink-0 bg-surface/80 backdrop-blur border-b border-line px-6 pt-5 pb-4 relative z-10">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 font-sans text-[12.5px] text-muted hover:text-ink transition-colors mb-3 cursor-pointer"
+          className="flex items-center gap-1.5 font-sans text-[12.5px] text-muted hover:text-ink transition-colors mb-3 cursor-pointer border-0 bg-transparent outline-none"
         >
           <ChevronLeft size={14} />
           Partners
         </button>
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
             <h1 className="font-display text-3xl text-ink leading-tight">{crm.name}</h1>
-            <div className="flex items-center gap-2 mt-1.5">
-              <Badge variant={isActive ? 'primary' : 'red'}>{isActive ? 'Active' : 'Inactive'}</Badge>
-              {crm.location && <span className="font-sans text-xs text-muted">{crm.location}</span>}
-              {crm.rating != null && (
-                <>
-                  <span className="font-sans text-xs font-bold text-ink">{crm.rating.toFixed(1)}</span>
-                  <StarRating rating={crm.rating} small />
-                </>
-              )}
-            </div>
+            <Badge variant={isActive ? 'primary' : 'red'}>{isActive ? 'Active' : 'Inactive'}</Badge>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 mt-1">
             <button onClick={() => onEdit(crm)}
-              className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-ink hover:bg-surface transition-colors">
+              className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-ink hover:bg-surface transition-colors cursor-pointer">
               Edit
             </button>
             <button onClick={() => onRemove(crm)}
-              className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-danger hover:bg-danger-tint transition-colors">
+              className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-danger hover:bg-danger-tint transition-colors cursor-pointer">
               Remove
             </button>
           </div>
         </div>
       </div>
 
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto bg-canvas">
-        <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
+      {/* Body: left info + right map */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
 
-          {/* Stats row */}
-          <div className="grid grid-cols-4 gap-3">
-            {[
-              { label: 'Active Orders', value: crm.activeOrders },
-              { label: 'Completed YTD', value: crm.completedYTD },
-              { label: 'Avg Turnaround', value: crm.avgTurnaround },
-              { label: 'Avg Fee', value: crm.avgFee },
-            ].map(s => (
-              <div key={s.label} className="bg-surface rounded-xl border border-line px-4 py-3.5">
-                <p className="font-display text-2xl text-ink leading-none mb-1.5">{s.value ?? '—'}</p>
-                <p className="font-sans text-[9px] uppercase tracking-wide text-muted">{s.label}</p>
-              </div>
-            ))}
-          </div>
+        {/* Left — info sections */}
+        <div className="flex-1 bg-white border-r border-line flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
 
-          {/* Contact */}
-          <div className="bg-surface rounded-xl border border-line p-5">
-            <p className="font-sans text-[9px] uppercase tracking-widest text-muted mb-3">Contact</p>
-            <div className="space-y-2">
-              <ContactLine
-                icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
-                value={crm.contactName}
-              />
-              <ContactLine
-                icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>}
-                value={crm.phone}
-                href={crm.phone ? `tel:${crm.phone}` : null}
-              />
-              <ContactLine
-                icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
-                value={crm.contactEmail}
-                href={crm.contactEmail ? `mailto:${crm.contactEmail}` : null}
-              />
-              <ContactLine
-                icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>}
+            <InfoSection title="Recent Cases" flush>
+              {recentCases.length === 0 ? (
+                <p className="font-sans text-[13px] text-muted px-5 py-2">No cases with this partner yet.</p>
+              ) : (
+                <div>
+                  {recentCases.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => onViewCase?.(c.id)}
+                      className="w-full text-left flex items-center justify-between px-5 py-2.5 border-t border-line hover:bg-canvas/60 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="font-sans text-[13px] text-ink truncate">{c.deceased}</p>
+                        {c.date && <span className="font-sans text-[11.5px] text-muted flex-shrink-0">· {c.date}</span>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </InfoSection>
+
+            <InfoSection title="Contact">
+              <InfoField label="Contact Name" value={crm.contactName} />
+              <InfoField label="Phone" value={crm.phone} href={crm.phone ? `tel:${crm.phone}` : null} />
+              <InfoField label="Email" value={crm.contactEmail} href={crm.contactEmail ? `mailto:${crm.contactEmail}` : null} />
+              <InfoField
+                label="Website"
                 value={crm.website ? crm.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') : null}
                 href={crm.website ?? null}
               />
-              {!crm.contactName && !crm.phone && !crm.contactEmail && !crm.website && (
-                <p className="font-sans text-xs text-muted/60 italic">No contact on file</p>
-              )}
-            </div>
-          </div>
+            </InfoSection>
 
-          {/* Hours + Map */}
-          <div className="flex gap-5">
             {crm.weekdayDescriptions?.length > 0 && (
-              <div className="bg-surface rounded-xl border border-line p-5 w-52 flex-shrink-0">
-                <p className="font-sans text-[9px] uppercase tracking-wide text-muted mb-2.5">Hours</p>
-                <div className="space-y-0.5">
+              <InfoSection title="Hours">
+                <div className="space-y-0.5 py-1">
                   {crm.weekdayDescriptions.map((d, i) => (
-                    <p key={i} className="font-sans text-[11px] text-muted leading-relaxed">{d}</p>
+                    <p key={i} className="font-sans text-[12px] text-ink leading-relaxed">{d}</p>
                   ))}
-                  <p className="font-sans text-[10px] text-muted/50 italic mt-2">Hours may vary on holidays.</p>
+                  <p className="font-sans text-[10px] text-muted/60 italic mt-2">Hours may vary on holidays.</p>
                 </div>
-              </div>
+              </InfoSection>
             )}
-            <div className="flex-1 bg-surface rounded-xl border border-line overflow-hidden" style={{ minHeight: 200 }}>
-              {mapQuery ? (
-                <iframe
-                  title={`Map — ${crm.name}`}
-                  src={`https://maps.google.com/maps?q=${mapQuery}&output=embed&hl=en`}
-                  className="w-full h-full border-0"
-                  style={{ minHeight: 200 }}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full" style={{ minHeight: 200 }}>
-                  <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+
+            {(crm.licenseNumber || crm.vettingNotes) && (
+              <InfoSection title="Notes">
+                {crm.licenseNumber && <InfoField label="License Number" value={crm.licenseNumber} />}
+                {crm.vettingNotes && (
+                  <p className="font-sans text-[13px] text-ink leading-relaxed py-1.5">{crm.vettingNotes}</p>
+                )}
+              </InfoSection>
+            )}
+
+          </div>
+        </div>
+
+        {/* Right — map */}
+        <div className="w-[380px] flex-shrink-0 flex flex-col relative">
+          {mapQuery ? (
+            <>
+              <iframe
+                title={`Map — ${crm.name}`}
+                src={`https://maps.google.com/maps?q=${mapQuery}&output=embed&hl=en`}
+                className="w-full flex-1 border-0"
+                style={{ minHeight: 0 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              {address && (
+                <div className="absolute top-3 right-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-white/90 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.12)] max-w-[55%]">
+                  <svg className="w-3.5 h-3.5 text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                   </svg>
+                  <span className="font-sans text-[12.5px] text-ink">{address}</span>
                 </div>
               )}
-            </div>
-          </div>
-
-          {(crm.licenseNumber || crm.vettingNotes) && (
-            <div className="bg-surface rounded-xl border border-line p-5">
-              <p className="font-sans text-[9px] uppercase tracking-wide text-muted mb-2">Notes</p>
-              {crm.licenseNumber && (
-                <p className="font-sans text-xs text-muted mb-1">License: {crm.licenseNumber}</p>
-              )}
-              {crm.vettingNotes && (
-                <p className="font-sans text-xs text-muted leading-relaxed">{crm.vettingNotes}</p>
-              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center flex-1 text-center px-8">
+              <svg className="w-8 h-8 text-muted mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+              <p className="font-sans text-sm text-muted">No address on file</p>
             </div>
           )}
         </div>
+
       </div>
     </div>
   )
@@ -844,7 +866,7 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, s
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export function CrematoriumsPage({ onAddPartner }) {
+export function CrematoriumsPage({ onAddPartner, cases = [], onViewCase }) {
   const { user } = useAuth()
   const [tab, setTab] = useState('partners')
   const [crematoriums, setCrematoriums] = useState([])
@@ -927,9 +949,11 @@ export function CrematoriumsPage({ onAddPartner }) {
         {disconnecting && <DisconnectModal crm={disconnecting} onConfirm={handleDisconnected} onClose={() => setDisconnecting(null)} />}
         <PartnerDetailPage
           crm={selectedPartner}
+          cases={cases}
           onBack={() => setSelectedPartner(null)}
           onEdit={setEditing}
           onRemove={crm => { setDisconnecting(crm) }}
+          onViewCase={onViewCase}
         />
       </>
     )

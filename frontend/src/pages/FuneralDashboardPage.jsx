@@ -154,7 +154,7 @@ export function FuneralDashboardPage() {
           onStatusChange={handleCaseStatusChange}
         />
       ) : view === 'crematoriums' ? (
-        <CrematoriumsPage onAddPartner={() => setView('new-crematorium')} />
+        <CrematoriumsPage onAddPartner={() => setView('new-crematorium')} cases={cases} onViewCase={viewCase} />
       ) : (
       <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
 
