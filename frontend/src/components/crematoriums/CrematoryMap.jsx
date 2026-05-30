@@ -1,30 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Loader } from '@googlemaps/js-api-loader'
+import { PASSAGE_MAP_STYLE } from '../../lib/mapStyles.js'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
-
-// ── Passage dark map style ─────────────────────────────────────────────────────
-const PASSAGE_MAP_STYLE = [
-  // Declutter — keep Google's base colors, strip noise
-  { featureType: 'administrative', elementType: 'geometry', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { featureType: 'road.local', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-  { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  // Slightly lighten roads for a cleaner, modern feel
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ lightness: 20 }, { saturation: -30 }] },
-  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ lightness: 10 }] },
-  // Refine water to a cooler, more modern blue
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#a0c4d8' }, { lightness: 5 }] },
-  // Subtle label tone to match DM Sans weight — charcoal-adjacent
-  { elementType: 'labels.text.fill', stylers: [{ color: '#3a3a3a' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }, { weight: 2 }] },
-]
 
 // Pin colors
 const PIN_GOLD   = '#c9a96e'  // Passage network
@@ -58,9 +37,10 @@ function makeMarkerIcon(google, color, size = 28) {
 
 // ── Sidebar list item ─────────────────────────────────────────────────────────
 
-function SidebarItem({ crematory, active, onClick }) {
+function SidebarItem({ crematory, active, onClick, id }) {
   return (
     <button
+      id={id}
       onClick={onClick}
       className={[
         'w-full text-left px-4 py-3 border-b border-line transition-colors',
@@ -100,12 +80,11 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
   const mapRef      = useRef(null)
   const googleRef   = useRef(null)
   const mapInstance = useRef(null)
-  const markersRef  = useRef([])
+  const markersRef  = useRef(new Map())
   const infoRef     = useRef(null)
   const fhMarkerRef = useRef(null)
 
   const [crematories, setCrematories]     = useState([])
-  const [filtered, setFiltered]           = useState([])
   const [loading, setLoading]             = useState(true)
   const [error, setError]                 = useState(null)
   const [activeId, setActiveId]           = useState(null)
@@ -129,7 +108,6 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
       .then(r => { if (!r.ok) throw new Error('Failed to load crematoriums'); return r.json() })
       .then(data => {
         setCrematories(data)
-        setFiltered(data)
         setLoading(false)
       })
       .catch(err => {
@@ -204,7 +182,7 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
 
     // Clear old markers
     markersRef.current.forEach(m => m.setMap(null))
-    markersRef.current = []
+    markersRef.current.clear()
 
     const google = googleRef.current
     const bounds = new google.maps.LatLngBounds()
@@ -221,7 +199,7 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
       })
 
       marker.addListener('click', () => openInfoWindow(crematory, marker))
-      markersRef.current.push(marker)
+      markersRef.current.set(crematory.id, marker)
       bounds.extend({ lat: crematory.lat, lng: crematory.lng })
     })
 
@@ -305,24 +283,21 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
             <div className="flex items-center justify-center h-32 text-muted font-sans text-sm">No results</div>
           )}
           {!loading && !error && crematories.map(crm => (
-            <div key={crm.id} id={`crm-item-${crm.id}`}>
-              <SidebarItem
-                crematory={crm}
-                active={activeId === crm.id}
-                onClick={() => {
-                  setActiveId(crm.id)
-                  if (mapInstance.current && crm.lat && crm.lng) {
-                    mapInstance.current.panTo({ lat: crm.lat, lng: crm.lng })
-                    mapInstance.current.setZoom(13)
-                  }
-                  const marker = markersRef.current.find(
-                    m => Math.abs(m.getPosition().lat() - crm.lat) < 0.0001
-                       && Math.abs(m.getPosition().lng() - crm.lng) < 0.0001
-                  )
-                  if (marker) openInfoWindow(crm, marker)
-                }}
-              />
-            </div>
+            <SidebarItem
+              key={crm.id}
+              id={`crm-item-${crm.id}`}
+              crematory={crm}
+              active={activeId === crm.id}
+              onClick={() => {
+                setActiveId(crm.id)
+                if (mapInstance.current && crm.lat && crm.lng) {
+                  mapInstance.current.panTo({ lat: crm.lat, lng: crm.lng })
+                  mapInstance.current.setZoom(13)
+                }
+                const marker = markersRef.current.get(crm.id)
+                if (marker) openInfoWindow(crm, marker)
+              }}
+            />
           ))}
         </div>
       </div>

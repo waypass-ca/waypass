@@ -121,19 +121,27 @@ async function main() {
 
           const { data: existing } = await supabase
             .from('crematoriums_db')
-            .select('id')
+            .select('id, opening_hours')
             .eq('google_place_id', place.place_id)
             .single()
 
           if (existing) {
-            // Update rating + last_verified (rating can drift; hours fetched for new records only)
+            const patch = {
+              last_verified_at:   new Date().toISOString(),
+              needs_review:       false,
+              rating:             place.rating ?? null,
+              user_ratings_total: place.user_ratings_total ?? null,
+            }
+            // Backfill hours for records that were seeded without them
+            if (!existing.opening_hours) {
+              await sleep(DELAY_MS)
+              const details = await fetchDetails(place.place_id)
+              if (details.openingHours) patch.opening_hours = details.openingHours
+              if (details.phone)        patch.phone         = details.phone
+              if (details.website)      patch.website       = details.website
+            }
             await supabase.from('crematoriums_db')
-              .update({
-                last_verified_at:   new Date().toISOString(),
-                needs_review:       false,
-                rating:             place.rating ?? null,
-                user_ratings_total: place.user_ratings_total ?? null,
-              })
+              .update(patch)
               .eq('google_place_id', place.place_id)
             updated++
           } else {

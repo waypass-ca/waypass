@@ -3,33 +3,11 @@ import {
   fetchCrematoriums, createCrematorium, updateCrematorium,
   disconnectCrematorium, fetchNearbyCrematoriums, loadMapsLib,
 } from '../../lib/api.js'
+import { PASSAGE_MAP_STYLE } from '../../lib/mapStyles.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { PageTitle } from '../layout/PageTitle'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
-
-// ── Passage map style ─────────────────────────────────────────────────────────
-
-const PASSAGE_MAP_STYLE = [
-  // Declutter — keep Google's base colors, strip noise
-  { featureType: 'administrative', elementType: 'geometry', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
-  { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { featureType: 'road.local', elementType: 'labels', stylers: [{ visibility: 'off' }] },
-  { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  // Slightly lighten roads for a cleaner, modern feel
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ lightness: 20 }, { saturation: -30 }] },
-  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ lightness: 10 }] },
-  // Refine water to a cooler, more modern blue
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#a0c4d8' }, { lightness: 5 }] },
-  // Subtle label tone to match DM Sans weight — charcoal-adjacent
-  { elementType: 'labels.text.fill', stylers: [{ color: '#3a3a3a' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }, { weight: 2 }] },
-]
 
 function makeMarkerIcon(onPassage, active = false) {
   const fill  = active
@@ -214,15 +192,6 @@ function PartnerListRow({ crm, selected, onClick }) {
 }
 
 // ── PartnerPreview ────────────────────────────────────────────────────────────
-
-function PreviewSection({ title, children }) {
-  return (
-    <div className="px-6 py-5 border-b border-line last:border-b-0">
-      <p className="font-sans text-[9px] uppercase tracking-widest text-muted mb-3">{title}</p>
-      {children}
-    </div>
-  )
-}
 
 function ContactLine({ icon, value, href }) {
   if (!value) return null
@@ -450,6 +419,7 @@ function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerClick, o
   const mapRef = useRef(null)
   const markerMapRef = useRef({})
   const infoWindowRef = useRef(null)
+  const iconsRef = useRef(null)
   const [mapReady, setMapReady] = useState(false)
 
   useEffect(() => {
@@ -466,6 +436,10 @@ function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerClick, o
         gestureHandling: 'cooperative',
       })
       mapRef.current.addListener('click', () => onMapClick?.())
+      iconsRef.current = {
+        passage: { normal: makeMarkerIcon(true, false), active: makeMarkerIcon(true, true) },
+        plain:   { normal: makeMarkerIcon(false, false), active: makeMarkerIcon(false, true) },
+      }
       setMapReady(true)
       clearInterval(interval)
     }
@@ -493,10 +467,11 @@ function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerClick, o
       bounds.extend(pos)
       hasPoints = true
 
+      const icons = iconsRef.current?.[crm.onPassage ? 'passage' : 'plain']
       const marker = new window.google.maps.Marker({
         position: pos,
         map: mapRef.current,
-        icon: makeMarkerIcon(crm.onPassage, false),
+        icon: icons?.normal,
       })
 
       const photoHtml = crm.photos?.[0]
@@ -551,7 +526,8 @@ function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerClick, o
     if (!mapReady) return
     Object.entries(markerMapRef.current).forEach(([id, { marker, onPassage }]) => {
       const highlighted = id === hoveredId || id === selectedId
-      marker.setIcon(makeMarkerIcon(onPassage, highlighted))
+      const icons = iconsRef.current?.[onPassage ? 'passage' : 'plain']
+      marker.setIcon(highlighted ? icons?.active : icons?.normal)
       marker.setZIndex(highlighted ? 999 : 1)
     })
   }, [hoveredId, selectedId, mapReady])
@@ -717,7 +693,7 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, s
   const clickTimerRef = useRef(null)
 
   // Trigger Maps SDK load as soon as this panel mounts
-  useEffect(() => { loadMapsLib().catch(() => {}) }, [])
+  useEffect(() => { loadMapsLib().catch(err => console.error('Maps SDK failed to load:', err)) }, [])
 
   const filtered = search
     ? nearby.filter(c =>
