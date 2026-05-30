@@ -132,6 +132,79 @@ function EditModal({ crm, onSave, onClose }) {
   )
 }
 
+// ── Add Partner Modal ─────────────────────────────────────────────────────────
+
+function AddPartnerModal({ crm, onConfirm, onClose }) {
+  const address = [crm.streetAddress, crm.city, crm.state, crm.zip].filter(Boolean).join(', ') || crm.location || ''
+  const [form, setForm] = useState({
+    name: crm.name ?? '',
+    location: address,
+    contactName: '',
+    contactEmail: '',
+    phone: crm.phone ?? '',
+    website: crm.website ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const set = key => v => setForm(p => ({ ...p, [key]: v }))
+
+  async function handleSave() {
+    setSaving(true); setError(null)
+    try {
+      await onConfirm({
+        ...crm,
+        name: form.name,
+        location: form.location,
+        contactName: form.contactName || null,
+        contactEmail: form.contactEmail || null,
+        phone: form.phone || null,
+        website: form.website || null,
+      })
+    } catch (err) { setError(err.message); setSaving(false) }
+  }
+
+  const missing = [
+    !form.contactName && 'Contact name',
+    !form.contactEmail && 'Email',
+    !form.phone && 'Phone',
+  ].filter(Boolean)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm px-4">
+      <div className="bg-surface rounded-2xl border border-line w-full max-w-lg shadow-xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-line flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-xl text-ink">Add Partner</h2>
+            {missing.length > 0 && (
+              <p className="font-sans text-xs text-muted mt-0.5">
+                Missing: {missing.join(', ')}
+              </p>
+            )}
+          </div>
+          <button onClick={onClose} className="text-muted hover:text-ink transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2"><InputField label="Name" placeholder="Crematorium name" value={form.name} onChange={set('name')} /></div>
+            <div className="col-span-2"><InputField label="Location" placeholder="City, Province" value={form.location} onChange={set('location')} /></div>
+            <InputField label="Contact Name" placeholder="e.g. John Smith" value={form.contactName} onChange={set('contactName')} />
+            <InputField label="Contact Email" type="email" placeholder="email@example.com" value={form.contactEmail} onChange={set('contactEmail')} />
+            <InputField label="Phone" type="tel" placeholder="(415) 555-0100" value={form.phone} onChange={set('phone')} />
+            <InputField label="Website" placeholder="https://…" value={form.website} onChange={set('website')} />
+          </div>
+          {error && <p className="font-sans text-xs text-danger">{error}</p>}
+        </div>
+        <div className="px-6 py-4 border-t border-line flex justify-end gap-2">
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" onClick={handleSave} disabled={saving || !form.name.trim()}>{saving ? 'Adding…' : 'Add Partner'}</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Disconnect Modal ──────────────────────────────────────────────────────────
 
 function DisconnectModal({ crm, onConfirm, onClose }) {
@@ -367,21 +440,19 @@ function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCase, onSa
         <div className="flex-1 bg-white border-r border-line flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto">
 
-            {!isEditing && <InfoSection title="Recent Cases" flush>
+            {!isEditing && <InfoSection title="Recent Cases">
               {recentCases.length === 0 ? (
-                <p className="font-sans text-[13px] text-muted px-5 py-2">No cases with this partner yet.</p>
+                <p className="font-sans text-[13px] text-muted py-1">No cases with this partner yet.</p>
               ) : (
-                <div>
+                <div className="rounded-lg border border-line bg-surface overflow-hidden">
                   {recentCases.map(c => (
                     <button
                       key={c.id}
                       onClick={() => onViewCase?.(c.id)}
-                      className="w-full text-left flex items-center justify-between px-5 py-2.5 border-t border-line hover:bg-canvas/60 transition-colors"
+                      className="w-full text-left flex items-center justify-between px-4 py-2.5 border-b border-line last:border-0 hover:bg-canvas/60 transition-colors"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <p className="font-sans text-[13px] text-ink truncate">{c.deceased}</p>
-                        {c.date && <span className="font-sans text-[11.5px] text-muted flex-shrink-0">· {c.date}</span>}
-                      </div>
+                      <p className="font-sans text-[13px] text-ink truncate">{c.deceased}</p>
+                      {c.date && <span className="font-sans text-[11.5px] text-muted flex-shrink-0 ml-2">{c.date}</span>}
                     </button>
                   ))}
                 </div>
@@ -746,7 +817,7 @@ function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerClick, o
 
 // ── DetailModal ───────────────────────────────────────────────────────────────
 
-function DetailModal({ crm, onAdd, addingId, onClose }) {
+function DetailModal({ crm, onAdd, onClose }) {
   const [photoIdx, setPhotoIdx] = useState(0)
   const hasPhotos = crm.photos?.length > 0
 
@@ -844,9 +915,9 @@ function DetailModal({ crm, onAdd, addingId, onClose }) {
         </div>
 
         <div className="px-6 py-4 border-t border-line bg-canvas">
-          <button onClick={() => { onAdd(crm); onClose() }} disabled={addingId === crm.id}
-            className="w-full bg-primary text-white font-sans text-sm font-semibold rounded-xl py-3 hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer">
-            {addingId === crm.id ? 'Adding…' : '+ Add to Partners'}
+          <button onClick={() => { onAdd(crm); onClose() }}
+            className="w-full bg-primary text-white font-sans text-sm font-semibold rounded-xl py-3 hover:opacity-90 transition-opacity cursor-pointer">
+            + Add to Partners
           </button>
         </div>
       </div>
@@ -856,7 +927,7 @@ function DetailModal({ crm, onAdd, addingId, onClose }) {
 
 // ── NearbyDiscovery — split panel ─────────────────────────────────────────────
 
-function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, search, setSearch, onAdd, addingId }) {
+function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, search, setSearch, onAdd }) {
   const [hoveredId, setHoveredId] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [detailCrm, setDetailCrm] = useState(null)
@@ -896,7 +967,7 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, s
   return (
     <div className="flex flex-col flex-1 min-h-0">
       {detailCrm && (
-        <DetailModal crm={detailCrm} onAdd={onAdd} addingId={addingId} onClose={() => setDetailCrm(null)} />
+        <DetailModal crm={detailCrm} onAdd={onAdd} onClose={() => setDetailCrm(null)} />
       )}
 
       <div className="flex flex-1 min-h-0 overflow-hidden border-b border-line">
@@ -1012,7 +1083,7 @@ export function CrematoriumsPage({ onAddPartner, cases = [], onViewCase }) {
   const [locationError, setLocationError] = useState(false)
   const [editing, setEditing] = useState(null)
   const [disconnecting, setDisconnecting] = useState(null)
-  const [addingId, setAddingId] = useState(null)
+  const [addingCrm, setAddingCrm] = useState(null)
   const [selectedPartner, setSelectedPartner] = useState(null)
 
   useEffect(() => {
@@ -1051,22 +1122,29 @@ export function CrematoriumsPage({ onAddPartner, cases = [], onViewCase }) {
     if (selectedPartner?.id === id) setSelectedPartner(null)
   }
 
-  async function handleAdd(crm) {
-    setAddingId(crm.id)
-    try {
-      const created = await createCrematorium({
-        name: crm.name, location: crm.location, streetAddress: crm.streetAddress,
-        city: crm.city, state: crm.state, zip: crm.zip, phone: crm.phone,
-        website: crm.website, rating: crm.rating, userRatingCount: crm.userRatingCount,
-        weekdayDescriptions: crm.weekdayDescriptions,
-      })
-      setCrematoriums(prev => [...prev, created])
-      setNearby(prev => prev.filter(n => n.id !== crm.id))
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setAddingId(null)
-    }
+  function handleAdd(crm) {
+    setAddingCrm(crm)
+  }
+
+  async function handleConfirmAdd(enriched) {
+    const created = await createCrematorium({
+      name: enriched.name,
+      location: enriched.location,
+      streetAddress: enriched.streetAddress,
+      city: enriched.city,
+      state: enriched.state,
+      zip: enriched.zip,
+      phone: enriched.phone,
+      website: enriched.website,
+      contactName: enriched.contactName,
+      contactEmail: enriched.contactEmail,
+      rating: enriched.rating,
+      userRatingCount: enriched.userRatingCount,
+      weekdayDescriptions: enriched.weekdayDescriptions,
+    })
+    setCrematoriums(prev => [...prev, created])
+    setNearby(prev => prev.filter(n => n.id !== enriched.id))
+    setAddingCrm(null)
   }
 
   if (loading) return (
@@ -1098,6 +1176,7 @@ export function CrematoriumsPage({ onAddPartner, cases = [], onViewCase }) {
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {editing && <EditModal crm={editing} onSave={handleSaved} onClose={() => setEditing(null)} />}
       {disconnecting && <DisconnectModal crm={disconnecting} onConfirm={handleDisconnected} onClose={() => setDisconnecting(null)} />}
+      {addingCrm && <AddPartnerModal crm={addingCrm} onConfirm={handleConfirmAdd} onClose={() => setAddingCrm(null)} />}
 
       {/* Header — matches CasesPage two-row layout */}
       <div className="border-b border-line bg-surface/80 backdrop-blur shrink-0 relative z-10">
@@ -1167,7 +1246,6 @@ export function CrematoriumsPage({ onAddPartner, cases = [], onViewCase }) {
             search={search}
             setSearch={setSearch}
             onAdd={handleAdd}
-            addingId={addingId}
           />
           <footer className="flex-shrink-0 bg-surface border-t border-line px-6 py-5 flex items-center justify-between gap-4">
             <div>
