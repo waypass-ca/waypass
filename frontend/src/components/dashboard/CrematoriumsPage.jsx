@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import { PageTitle } from '../layout/PageTitle'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
+import { Search, ChevronLeft } from 'lucide-react'
 
 function makeMarkerIcon(onPassage, active = false) {
   const fill  = active
@@ -15,17 +16,14 @@ function makeMarkerIcon(onPassage, active = false) {
     : (onPassage ? '#5a7060' : '#4A72B8')
   const ring  = 'white'
 
-  // Normal 28×38, active 34×46
   const w  = active ? 34 : 28
   const h  = active ? 46 : 38
   const cx = w / 2
 
-  // Paths hand-tuned for clean modern proportions
   const path = active
     ? `M17 1C8.72 1 2 7.72 2 16c0 10.8 15 29 15 29S32 26.8 32 16C32 7.72 25.28 1 17 1z`
     : `M14 1C7.37 1 2 6.37 2 13c0 8.8 12 24 12 24S26 21.8 26 13C26 6.37 20.63 1 14 1z`
 
-  // Donut: white outer ring + fill-colored inner dot
   const [ringCy, ringR, dotR] = active
     ? [15, 6.5, 3]
     : [12.5, 5.5, 2.5]
@@ -171,27 +169,30 @@ function DisconnectModal({ crm, onConfirm, onClose }) {
   )
 }
 
-// ── PartnerListRow ────────────────────────────────────────────────────────────
+// ── StarRating ────────────────────────────────────────────────────────────────
 
-function PartnerListRow({ crm, selected, onClick }) {
-  const isActive = crm.status === 'active'
+function StarRating({ rating, small = false }) {
+  const size = small ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left px-4 py-3.5 border-b border-line transition-colors border-l-2 ${
-        selected ? 'bg-canvas border-l-ink' : 'border-l-transparent hover:bg-canvas/50'
-      }`}
-    >
-      <p className="font-sans font-semibold text-xs text-ink leading-snug truncate mb-0.5">{crm.name}</p>
-      <p className="font-sans text-[11px] text-muted truncate">{crm.location || '—'}</p>
-      {crm.activeOrders > 0 && (
-        <p className="font-sans text-[10px] text-primary mt-0.5">{crm.activeOrders} active order{crm.activeOrders !== 1 ? 's' : ''}</p>
-      )}
-    </button>
+    <span className="flex items-center gap-px">
+      {[1, 2, 3, 4, 5].map(i => {
+        const filled = i <= Math.floor(rating)
+        const half = !filled && i - 0.5 <= rating
+        return (
+          <svg key={i} className={`${size} flex-shrink-0`} viewBox="0 0 20 20">
+            <defs>
+              <linearGradient id={`h${i}`}><stop offset="50%" stopColor="#F4B942" /><stop offset="50%" stopColor="#d1d5db" /></linearGradient>
+            </defs>
+            <path fill={filled ? '#F4B942' : half ? `url(#h${i})` : '#d1d5db'}
+              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+        )
+      })}
+    </span>
   )
 }
 
-// ── PartnerPreview ────────────────────────────────────────────────────────────
+// ── Contact line (used in detail page) ───────────────────────────────────────
 
 function ContactLine({ icon, value, href }) {
   if (!value) return null
@@ -208,22 +209,31 @@ function ContactLine({ icon, value, href }) {
     : <div>{content}</div>
 }
 
-function PartnerPreview({ crm, onEdit, onRemove }) {
+// ── PartnerDetailPage ─────────────────────────────────────────────────────────
+
+function PartnerDetailPage({ crm, onBack, onEdit, onRemove }) {
   const isActive = crm.status === 'active'
   const mapQuery = encodeURIComponent(
     [crm.streetAddress, crm.city, crm.state].filter(Boolean).join(', ') || crm.location || ''
   )
 
   return (
-    <div className="flex flex-col h-full">
-
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Header */}
-      <div className={`flex-shrink-0 px-7 py-5 border-b border-line ${isActive ? 'bg-primary-light/20' : 'bg-canvas'}`}>
-        <div className="flex items-center justify-between gap-4">
+      <div className="flex-shrink-0 bg-surface/80 backdrop-blur border-b border-line px-6 pt-5 pb-4 relative z-10">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 font-sans text-[12.5px] text-muted hover:text-ink transition-colors mb-3 cursor-pointer"
+        >
+          <ChevronLeft size={14} />
+          Partners
+        </button>
+        <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="font-display text-2xl text-ink leading-tight">{crm.name}</h2>
-            <div className="flex items-center gap-2 mt-1">
+            <h1 className="font-display text-3xl text-ink leading-tight">{crm.name}</h1>
+            <div className="flex items-center gap-2 mt-1.5">
               <Badge variant={isActive ? 'primary' : 'red'}>{isActive ? 'Active' : 'Inactive'}</Badge>
+              {crm.location && <span className="font-sans text-xs text-muted">{crm.location}</span>}
               {crm.rating != null && (
                 <>
                   <span className="font-sans text-xs font-bold text-ink">{crm.rating.toFixed(1)}</span>
@@ -232,7 +242,7 @@ function PartnerPreview({ crm, onEdit, onRemove }) {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 mt-1">
             <button onClick={() => onEdit(crm)}
               className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-ink hover:bg-surface transition-colors">
               Edit
@@ -246,79 +256,78 @@ function PartnerPreview({ crm, onEdit, onRemove }) {
       </div>
 
       {/* Body */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto bg-canvas">
+        <div className="max-w-3xl mx-auto px-6 py-6 space-y-6">
 
-        {/* Details — performance + contact */}
-        <div className="px-6 py-5">
-          <div className="grid grid-cols-4 gap-3 mb-5">
+          {/* Stats row */}
+          <div className="grid grid-cols-4 gap-3">
             {[
               { label: 'Active Orders', value: crm.activeOrders },
               { label: 'Completed YTD', value: crm.completedYTD },
               { label: 'Avg Turnaround', value: crm.avgTurnaround },
               { label: 'Avg Fee', value: crm.avgFee },
             ].map(s => (
-              <div key={s.label} className="bg-canvas rounded-xl border border-line px-4 py-3.5">
+              <div key={s.label} className="bg-surface rounded-xl border border-line px-4 py-3.5">
                 <p className="font-display text-2xl text-ink leading-none mb-1.5">{s.value ?? '—'}</p>
                 <p className="font-sans text-[9px] uppercase tracking-wide text-muted">{s.label}</p>
               </div>
             ))}
           </div>
-          <p className="font-sans text-[9px] uppercase tracking-widest text-muted mb-3">Contact</p>
-          <div className="space-y-2">
-            <ContactLine
-              icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
-              value={crm.contactName}
-            />
-            <ContactLine
-              icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>}
-              value={crm.phone}
-              href={crm.phone ? `tel:${crm.phone}` : null}
-            />
-            <ContactLine
-              icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
-              value={crm.contactEmail}
-              href={crm.contactEmail ? `mailto:${crm.contactEmail}` : null}
-            />
-            <ContactLine
-              icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>}
-              value={crm.website ? crm.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') : null}
-              href={crm.website ?? null}
-            />
-            {!crm.contactName && !crm.phone && !crm.contactEmail && !crm.website && (
-              <p className="font-sans text-xs text-muted/60 italic">No contact on file</p>
-            )}
-          </div>
-        </div>
 
-        {/* Hours (plain) + Location+Map card side by side */}
-        <div className="px-6 py-5 flex gap-5">
-
-          {/* Hours — plain, no card; hidden when no data */}
-          {crm.weekdayDescriptions?.length > 0 && (
-            <div className="w-44 flex-shrink-0">
-              <p className="font-sans text-[9px] uppercase tracking-wide text-muted mb-2.5">Hours</p>
-              <div className="space-y-0.5">
-                {crm.weekdayDescriptions.map((d, i) => (
-                  <p key={i} className="font-sans text-[11px] text-muted leading-relaxed">{d}</p>
-                ))}
-                <p className="font-sans text-[10px] text-muted/50 italic mt-2">Hours may vary on holidays.</p>
-              </div>
+          {/* Contact */}
+          <div className="bg-surface rounded-xl border border-line p-5">
+            <p className="font-sans text-[9px] uppercase tracking-widest text-muted mb-3">Contact</p>
+            <div className="space-y-2">
+              <ContactLine
+                icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>}
+                value={crm.contactName}
+              />
+              <ContactLine
+                icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>}
+                value={crm.phone}
+                href={crm.phone ? `tel:${crm.phone}` : null}
+              />
+              <ContactLine
+                icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+                value={crm.contactEmail}
+                href={crm.contactEmail ? `mailto:${crm.contactEmail}` : null}
+              />
+              <ContactLine
+                icon={<svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>}
+                value={crm.website ? crm.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') : null}
+                href={crm.website ?? null}
+              />
+              {!crm.contactName && !crm.phone && !crm.contactEmail && !crm.website && (
+                <p className="font-sans text-xs text-muted/60 italic">No contact on file</p>
+              )}
             </div>
-          )}
+          </div>
 
-          {/* Map card — fills remaining space */}
-          <div className="flex-1 bg-surface rounded-xl border border-line overflow-hidden">
-            <div className="aspect-square w-full">
+          {/* Hours + Map */}
+          <div className="flex gap-5">
+            {crm.weekdayDescriptions?.length > 0 && (
+              <div className="bg-surface rounded-xl border border-line p-5 w-52 flex-shrink-0">
+                <p className="font-sans text-[9px] uppercase tracking-wide text-muted mb-2.5">Hours</p>
+                <div className="space-y-0.5">
+                  {crm.weekdayDescriptions.map((d, i) => (
+                    <p key={i} className="font-sans text-[11px] text-muted leading-relaxed">{d}</p>
+                  ))}
+                  <p className="font-sans text-[10px] text-muted/50 italic mt-2">Hours may vary on holidays.</p>
+                </div>
+              </div>
+            )}
+            <div className="flex-1 bg-surface rounded-xl border border-line overflow-hidden" style={{ minHeight: 200 }}>
               {mapQuery ? (
                 <iframe
                   title={`Map — ${crm.name}`}
                   src={`https://maps.google.com/maps?q=${mapQuery}&output=embed&hl=en`}
                   className="w-full h-full border-0"
+                  style={{ minHeight: 200 }}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                 />
               ) : (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex items-center justify-center h-full" style={{ minHeight: 200 }}>
                   <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
@@ -327,11 +336,9 @@ function PartnerPreview({ crm, onEdit, onRemove }) {
               )}
             </div>
           </div>
-        </div>
 
-        {(crm.licenseNumber || crm.vettingNotes) && (
-          <div className="px-6 pb-5">
-            <div className="bg-surface rounded-xl border border-line p-4">
+          {(crm.licenseNumber || crm.vettingNotes) && (
+            <div className="bg-surface rounded-xl border border-line p-5">
               <p className="font-sans text-[9px] uppercase tracking-wide text-muted mb-2">Notes</p>
               {crm.licenseNumber && (
                 <p className="font-sans text-xs text-muted mb-1">License: {crm.licenseNumber}</p>
@@ -340,73 +347,107 @@ function PartnerPreview({ crm, onEdit, onRemove }) {
                 <p className="font-sans text-xs text-muted leading-relaxed">{crm.vettingNotes}</p>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
 }
 
-// ── YourPartnersTab ───────────────────────────────────────────────────────────
+// ── PartnerRow (list row) ─────────────────────────────────────────────────────
 
-function YourPartnersTab({ crematoriums, onEdit, onRemove }) {
-  const [selectedId, setSelectedId] = useState(() => crematoriums[0]?.id ?? null)
-  const [search, setSearch] = useState('')
+function PartnerRow({ crm, onClick }) {
+  const isActive = crm.status === 'active'
+  return (
+    <tr
+      onClick={onClick}
+      className="border-b border-line cursor-pointer group transition-colors hover:bg-canvas/40"
+    >
+      {/* Name · Location */}
+      <td className="px-3 py-3 align-middle">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="font-sans text-[13.5px] font-medium text-ink truncate">{crm.name}</span>
+        </div>
+      </td>
+      <td className="px-3 py-2.5 align-middle">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {crm.location && (
+              <span className="font-sans text-[12px] text-muted truncate">{crm.location}</span>
+          )}
+        </div>
+      </td>
 
+      {/* Status */}
+      <td className="px-3 py-2.5 align-middle">
+        <Badge variant={isActive ? 'primary' : 'red'}>{isActive ? 'Active' : 'Inactive'}</Badge>
+      </td>
+    </tr>
+  )
+}
+
+// ── PartnersList ──────────────────────────────────────────────────────────────
+
+function PartnersList({ crematoriums, search, onSelect }) {
   const filtered = crematoriums.filter(c =>
     !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.location ?? '').toLowerCase().includes(search.toLowerCase())
   )
-  const selected = crematoriums.find(c => c.id === selectedId) ?? null
+
+  if (crematoriums.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center flex-1 text-center px-8">
+        <div className="w-12 h-12 rounded-full bg-canvas border border-line flex items-center justify-center mb-4">
+          <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+        </div>
+        <p className="font-sans text-sm font-medium text-ink">No partners yet</p>
+        <p className="font-sans text-xs text-muted mt-1">Use Find a Partner to discover and add crematoriums.</p>
+      </div>
+    )
+  }
+
+  const Th = ({ children, className = '' }) => (
+    <th className={`font-sans text-[10.5px] uppercase tracking-[0.08em] text-muted font-medium text-left px-3 py-2.5 ${className}`}>{children}</th>
+  )
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden bg-surface">
-      {/* Left list */}
-      <div className="w-72 flex-shrink-0 flex flex-col border-r border-line h-full">
-        <div className="flex-shrink-0 p-3 border-b border-line">
-          <div className="relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input type="text" placeholder="Search partners…" value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full bg-canvas border border-line rounded-lg pl-8 pr-3 py-2 font-sans text-xs text-ink placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-ink/20" />
+    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
+        <div className="bg-white overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full" style={{ minWidth: 400 }}>
+              <thead className="bg-white border-b border-line">
+                <tr>
+                  <Th>Name</Th>
+                  <Th>Location</Th>
+                  <Th>Status</Th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-6 py-16 text-center">
+                      <p className="font-display text-[17px] text-secondary">No results</p>
+                      <p className="font-sans text-[12px] text-muted mt-1">Try a different search.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map(crm => (
+                    <PartnerRow key={crm.id} crm={crm} onClick={() => onSelect(crm)} />
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {filtered.length === 0 ? (
-            <div className="flex items-center justify-center h-full px-6 text-center">
-              <p className="font-sans text-sm text-muted">{crematoriums.length === 0 ? 'No partners yet.' : 'No results.'}</p>
-            </div>
-          ) : (
-            filtered.map(crm => (
-              <PartnerListRow
-                key={crm.id}
-                crm={crm}
-                selected={selectedId === crm.id}
-                onClick={() => setSelectedId(crm.id)}
-              />
-            ))
-          )}
-        </div>
-        <div className="flex-shrink-0 px-4 py-2 border-t border-line bg-canvas">
-          <p className="font-sans text-[11px] text-muted">{crematoriums.length} partner{crematoriums.length !== 1 ? 's' : ''}</p>
         </div>
       </div>
 
-      {/* Right preview */}
-      <div className="flex-1 min-w-0 overflow-hidden">
-        {selected ? (
-          <PartnerPreview crm={selected} onEdit={onEdit} onRemove={onRemove} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center px-8">
-            <div className="w-12 h-12 rounded-full bg-canvas border border-line flex items-center justify-center mb-4">
-              <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            <p className="font-sans text-sm font-medium text-ink">Select a partner</p>
-            <p className="font-sans text-xs text-muted mt-1">Choose a crematorium from the list to view its details</p>
-          </div>
-        )}
+      {/* Footer count */}
+      <div className="flex-shrink-0 px-6 py-2.5 border-t border-line">
+        <p className="font-sans text-[11px] text-muted">
+          {filtered.length} of {crematoriums.length} partner{crematoriums.length !== 1 ? 's' : ''}
+        </p>
       </div>
     </div>
   )
@@ -521,7 +562,6 @@ function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerClick, o
     }
   }, [nearby, mapReady])
 
-  // Hover — update icons only
   useEffect(() => {
     if (!mapReady) return
     Object.entries(markerMapRef.current).forEach(([id, { marker, onPassage }]) => {
@@ -532,7 +572,6 @@ function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerClick, o
     })
   }, [hoveredId, selectedId, mapReady])
 
-  // Click — open info window + pan
   useEffect(() => {
     if (!mapReady) return
     if (selectedId != null) {
@@ -547,29 +586,6 @@ function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerClick, o
   }, [selectedId, mapReady])
 
   return <div ref={containerRef} className="w-full h-full" />
-}
-
-// ── StarRating ────────────────────────────────────────────────────────────────
-
-function StarRating({ rating, small = false }) {
-  const size = small ? 'w-2.5 h-2.5' : 'w-3.5 h-3.5'
-  return (
-    <span className="flex items-center gap-px">
-      {[1, 2, 3, 4, 5].map(i => {
-        const filled = i <= Math.floor(rating)
-        const half = !filled && i - 0.5 <= rating
-        return (
-          <svg key={i} className={`${size} flex-shrink-0`} viewBox="0 0 20 20">
-            <defs>
-              <linearGradient id={`h${i}`}><stop offset="50%" stopColor="#F4B942" /><stop offset="50%" stopColor="#d1d5db" /></linearGradient>
-            </defs>
-            <path fill={filled ? '#F4B942' : half ? `url(#h${i})` : '#d1d5db'}
-              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-        )
-      })}
-    </span>
-  )
 }
 
 // ── DetailModal ───────────────────────────────────────────────────────────────
@@ -601,7 +617,7 @@ function DetailModal({ crm, onAdd, addingId, onClose }) {
                       className={`w-1.5 h-1.5 rounded-full transition-colors ${i === photoIdx ? 'bg-white' : 'bg-white/40'}`} />
                   ))}
                 </div>
-            </>
+              </>
             )}
             <button onClick={onClose}
               className="absolute top-3 right-3 w-8 h-8 rounded-full bg-ink/40 hover:bg-ink/60 text-white flex items-center justify-center transition-colors">
@@ -692,7 +708,6 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, s
   const itemRefs = useRef({})
   const clickTimerRef = useRef(null)
 
-  // Trigger Maps SDK load as soon as this panel mounts
   useEffect(() => { loadMapsLib().catch(err => console.error('Maps SDK failed to load:', err)) }, [])
 
   const filtered = search
@@ -728,30 +743,11 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, s
         <DetailModal crm={detailCrm} onAdd={onAdd} addingId={addingId} onClose={() => setDetailCrm(null)} />
       )}
 
-      {/* Split panel — fills remaining height */}
       <div className="flex flex-1 min-h-0 overflow-hidden border-b border-line">
 
         {/* ── Left: list ─────────────────────────────────────────────────── */}
         <div className="w-[300px] flex-shrink-0 flex flex-col bg-surface border-r border-line">
 
-          {/* Search */}
-          <div className="flex-shrink-0 p-3 border-b border-line">
-            <div className="relative">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              <input type="text" placeholder="Search nearby…" value={search} onChange={e => setSearch(e.target.value)}
-                className="w-full bg-canvas border border-line rounded-lg pl-8 pr-7 py-2 font-sans text-xs text-ink placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-ink/20" />
-              {search && (
-                <button onClick={() => setSearch('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-muted hover:text-ink transition-colors">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Results */}
           <div ref={listRef} className="flex-1 overflow-y-auto">
             {nearbyLoading ? (
               <div className="flex items-center justify-center h-full">
@@ -787,11 +783,7 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, s
                     selectedId === crm.id ? 'bg-canvas border-l-ink' : 'border-l-transparent hover:bg-canvas/40'
                   }`}
                 >
-                  <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 text-[10px] font-bold transition-colors ${
-                    selectedId === crm.id ? 'bg-ink text-surface' : 'bg-canvas border border-line text-muted'
-                  }`}>
-                    {i + 1}
-                  </div>
+                  
 
                   <div className="min-w-0 flex-1">
                     <p className="font-sans font-semibold text-xs text-ink leading-snug">{crm.name}</p>
@@ -823,7 +815,6 @@ function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, s
             )}
           </div>
 
-          {/* Footer */}
           {!nearbyLoading && filtered.length > 0 && (
             <div className="flex-shrink-0 px-4 py-2 border-t border-line bg-canvas flex items-center justify-between">
               <p className="font-sans text-[11px] text-muted">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</p>
@@ -866,6 +857,7 @@ export function CrematoriumsPage({ onAddPartner }) {
   const [editing, setEditing] = useState(null)
   const [disconnecting, setDisconnecting] = useState(null)
   const [addingId, setAddingId] = useState(null)
+  const [selectedPartner, setSelectedPartner] = useState(null)
 
   useEffect(() => {
     fetchCrematoriums().then(setCrematoriums).catch(console.error).finally(() => setLoading(false))
@@ -885,6 +877,13 @@ export function CrematoriumsPage({ onAddPartner }) {
       .then(setNearby).catch(console.error).finally(() => setNearbyLoading(false))
   }, [userLocation])
 
+  // Keep selectedPartner in sync if it gets edited
+  useEffect(() => {
+    if (!selectedPartner) return
+    const updated = crematoriums.find(c => c.id === selectedPartner.id)
+    if (updated) setSelectedPartner(updated)
+  }, [crematoriums])
+
   function handleSaved(updated) {
     setCrematoriums(prev => prev.map(c => c.id === updated.id ? updated : c))
     setEditing(null)
@@ -893,22 +892,16 @@ export function CrematoriumsPage({ onAddPartner }) {
   function handleDisconnected(id) {
     setCrematoriums(prev => prev.filter(c => c.id !== id))
     setDisconnecting(null)
+    if (selectedPartner?.id === id) setSelectedPartner(null)
   }
 
   async function handleAdd(crm) {
     setAddingId(crm.id)
     try {
       const created = await createCrematorium({
-        name: crm.name,
-        location: crm.location,
-        streetAddress: crm.streetAddress,
-        city: crm.city,
-        state: crm.state,
-        zip: crm.zip,
-        phone: crm.phone,
-        website: crm.website,
-        rating: crm.rating,
-        userRatingCount: crm.userRatingCount,
+        name: crm.name, location: crm.location, streetAddress: crm.streetAddress,
+        city: crm.city, state: crm.state, zip: crm.zip, phone: crm.phone,
+        website: crm.website, rating: crm.rating, userRatingCount: crm.userRatingCount,
         weekdayDescriptions: crm.weekdayDescriptions,
       })
       setCrematoriums(prev => [...prev, created])
@@ -926,49 +919,83 @@ export function CrematoriumsPage({ onAddPartner }) {
     </div>
   )
 
-  const TABS = [
-    { id: 'partners', label: 'Your Partners', count: crematoriums.length },
-    { id: 'find', label: 'Find a Partner' },
-  ]
+  // ── Detail page ───────────────────────────────────────────────────────────
+  if (selectedPartner) {
+    return (
+      <>
+        {editing && <EditModal crm={editing} onSave={handleSaved} onClose={() => setEditing(null)} />}
+        {disconnecting && <DisconnectModal crm={disconnecting} onConfirm={handleDisconnected} onClose={() => setDisconnecting(null)} />}
+        <PartnerDetailPage
+          crm={selectedPartner}
+          onBack={() => setSelectedPartner(null)}
+          onEdit={setEditing}
+          onRemove={crm => { setDisconnecting(crm) }}
+        />
+      </>
+    )
+  }
 
+  // ── List / Find page ──────────────────────────────────────────────────────
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {editing && <EditModal crm={editing} onSave={handleSaved} onClose={() => setEditing(null)} />}
       {disconnecting && <DisconnectModal crm={disconnecting} onConfirm={handleDisconnected} onClose={() => setDisconnecting(null)} />}
 
-      {/* Header + tabs */}
-      <div className="flex-shrink-0 bg-surface/80 backdrop-blur border-b border-line relative z-10">
-        <div className="px-6 pt-5 pb-3">
-          <PageTitle className="leading-none">Partners</PageTitle>
+      {/* Header — matches CasesPage two-row layout */}
+      <div className="border-b border-line bg-surface/80 backdrop-blur shrink-0 relative z-10">
+        {/* Row 1: title + toggle */}
+        <div className="px-6 pt-6 pb-2 flex items-start justify-between gap-4">
+          <div className="flex items-baseline gap-3">
+            <PageTitle className="leading-none">Partners</PageTitle>
+          </div>
+
+          
         </div>
-        <div className="flex items-center gap-0 px-2">
-          {TABS.map(t => (
+
+        {/* Row 2: search — placeholder changes by tab */}
+        <div className="px-6 pb-3 flex items-end justify-between gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[180px] max-w-sm">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={tab === 'partners' ? 'Search partners…' : 'Search nearby…'}
+              className="w-full pl-9 pr-4 h-9 rounded-lg border border-line bg-white text-[13px] text-ink font-sans placeholder:text-muted outline-none focus:border-ink/60 transition"
+            />
+          </div>
+          {/* Tab toggle — Cases-style segment control */}
+          <div className="flex bg-surface border border-line rounded-lg p-0.5 h-9 mt-1 shrink-0">
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 font-sans text-sm transition-colors border-b-2 -mb-px ${
-                tab === t.id
-                  ? 'border-ink text-ink font-medium'
-                  : 'border-transparent text-muted hover:text-ink'
+              onClick={() => { setTab('partners'); setSearch('') }}
+              className={`px-3 rounded-md font-sans text-[12px] flex items-center cursor-pointer transition ${
+                tab === 'partners'
+                  ? 'bg-white text-ink shadow-[0_1px_2px_rgba(0,0,0,0.05)]'
+                  : 'text-muted hover:text-secondary'
               }`}
             >
-              {t.label}
-              {t.count != null && (
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-canvas border border-line font-sans text-[10px] font-semibold text-muted">
-                  {t.count}
-                </span>
-              )}
+              Your Partners
             </button>
-          ))}
+            <button
+              onClick={() => { setTab('find'); setSearch('') }}
+              className={`px-3 rounded-md font-sans text-[12px] flex items-center cursor-pointer transition ${
+                tab === 'find'
+                  ? 'bg-white text-ink shadow-[0_1px_2px_rgba(0,0,0,0.05)]'
+                  : 'text-muted hover:text-secondary'
+              }`}
+            >
+              Find a Partner
+            </button>
+          </div>
         </div>
+        
       </div>
 
-      {/* Tab content — fills remaining height */}
+      {/* Content */}
       {tab === 'partners' && (
-        <YourPartnersTab
+        <PartnersList
           crematoriums={crematoriums}
-          onEdit={setEditing}
-          onRemove={setDisconnecting}
+          search={search}
+          onSelect={setSelectedPartner}
         />
       )}
 
