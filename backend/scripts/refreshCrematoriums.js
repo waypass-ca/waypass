@@ -21,7 +21,7 @@ const supabase = createClient(
 
 const DELAY_MS = 200
 const PAGE_TOKEN_DELAY_MS = 3000
-const TILE_DEG = 2
+const TILE_DEG = 0.8
 
 // Canadian province/territory bounding boxes (approximate)
 const PROVINCE_BOUNDS = {
@@ -48,7 +48,7 @@ function tilesForBounds({ latMin, latMax, lngMin, lngMax }) {
   const tiles = []
   for (let lat = latMin; lat < latMax; lat += TILE_DEG) {
     for (let lng = lngMin; lng < lngMax; lng += TILE_DEG) {
-      tiles.push({ centerLat: lat + TILE_DEG / 2, centerLng: lng + TILE_DEG / 2, radius: 157000 })
+      tiles.push({ centerLat: lat + TILE_DEG / 2, centerLng: lng + TILE_DEG / 2, radius: 45000 })
     }
   }
   return tiles
@@ -93,7 +93,8 @@ async function fetchDetails(placeId) {
 async function main() {
   if (!GOOGLE_KEY) { console.error('Missing GOOGLE_MAPS_API_KEY'); process.exit(1) }
 
-  const provinces = await getActiveProvinces()
+  const arg = process.argv[2]?.toUpperCase()
+  const provinces = arg ? [arg] : await getActiveProvinces()
   console.log(`Refreshing ${provinces.length} provinces: ${provinces.join(', ')}`)
 
   const seenPlaceIds = new Set()
@@ -112,7 +113,10 @@ async function main() {
       do {
         if (pageToken) await sleep(PAGE_TOKEN_DELAY_MS)
         const data = await searchPlaces(tile.centerLat, tile.centerLng, tile.radius, pageToken)
-        if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') { break }
+        if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+          console.warn(`  Places API error: ${data.status} — ${data.error_message ?? 'no message'}`)
+          break
+        }
 
         for (const place of data.results ?? []) {
           const loc = place.geometry?.location
