@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js'
+import { normalizeDbRecord } from './crematoriumUtils.js'
 
 const BASE = import.meta.env.VITE_API_URL
 
@@ -49,13 +50,49 @@ export const addCaseDocument = (id, doc) =>
   mutate(`/api/cases/${id}/documents`, { method: 'POST', body: JSON.stringify(doc) })
 
 // ── Crematoriums ──────────────────────────────────────
-export const fetchCrematoriums = () => request('/api/crematoriums')
+export const fetchCrematoriums = () => mutate('/api/crematoriums')
 export const createCrematorium = (payload) =>
   mutate('/api/crematoriums', { method: 'POST', body: JSON.stringify(payload) })
 export const updateCrematorium = (id, payload) =>
   mutate(`/api/crematoriums/${id}`, { method: 'PATCH', body: JSON.stringify(payload) })
 export const deleteCrematorium = (id) =>
   mutate(`/api/crematoriums/${id}`, { method: 'DELETE' })
+export const connectCrematorium = (id) =>
+  mutate(`/api/crematoriums/${id}/connect`, { method: 'POST' })
+export const disconnectCrematorium = (id) =>
+  mutate(`/api/crematoriums/${id}/connect`, { method: 'DELETE' })
+
+const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+
+// Bootstrap the Maps JS SDK once (no Places library needed — discovery is DB-backed)
+let mapsLibPromise = null
+export function loadMapsLib() {
+  if (mapsLibPromise) return mapsLibPromise
+  mapsLibPromise = new Promise((resolve, reject) => {
+    if (window.google?.maps) {
+      resolve(window.google.maps)
+      return
+    }
+    window.__mapsReady = () => {
+      delete window.__mapsReady
+      resolve(window.google.maps)
+    }
+    const script = document.createElement('script')
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_KEY}&loading=async&callback=__mapsReady`
+    script.async = true
+    script.onerror = () => reject(new Error('Failed to load Google Maps'))
+    document.head.appendChild(script)
+  })
+  return mapsLibPromise
+}
+
+export async function fetchNearbyCrematoriums(lat, lng) {
+  const hasCoords = lat !== 0 || lng !== 0
+  const rows = hasCoords
+    ? await request(`/api/crematoriums/nearby-db?lat=${lat}&lng=${lng}&radius_miles=100`)
+    : await request('/api/crematoriums/db')
+  return (rows ?? []).map(normalizeDbRecord)
+}
 
 // ── Orders ────────────────────────────────────────────
 export const fetchOrders = () => request('/api/orders')
