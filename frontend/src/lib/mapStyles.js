@@ -1,0 +1,16 @@
+export const PASSAGE_MAP_STYLE = [
+  { featureType: 'administrative', elementType: 'geometry', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road.local', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road', elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ lightness: 20 }, { saturation: -30 }] },
+  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ lightness: 10 }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#a0c4d8' }, { lightness: 5 }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#3a3a3a' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#ffffff' }, { weight: 2 }] },
+]

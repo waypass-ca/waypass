@@ -6,6 +6,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "seed": "node scripts/seed.js",
+    "seed:crematoriums": "node scripts/seedCrematoriums.js",
+    "refresh:crematoriums": "node scripts/refreshCrematoriums.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },

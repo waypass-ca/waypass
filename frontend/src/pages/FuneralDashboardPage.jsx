@@ -153,6 +153,8 @@ export function FuneralDashboardPage() {
           onBack={() => navigate('cases')}
           onStatusChange={handleCaseStatusChange}
         />
+      ) : view === 'crematoriums' ? (
+        <CrematoriumsPage onAddPartner={() => setView('new-crematorium')} cases={cases} onViewCase={viewCase} />
       ) : (
       <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
 
@@ -174,11 +176,6 @@ export function FuneralDashboardPage() {
               navigate('cases')
             }}
           />
-        )}
-
-        {/* ── Crematoriums ── */}
-        {view === 'crematoriums' && (
-          <CrematoriumsPage onAddPartner={() => setView('new-crematorium')} />
         )}
 
         {/* ── New crematorium ── */}
