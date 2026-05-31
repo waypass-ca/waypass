@@ -2,16 +2,16 @@ import { useState, useEffect } from 'react'
 import { fetchCases, updateCaseStatus, assignCaseFolder } from '../lib/api.js'
 import { Sidebar } from '../components/layout/Sidebar'
 import { PageHeader } from '../components/layout/PageHeader'
-import { HomeDashboard } from '../components/dashboard/HomeDashboard'
-import { CasesPage } from '../components/dashboard/CasesPage'
-import { CaseDetailPage } from '../components/dashboard/CaseDetailPage'
-import { NewCasePage } from '../components/dashboard/NewCasePage'
-import { CrematoriumsPage } from '../components/dashboard/CrematoriumsPage'
-import { NewCrematoriumPage } from '../components/dashboard/NewCrematoriumPage'
-import { RevenuePage } from '../components/dashboard/RevenuePage'
-import { InboxPage } from '../components/dashboard/InboxPage'
-import { DocumentsPage } from '../components/dashboard/DocumentsPage'
-import { SettingsPage } from '../components/dashboard/SettingsPage'
+import { HomeDashboardPage } from './HomeDashboardPage'
+import { CasesPage } from './CasesPage'
+import { CaseDetailPage } from './CaseDetailPage'
+import { NewCasePage } from './NewCasePage'
+import { CrematoriumsPage } from './CrematoriumsPage'
+import { NewCrematoriumPage } from './NewCrematoriumPage'
+import { RevenuePage } from './RevenuePage'
+import { InboxPage } from './InboxPage'
+import { DocumentsPage } from './DocumentsPage'
+import { SettingsPage } from './SettingsPage'
 import { FamilyPageEditorPage } from '../components/dashboard/FamilyPageEditorPage'
 import { Button } from '../components/ui/Button'
 
@@ -160,7 +160,7 @@ export function FuneralDashboardPage() {
 
         {/* ── Dashboard ── */}
         {view === 'dashboard' && (
-          <HomeDashboard
+          <HomeDashboardPage
             cases={cases}
             onViewCase={viewCase}
             onNewCase={() => setView('new-case')}
