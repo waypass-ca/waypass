@@ -94,6 +94,25 @@ export async function fetchNearbyCrematoriums(lat, lng) {
   return (rows ?? []).map(normalizeDbRecord)
 }
 
+// ── Bookings ──────────────────────────────────────────
+export const fetchBookings = () => mutate('/api/bookings')
+export const fetchBooking = (id) => mutate(`/api/bookings/${id}`)
+export const createBooking = (payload) =>
+  mutate('/api/bookings', { method: 'POST', body: JSON.stringify(payload) })
+export const confirmBooking = (id, slot) =>
+  mutate(`/api/bookings/${id}/confirm`, { method: 'POST', body: JSON.stringify({ slot }) })
+export const cancelBooking = (id) =>
+  mutate(`/api/bookings/${id}`, { method: 'DELETE' })
+// Public — no auth header
+export const fetchBookingByToken = (token) =>
+  request(`/api/bookings/respond/${token}`)
+export const respondToBooking = (token, slots) =>
+  request(`/api/bookings/respond/${token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ slots }),
+  })
+
 // ── Orders ────────────────────────────────────────────
 export const fetchOrders = () => request('/api/orders')
 export const advanceOrder = (id) =>

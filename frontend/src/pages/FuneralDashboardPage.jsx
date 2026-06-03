@@ -13,6 +13,8 @@ import { InboxPage } from './InboxPage'
 import { DocumentsPage } from './DocumentsPage'
 import { SettingsPage } from './SettingsPage'
 import { FamilyPageEditorPage } from '../components/dashboard/FamilyPageEditorPage'
+import { BookCremationPage } from './BookCremationPage'
+import { PickupCalendarPage } from './PickupCalendarPage'
 import { Button } from '../components/ui/Button'
 
 // Map sidebar ids to internal views
@@ -23,8 +25,9 @@ const SIDEBAR_TO_VIEW = {
   cases:              'cases',
   'family-editor':    'family-portal',
   partners:           'crematoriums',
-  'book-cremation':   'book-cremation',
-  'crematory-editor': 'crematory-editor',
+  'book-cremation':    'book-cremation',
+  'pickup-calendar':   'pickup-calendar',
+  'crematory-editor':  'crematory-editor',
   documents:          'documents',
   financials:         'revenue',
   settings:           'settings',
@@ -141,7 +144,9 @@ export function FuneralDashboardPage() {
         }}
       />
 
-      {view === 'inbox' ? (
+      {view === 'pickup-calendar' ? (
+        <PickupCalendarPage />
+      ) : view === 'inbox' ? (
         <InboxPage />
       ) : view === 'cases' ? (
         <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} onCaseFolderAssign={handleCaseFolderAssign} onCasesChange={setCases} />
@@ -190,13 +195,7 @@ export function FuneralDashboardPage() {
         {view === 'revenue' && <RevenuePage />}
 
         {/* ── Book cremation ── */}
-        {view === 'book-cremation' && (
-          <BlankPage
-            title="Book Cremation"
-            description="Schedule and manage cremation bookings with partner crematories."
-            icon={<svg className="w-6 h-6 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-          />
-        )}
+        {view === 'book-cremation' && <BookCremationPage cases={cases} />}
 
         {/* ── Crematory editor ── */}
         {view === 'crematory-editor' && (

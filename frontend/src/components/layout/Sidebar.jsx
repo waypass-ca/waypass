@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   Search, Home, Inbox, Archive, Building2, UserPen,
-  CalendarPlus, MapPinPen, FileText, Landmark, Settings, ChevronDown,
+  CalendarPlus, CalendarDays, MapPinPen, FileText, Landmark, Settings, ChevronDown,
   ArrowLeftToLine, ArrowRightToLine,
 } from 'lucide-react'
 
@@ -100,8 +100,9 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
         {!collapsed.crematoriums && (
           <>
             <NavItem id="partners"         label="Partners"         icon={Building2}   isActive={activeItem === 'partners'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="book-cremation"   label="Book Cremation"   icon={CalendarPlus} isActive={activeItem === 'book-cremation'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="crematory-editor" label="Crematory Editor" icon={MapPinPen}    isActive={activeItem === 'crematory-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="book-cremation"   label="Book Cremation"    icon={CalendarPlus} isActive={activeItem === 'book-cremation'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="pickup-calendar"  label="Pickup Calendar"   icon={CalendarDays} isActive={activeItem === 'pickup-calendar'}  onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="crematory-editor" label="Crematory Editor"  icon={MapPinPen}    isActive={activeItem === 'crematory-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
           </>
         )}
 
