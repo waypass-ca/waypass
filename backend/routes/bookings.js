@@ -24,6 +24,10 @@ function shapeRow(row) {
 }
 
 async function sendBookingInvite(booking, deceasedName) {
+  if (process.env.ENABLE_RESEND === 'false') {
+    console.warn('Resend disabled (ENABLE_RESEND=false) — skipping email')
+    return false
+  }
   if (!booking.crematoriumEmail) {
     console.warn('No crematorium email — skipping invite')
     return false

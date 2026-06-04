@@ -146,11 +146,12 @@ export function WeekTimeGrid({
               {dayDates.map((date) => {
                 const key = slotKey(date, hour)
                 const isSelected = selectedSlots.has(key)
-                const isBusy = busySlots.has(key)
+                const busyLabel = busySlots.get ? busySlots.get(key) : (busySlots.has(key) ? '' : undefined)
+                const isBusy = busyLabel !== undefined
                 const isHighlighted = highlightSlots.has(key)
                 const isPast = date < today || (date === today && hour < new Date().getHours())
 
-                let cellClass = 'border-t border-l border-line h-10 cursor-pointer transition-colors '
+                let cellClass = 'border-t border-l border-line h-12 cursor-pointer transition-colors overflow-hidden '
 
                 if (isBusy) {
                   cellClass += 'bg-danger/10 cursor-not-allowed '
@@ -174,8 +175,11 @@ export function WeekTimeGrid({
                     onMouseEnter={() => handleMouseEnter(key)}
                   >
                     {isBusy && (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 rounded-full bg-danger/50" />
+                      <div className="w-full h-full flex flex-col items-center justify-center px-1">
+                        {busyLabel
+                          ? <span className="font-sans text-[9px] font-semibold text-danger/70 leading-tight text-center w-full truncate px-0.5">{busyLabel}</span>
+                          : <div className="w-1.5 h-1.5 rounded-full bg-danger/50" />
+                        }
                       </div>
                     )}
                   </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Loader } from '@googlemaps/js-api-loader'
 import { PASSAGE_MAP_STYLE } from '../../lib/mapStyles.js'
+import { FEATURES } from '../../lib/features.js'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
@@ -102,6 +103,10 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
   }, [stateFilter, cityFilter, networkOnly])
 
   useEffect(() => {
+    if (!FEATURES.googleMaps) {
+      setError('Google Maps is disabled (VITE_ENABLE_GOOGLE_MAPS)')
+      return
+    }
     if (!MAPS_KEY) {
       setError('VITE_GOOGLE_MAPS_API_KEY is not set')
       return
