@@ -41,7 +41,7 @@ function BookingChip({ booking, onClick }) {
   )
 }
 
-function DetailPanel({ booking, onConfirm, onCancel, onClose }) {
+function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onClose }) {
   const styles = STATUS_STYLES[booking.status] ?? STATUS_STYLES.cancelled
   const overlap = (booking.proposedSlots ?? []).filter(s =>
     (booking.crematoriumSlots ?? []).some(c => `${c.date}T${c.start}` === `${s.date}T${s.start}`)
@@ -62,7 +62,8 @@ function DetailPanel({ booking, onConfirm, onCancel, onClose }) {
         <div className="flex flex-col gap-4">
           <div>
             <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-0.5">Case</p>
-            <p className="font-sans text-[13px] text-ink font-medium">{booking.caseId}</p>
+            <p className="font-sans text-[13px] text-ink font-medium">{deceasedName ?? booking.caseId}</p>
+            {deceasedName && <p className="font-sans text-[11px] text-muted mt-0.5">{booking.caseId}</p>}
           </div>
           <div>
             <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-0.5">Crematorium</p>
@@ -134,9 +135,10 @@ function DetailPanel({ booking, onConfirm, onCancel, onClose }) {
   )
 }
 
-function ListView({ bookings, onSelect }) {
+function ListView({ bookings, cases, onSelect }) {
   const active = bookings.filter(b => b.status !== 'cancelled')
   const cancelled = bookings.filter(b => b.status === 'cancelled')
+  const deceasedName = (b) => cases.find(c => c.id === b.caseId)?.deceased ?? null
 
   return (
     <div className="flex flex-col gap-2">
@@ -145,6 +147,7 @@ function ListView({ bookings, onSelect }) {
       )}
       {active.map(b => {
         const styles = STATUS_STYLES[b.status] ?? STATUS_STYLES.cancelled
+        const name = deceasedName(b)
         return (
           <button
             key={b.id}
@@ -153,8 +156,8 @@ function ListView({ bookings, onSelect }) {
           >
             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${styles.dot}`} />
             <div className="flex-1 min-w-0">
-              <p className="font-sans text-[13px] font-medium text-ink truncate">{b.crematoriumName}</p>
-              <p className="font-sans text-[11px] text-muted">Case {b.caseId}</p>
+              <p className="font-sans text-[13px] font-medium text-ink truncate">{name ?? b.caseId}</p>
+              <p className="font-sans text-[11px] text-muted">{b.crematoriumName}{name ? ` · ${b.caseId}` : ''}</p>
             </div>
             <div className="text-right flex-shrink-0">
               <p className={`font-sans text-[10px] font-semibold uppercase tracking-wide ${styles.chip.split(' ')[1]}`}>{b.status}</p>
@@ -168,22 +171,25 @@ function ListView({ bookings, onSelect }) {
       {cancelled.length > 0 && (
         <>
           <p className="font-sans text-[11px] text-muted uppercase tracking-wide mt-4 mb-2">Cancelled</p>
-          {cancelled.map(b => (
-            <div key={b.id} className="flex items-center gap-4 px-4 py-3 rounded-xl border border-line bg-surface opacity-50">
-              <div className="w-2 h-2 rounded-full bg-line flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-sans text-[13px] font-medium text-ink truncate">{b.crematoriumName}</p>
-                <p className="font-sans text-[11px] text-muted">Case {b.caseId}</p>
+          {cancelled.map(b => {
+            const name = deceasedName(b)
+            return (
+              <div key={b.id} className="flex items-center gap-4 px-4 py-3 rounded-xl border border-line bg-surface opacity-50">
+                <div className="w-2 h-2 rounded-full bg-line flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="font-sans text-[13px] font-medium text-ink truncate">{name ?? b.caseId}</p>
+                  <p className="font-sans text-[11px] text-muted">{b.crematoriumName}{name ? ` · ${b.caseId}` : ''}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </>
       )}
     </div>
   )
 }
 
-export function PickupCalendarPage() {
+export function PickupCalendarPage({ cases = [] }) {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
@@ -220,13 +226,11 @@ export function PickupCalendarPage() {
     else setMonth(m => m + 1)
   }
 
-  // Map bookings to dates for quick lookup
+  // Only confirmed bookings appear on the calendar grid
+  const confirmedBookings = bookings.filter(b => b.status === 'confirmed' && b.confirmedSlot)
   const bookingsByDate = {}
-  bookings.forEach(b => {
-    const dateStr = b.confirmedSlot?.date
-      ?? b.proposedSlots?.[0]?.date
-      ?? null
-    if (!dateStr) return
+  confirmedBookings.forEach(b => {
+    const dateStr = b.confirmedSlot.date
     if (!bookingsByDate[dateStr]) bookingsByDate[dateStr] = []
     bookingsByDate[dateStr].push(b)
   })
@@ -235,115 +239,121 @@ export function PickupCalendarPage() {
   const todayStr = today.toISOString().slice(0, 10)
 
   return (
-    <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="font-display text-2xl text-ink mb-1">Pickup Calendar</h1>
-            <p className="font-sans text-[13px] text-muted">All cremation pickup bookings.</p>
-          </div>
+    <div className="flex-1 flex flex-col overflow-hidden bg-surface">
+
+      {/* ── Page header ── */}
+      <div className="flex-shrink-0 px-8 py-5 border-b border-line flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl text-ink">Pickup Calendar</h1> 
+        </div>
+        <div className="flex items-center gap-4">
+          {viewMode === 'month' && (
+            <div className="flex items-center gap-1">
+              <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors">
+                <ChevronLeft size={16} strokeWidth={2} />
+              </button>
+              <p className="font-sans text-[14px] font-semibold text-ink w-40 text-center">{MONTH_NAMES[month]} {year}</p>
+              <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors">
+                <ChevronRight size={16} strokeWidth={2} />
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-1 p-0.5 rounded-lg border border-line bg-surface">
             <button
               onClick={() => setViewMode('month')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-sans text-[12px] transition-colors ${viewMode === 'month' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
             >
-              <CalendarDays size={13} strokeWidth={1.8} /> Month
+              <CalendarDays size={13} strokeWidth={1.8} />
             </button>
             <button
               onClick={() => setViewMode('list')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-sans text-[12px] transition-colors ${viewMode === 'list' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
             >
-              <List size={13} strokeWidth={1.8} /> List
+              <List size={13} strokeWidth={1.8} />
             </button>
           </div>
         </div>
-
-        {loading ? (
-          <p className="font-sans text-[13px] text-muted">Loading…</p>
-        ) : viewMode === 'list' ? (
-          <ListView bookings={bookings} onSelect={setSelectedBooking} />
-        ) : (
-          <>
-            {/* Month nav */}
-            <div className="flex items-center justify-between mb-4">
-              <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors">
-                <ChevronLeft size={16} strokeWidth={2} />
-              </button>
-              <p className="font-sans text-[14px] font-semibold text-ink">{MONTH_NAMES[month]} {year}</p>
-              <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors">
-                <ChevronRight size={16} strokeWidth={2} />
-              </button>
-            </div>
-
-            {/* Calendar grid */}
-            <div className="rounded-xl border border-line bg-surface overflow-hidden">
-              {/* Day labels */}
-              <div className="grid grid-cols-7 border-b border-line">
-                {DAY_LABELS.map(d => (
-                  <div key={d} className="py-2 text-center font-sans text-[11px] font-semibold text-muted uppercase tracking-wide">
-                    {d}
-                  </div>
-                ))}
-              </div>
-
-              {/* Cells */}
-              <div className="grid grid-cols-7">
-                {cells.map((date, idx) => {
-                  if (!date) return <div key={`empty-${idx}`} className="border-t border-r border-line min-h-[90px] bg-canvas/30" />
-                  const dateStr = date.toISOString().slice(0, 10)
-                  const dayBookings = bookingsByDate[dateStr] ?? []
-                  const isToday = dateStr === todayStr
-                  const isPast = dateStr < todayStr
-
-                  return (
-                    <div
-                      key={dateStr}
-                      className={`border-t border-r border-line min-h-[90px] p-1.5 ${isPast ? 'bg-canvas/30' : ''} ${isToday ? 'bg-primary/[0.03]' : ''}`}
-                    >
-                      <div className={`font-sans text-[12px] font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full ${
-                        isToday ? 'bg-primary text-surface' : isPast ? 'text-muted' : 'text-ink'
-                      }`}>
-                        {date.getDate()}
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        {dayBookings.slice(0, 3).map(b => (
-                          <BookingChip key={b.id} booking={b} onClick={setSelectedBooking} />
-                        ))}
-                        {dayBookings.length > 3 && (
-                          <p className="font-sans text-[10px] text-muted pl-1">+{dayBookings.length - 3} more</p>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="flex items-center gap-5 mt-4">
-              {Object.entries(STATUS_STYLES).map(([status, styles]) => (
-                <div key={status} className="flex items-center gap-1.5">
-                  <div className={`w-2 h-2 rounded-full ${styles.dot}`} />
-                  <span className="font-sans text-[11px] text-muted capitalize">{status}</span>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
       </div>
+
+      {/* ── Body ── */}
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="font-sans text-[13px] text-muted">Loading…</p>
+        </div>
+      ) : viewMode === 'list' ? (
+        <div className="flex-1 overflow-auto px-8 py-6">
+          <div className="max-w-3xl">
+            <ListView bookings={bookings} cases={cases} onSelect={setSelectedBooking} />
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex bg-white flex-col overflow-auto min-h-0 ">
+
+          {/* Day labels */}
+          <div className="grid grid-cols-7 flex-shrink-0 border-b border-line">
+            {DAY_LABELS.map(d => (
+              <div key={d} className="py-2.5 text-center font-sans text-[11px] font-semibold text-muted uppercase tracking-wide border-r border-line last:border-r-0">
+                {d}
+              </div>
+            ))}
+          </div>
+
+          {/* Cells */}
+          <div className="grid grid-cols-7 flex-1">
+            {cells.map((date, idx) => {
+              if (!date) return (
+                <div key={`empty-${idx}`} className="border-b border-r border-line last:border-r-0 min-h-[100px] bg-canvas/40" />
+              )
+              const dateStr = date.toISOString().slice(0, 10)
+              const dayBookings = bookingsByDate[dateStr] ?? []
+              const isToday = dateStr === todayStr
+              const isPast = dateStr < todayStr
+
+              return (
+                <div
+                  key={dateStr}
+                  className={`border-b border-r border-line last:border-r-0 min-h-[100px] p-2 ${isPast ? 'bg-canvas/40' : ''}`}
+                >
+                  <div className={`font-sans text-[12px] font-medium mb-1.5 w-6 h-6 flex items-center justify-center rounded-full ${
+                    isToday ? 'bg-primary text-surface' : isPast ? 'text-muted' : 'text-ink'
+                  }`}>
+                    {date.getDate()}
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    {dayBookings.slice(0, 3).map(b => (
+                      <BookingChip key={b.id} booking={b} onClick={setSelectedBooking} />
+                    ))}
+                    {dayBookings.length > 3 && (
+                      <p className="font-sans text-[10px] text-muted pl-1">+{dayBookings.length - 3} more</p>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="flex-shrink-0 flex items-center gap-4 px-4 py-3">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="font-sans text-[11px] text-muted">Confirmed pickup</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedBooking && (
         <>
           <div className="fixed inset-0 bg-ink/20 z-40" onClick={() => setSelectedBooking(null)} />
           <DetailPanel
             booking={selectedBooking}
+            deceasedName={cases.find(c => c.id === selectedBooking.caseId)?.deceased ?? null}
             onConfirm={handleConfirm}
             onCancel={handleCancel}
             onClose={() => setSelectedBooking(null)}
           />
         </>
       )}
-    </main>
+    </div>
   )
 }

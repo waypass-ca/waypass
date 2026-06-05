@@ -145,7 +145,7 @@ export function FuneralDashboardPage() {
       />
 
       {view === 'pickup-calendar' ? (
-        <PickupCalendarPage />
+        <PickupCalendarPage cases={cases} />
       ) : view === 'book-cremation' ? (
         <BookCremationPage cases={cases} />
       ) : view === 'inbox' ? (
