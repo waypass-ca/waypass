@@ -58,6 +58,13 @@ export function getMondayOf(date) {
   return d
 }
 
+export function getSundayOf(date) {
+  const d = new Date(date)
+  d.setDate(d.getDate() - d.getDay())
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
 export function formatWeekRange(weekStart) {
   const end = new Date(weekStart)
   end.setDate(end.getDate() + 6)

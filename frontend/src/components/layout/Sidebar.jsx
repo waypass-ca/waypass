@@ -84,9 +84,10 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
 
       {/* Nav */}
       <nav className={`py-3 flex-1 overflow-y-auto overflow-x-hidden ${sidebarCollapsed ? 'px-1.5' : 'px-2.5'}`}>
-        <NavItem id="search"  label="Search"  icon={Search}  isActive={activeItem === 'search'}  onClick={onItemChange} collapsed={sidebarCollapsed} />
-        <NavItem id="home"    label="Home"    icon={Home}    isActive={activeItem === 'home'}    onClick={onItemChange} collapsed={sidebarCollapsed} />
-        <NavItem id="inbox"   label="Inbox"   icon={Inbox}   isActive={activeItem === 'inbox'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="search"          label="Search"   icon={Search}      isActive={activeItem === 'search'}          onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="home"            label="Home"     icon={Home}        isActive={activeItem === 'home'}            onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="inbox"           label="Inbox"    icon={Inbox}       isActive={activeItem === 'inbox'}           onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="pickup-calendar" label="Calendar" icon={CalendarDays} isActive={activeItem === 'pickup-calendar'} onClick={onItemChange} collapsed={sidebarCollapsed} />
 
         <SectionHeader label="Patients" collapsed={collapsed.patients} onToggle={() => toggle('patients')} sidebarCollapsed={sidebarCollapsed} />
         {!collapsed.patients && (
@@ -99,10 +100,9 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
         <SectionHeader label="Crematoriums" collapsed={collapsed.crematoriums} onToggle={() => toggle('crematoriums')} sidebarCollapsed={sidebarCollapsed} />
         {!collapsed.crematoriums && (
           <>
-            <NavItem id="partners"         label="Partners"         icon={Building2}   isActive={activeItem === 'partners'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="book-cremation"   label="Book Cremation"    icon={CalendarPlus} isActive={activeItem === 'book-cremation'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="pickup-calendar"  label="Pickup Calendar"   icon={CalendarDays} isActive={activeItem === 'pickup-calendar'}  onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="crematory-editor" label="Crematory Editor"  icon={MapPinPen}    isActive={activeItem === 'crematory-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="partners"         label="Partners"        icon={Building2}    isActive={activeItem === 'partners'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="book-cremation"   label="Book Cremation"  icon={CalendarPlus} isActive={activeItem === 'book-cremation'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="crematory-editor" label="Crematory Editor" icon={MapPinPen}   isActive={activeItem === 'crematory-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
           </>
         )}
 

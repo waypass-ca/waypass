@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Search, X, CheckCircle2, Send, CalendarCheck, ChevronRight } from 'lucide-react'
 import { fetchCrematoriums, fetchBookings, createBooking, confirmBooking, cancelBooking } from '../lib/api.js'
 import { WeekTimeGrid } from '../components/booking/WeekTimeGrid.jsx'
-import { getMondayOf, slotToObj, objToKey, slotToLabel } from '../lib/slotUtils.js'
+import { getSundayOf, slotToObj, objToKey, slotToLabel } from '../lib/slotUtils.js'
 import { Button } from '../components/ui/Button.jsx'
 
 const STATUS_DOT = {
@@ -128,7 +128,7 @@ export function BookCremationPage({ cases }) {
   const [matchedCrem, setMatchedCrem] = useState(null)
   const searchRef = useRef(null)
 
-  const [weekStart, setWeekStart] = useState(() => getMondayOf(new Date()))
+  const [weekStart, setWeekStart] = useState(() => getSundayOf(new Date()))
   const [selectedSlots, setSelectedSlots] = useState(new Set())
 
   const [sending, setSending] = useState(false)

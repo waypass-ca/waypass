@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, CalendarDays, List } from 'lucide-react'
+import { ChevronLeft, ChevronRight, LayoutGrid, Rows3 } from 'lucide-react'
 import { fetchBookings, confirmBooking, cancelBooking } from '../lib/api.js'
-import { objToKey, slotToLabel } from '../lib/slotUtils.js'
+import { objToKey, slotToLabel, slotKey, HOURS_LIST, getSundayOf, formatWeekRange } from '../lib/slotUtils.js'
 
 const STATUS_STYLES = {
   pending:   { chip: 'bg-amber-100 text-amber-800', dot: 'bg-amber-400' },
@@ -25,6 +25,91 @@ function buildMonthGrid(year, month) {
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+const WEEK_DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
+function formatHour(hour) {
+  if (hour === 0) return '12am'
+  if (hour === 12) return '12pm'
+  return hour < 12 ? `${hour}am` : `${hour - 12}pm`
+}
+
+function getWeekDates(weekStart) {
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart)
+    d.setDate(d.getDate() + i)
+    return d.toISOString().slice(0, 10)
+  })
+}
+
+function WeekView({ bookings, cases, weekStart, onSelectBooking }) {
+  const dayDates = getWeekDates(weekStart)
+  const today = new Date().toISOString().slice(0, 10)
+
+  const slotMap = {}
+  bookings
+    .filter(b => b.status === 'confirmed' && b.confirmedSlot)
+    .forEach(b => { slotMap[objToKey(b.confirmedSlot)] = b })
+
+  return (
+    <div className="flex-1 flex flex-col overflow-hidden border-l border-line">
+      {/* Day headers */}
+      <div className="grid flex-shrink-0 border-b border-line" style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}>
+        <div className="border-r border-line" />
+        {dayDates.map((date, i) => {
+          const d = new Date(date + 'T12:00:00')
+          const isToday = date === today
+          return (
+            <div key={date} className={`border-r border-line last:border-r-0 py-2 text-center ${isToday ? 'bg-primary/5' : ''}`}>
+              <div className={`font-sans text-[11px] uppercase tracking-wide ${isToday ? 'text-primary font-semibold' : 'text-muted'}`}>
+                {WEEK_DAY_LABELS[i]}
+              </div>
+              <div className={`font-sans text-[13px] font-medium ${isToday ? 'text-primary' : 'text-ink'}`}>
+                {d.getDate()}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* All hour rows in one grid so they stretch to fill remaining height */}
+      <div
+        className="flex-1 grid overflow-hidden"
+        style={{
+          gridTemplateColumns: '52px repeat(7, 1fr)',
+          gridTemplateRows: `repeat(${HOURS_LIST.length}, 1fr)`,
+        }}
+      >
+        {HOURS_LIST.flatMap(hour => [
+          <div key={`lbl-${hour}`} className="border-r border-b border-line flex items-start justify-end pr-2 pt-1">
+            <span className="font-sans text-[10px] text-muted">{formatHour(hour)}</span>
+          </div>,
+          ...dayDates.map(date => {
+            const key = slotKey(date, hour)
+            const booking = slotMap[key]
+            const isToday = date === today
+            return (
+              <div key={key} className={`border-r border-b border-line last:border-r-0 p-0.5 ${isToday ? 'bg-primary/5' : ''}`}>
+                {booking && (
+                  <button
+                    onClick={() => onSelectBooking(booking)}
+                    className="w-full h-full rounded px-1.5 flex flex-col justify-center bg-emerald-100 hover:bg-emerald-200 transition-colors text-left overflow-hidden"
+                  >
+                    <span className="font-sans text-[10px] font-semibold text-emerald-800 truncate leading-tight">
+                      {cases.find(c => c.id === booking.caseId)?.deceased ?? booking.caseId}
+                    </span>
+                    <span className="font-sans text-[9px] text-emerald-600 truncate leading-tight">
+                      {booking.crematoriumName}
+                    </span>
+                  </button>
+                )}
+              </div>
+            )
+          }),
+        ])}
+      </div>
+    </div>
+  )
+}
 
 function BookingChip({ booking, onClick }) {
   const styles = STATUS_STYLES[booking.status] ?? STATUS_STYLES.cancelled
@@ -135,65 +220,13 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onClose }) {
   )
 }
 
-function ListView({ bookings, cases, onSelect }) {
-  const active = bookings.filter(b => b.status !== 'cancelled')
-  const cancelled = bookings.filter(b => b.status === 'cancelled')
-  const deceasedName = (b) => cases.find(c => c.id === b.caseId)?.deceased ?? null
 
-  return (
-    <div className="flex flex-col gap-2">
-      {active.length === 0 && cancelled.length === 0 && (
-        <p className="font-sans text-[13px] text-muted py-10 text-center">No bookings yet.</p>
-      )}
-      {active.map(b => {
-        const styles = STATUS_STYLES[b.status] ?? STATUS_STYLES.cancelled
-        const name = deceasedName(b)
-        return (
-          <button
-            key={b.id}
-            onClick={() => onSelect(b)}
-            className="w-full text-left flex items-center gap-4 px-4 py-3 rounded-xl border border-line bg-surface hover:border-primary/30 transition-colors"
-          >
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${styles.dot}`} />
-            <div className="flex-1 min-w-0">
-              <p className="font-sans text-[13px] font-medium text-ink truncate">{name ?? b.caseId}</p>
-              <p className="font-sans text-[11px] text-muted">{b.crematoriumName}{name ? ` · ${b.caseId}` : ''}</p>
-            </div>
-            <div className="text-right flex-shrink-0">
-              <p className={`font-sans text-[10px] font-semibold uppercase tracking-wide ${styles.chip.split(' ')[1]}`}>{b.status}</p>
-              {b.confirmedSlot && (
-                <p className="font-sans text-[11px] text-muted mt-0.5">{slotToLabel(objToKey(b.confirmedSlot))}</p>
-              )}
-            </div>
-          </button>
-        )
-      })}
-      {cancelled.length > 0 && (
-        <>
-          <p className="font-sans text-[11px] text-muted uppercase tracking-wide mt-4 mb-2">Cancelled</p>
-          {cancelled.map(b => {
-            const name = deceasedName(b)
-            return (
-              <div key={b.id} className="flex items-center gap-4 px-4 py-3 rounded-xl border border-line bg-surface opacity-50">
-                <div className="w-2 h-2 rounded-full bg-line flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-sans text-[13px] font-medium text-ink truncate">{name ?? b.caseId}</p>
-                  <p className="font-sans text-[11px] text-muted">{b.crematoriumName}{name ? ` · ${b.caseId}` : ''}</p>
-                </div>
-              </div>
-            )
-          })}
-        </>
-      )}
-    </div>
-  )
-}
-
-export function PickupCalendarPage({ cases = [] }) {
+export function CalendarPage({ cases = [] }) {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
-  const [viewMode, setViewMode] = useState('month') // 'month' | 'list'
+  const [viewMode, setViewMode] = useState('month') // 'month' | 'week'
+  const [weekStart, setWeekStart] = useState(() => getSundayOf(today))
   const [bookings, setBookings] = useState([])
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -242,37 +275,59 @@ export function PickupCalendarPage({ cases = [] }) {
     <div className="flex-1 flex flex-col overflow-hidden bg-surface">
 
       {/* ── Page header ── */}
-      <div className="flex-shrink-0 px-8 py-5 border-b border-line flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl text-ink">Pickup Calendar</h1> 
-        </div>
-        <div className="flex items-center gap-4">
-          {viewMode === 'month' && (
-            <div className="flex items-center gap-1">
-              <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors">
-                <ChevronLeft size={16} strokeWidth={2} />
-              </button>
-              <p className="font-sans text-[14px] font-semibold text-ink w-40 text-center">{MONTH_NAMES[month]} {year}</p>
-              <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors">
-                <ChevronRight size={16} strokeWidth={2} />
-              </button>
-            </div>
-          )}
-          <div className="flex items-center gap-1 p-0.5 rounded-lg border border-line bg-surface">
+      <div className="flex-shrink-0 border-b border-line">
+        {/* Top row: title + toggle */}
+        <div className="px-8 pt-5 pb-3 flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-2xl text-ink">Calendar</h1>
+          </div>
+          <div className="flex items-center gap-1 p-0.5 rounded-lg border border-line bg-canvas">
             <button
               onClick={() => setViewMode('month')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-sans text-[12px] transition-colors ${viewMode === 'month' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
+              title="Month view"
+              className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${viewMode === 'month' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
             >
-              <CalendarDays size={13} strokeWidth={1.8} />
+              <LayoutGrid size={14} strokeWidth={1.8} />
             </button>
             <button
-              onClick={() => setViewMode('list')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-sans text-[12px] transition-colors ${viewMode === 'list' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
+              onClick={() => setViewMode('week')}
+              title="Week view"
+              className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${viewMode === 'week' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
             >
-              <List size={13} strokeWidth={1.8} />
+              <Rows3 size={14} strokeWidth={1.8} />
             </button>
           </div>
         </div>
+
+        {/* Second row: centered period nav (month/week only) */}
+        {viewMode === 'month' && (
+          <div className="flex items-center justify-center gap-1 py-1 border-t border-line">
+            <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors">
+              <ChevronLeft size={16} strokeWidth={2} />
+            </button>
+            <p className="font-sans text-[14px] font-semibold text-ink w-40 text-center">{MONTH_NAMES[month]} {year}</p>
+            <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors">
+              <ChevronRight size={16} strokeWidth={2} />
+            </button>
+          </div>
+        )}
+        {viewMode === 'week' && (
+          <div className="flex items-center justify-center gap-1 py-1 border-t border-line">
+            <button
+              onClick={() => { const d = new Date(weekStart); d.setDate(d.getDate() - 7); setWeekStart(getSundayOf(d)) }}
+              className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors"
+            >
+              <ChevronLeft size={16} strokeWidth={2} />
+            </button>
+            <p className="font-sans text-[14px] font-semibold text-ink w-48 text-center">{formatWeekRange(weekStart)}</p>
+            <button
+              onClick={() => { const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(getSundayOf(d)) }}
+              className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors"
+            >
+              <ChevronRight size={16} strokeWidth={2} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── Body ── */}
@@ -280,14 +335,15 @@ export function PickupCalendarPage({ cases = [] }) {
         <div className="flex-1 flex items-center justify-center">
           <p className="font-sans text-[13px] text-muted">Loading…</p>
         </div>
-      ) : viewMode === 'list' ? (
-        <div className="flex-1 overflow-auto px-8 py-6">
-          <div className="max-w-3xl">
-            <ListView bookings={bookings} cases={cases} onSelect={setSelectedBooking} />
-          </div>
-        </div>
+      ) : viewMode === 'week' ? (
+        <WeekView
+          bookings={bookings}
+          cases={cases}
+          weekStart={weekStart}
+          onSelectBooking={setSelectedBooking}
+        />
       ) : (
-        <div className="flex-1 flex bg-white flex-col overflow-auto min-h-0 ">
+        <div className="flex-1 flex flex-col overflow-auto min-h-0 border-l border-line bg-white">
 
           {/* Day labels */}
           <div className="grid grid-cols-7 flex-shrink-0 border-b border-line">

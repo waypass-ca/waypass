@@ -1,8 +1,8 @@
 import { useRef, useCallback } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { HOURS_LIST, slotKey, formatWeekRange, getMondayOf } from '../../lib/slotUtils.js'
+import { HOURS_LIST, slotKey, formatWeekRange, getSundayOf } from '../../lib/slotUtils.js'
 
-const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 function formatHour(hour) {
   if (hour === 0) return '12am'
@@ -86,8 +86,8 @@ export function WeekTimeGrid({
     onWeekChange?.(d)
   }
 
-  const currentMonday = getMondayOf(new Date()).toISOString().slice(0, 10)
-  const isCurrentWeek = weekStart.toISOString().slice(0, 10) === currentMonday
+  const currentSunday = getSundayOf(new Date()).toISOString().slice(0, 10)
+  const isCurrentWeek = weekStart.toISOString().slice(0, 10) === currentSunday
 
   return (
     <div

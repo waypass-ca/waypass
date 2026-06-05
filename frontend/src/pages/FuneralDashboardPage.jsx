@@ -14,7 +14,7 @@ import { DocumentsPage } from './DocumentsPage'
 import { SettingsPage } from './SettingsPage'
 import { FamilyPageEditorPage } from '../components/dashboard/FamilyPageEditorPage'
 import { BookCremationPage } from './BookCremationPage'
-import { PickupCalendarPage } from './PickupCalendarPage'
+import { CalendarPage } from './CalendarPage'
 import { Button } from '../components/ui/Button'
 
 // Map sidebar ids to internal views
@@ -145,7 +145,7 @@ export function FuneralDashboardPage() {
       />
 
       {view === 'pickup-calendar' ? (
-        <PickupCalendarPage cases={cases} />
+        <CalendarPage cases={cases} />
       ) : view === 'book-cremation' ? (
         <BookCremationPage cases={cases} />
       ) : view === 'inbox' ? (
