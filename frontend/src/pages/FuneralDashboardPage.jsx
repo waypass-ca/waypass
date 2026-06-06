@@ -13,6 +13,8 @@ import { InboxPage } from './InboxPage'
 import { DocumentsPage } from './DocumentsPage'
 import { SettingsPage } from './SettingsPage'
 import { FamilyPageEditorPage } from '../components/dashboard/FamilyPageEditorPage'
+import { BookCremationPage } from './BookCremationPage'
+import { CalendarPage } from './CalendarPage'
 import { Button } from '../components/ui/Button'
 
 // Map sidebar ids to internal views
@@ -23,8 +25,8 @@ const SIDEBAR_TO_VIEW = {
   cases:              'cases',
   'family-editor':    'family-portal',
   partners:           'crematoriums',
-  'book-cremation':   'book-cremation',
-  'crematory-editor': 'crematory-editor',
+  'book-cremation':    'book-cremation',
+  'pickup-calendar':   'pickup-calendar',
   documents:          'documents',
   financials:         'revenue',
   settings:           'settings',
@@ -72,6 +74,7 @@ function ErrorState({ message }) {
 export function FuneralDashboardPage() {
   const [view, setView] = useState('dashboard')
   const [selectedCaseId, setSelectedCaseId] = useState(null)
+  const [bookingPreselect, setBookingPreselect] = useState(null)
   const [cases, setCases] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -86,6 +89,12 @@ export function FuneralDashboardPage() {
   function navigate(v) {
     setView(v)
     setSelectedCaseId(null)
+    setBookingPreselect(null)
+  }
+
+  function scheduleCase(c) {
+    setBookingPreselect(c)
+    setView('book-cremation')
   }
 
   function viewCase(id) {
@@ -141,7 +150,11 @@ export function FuneralDashboardPage() {
         }}
       />
 
-      {view === 'inbox' ? (
+      {view === 'pickup-calendar' ? (
+        <CalendarPage cases={cases} />
+      ) : view === 'book-cremation' ? (
+        <BookCremationPage cases={cases} preselectedCase={bookingPreselect} />
+      ) : view === 'inbox' ? (
         <InboxPage />
       ) : view === 'cases' ? (
         <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} onCaseFolderAssign={handleCaseFolderAssign} onCasesChange={setCases} />
@@ -152,6 +165,7 @@ export function FuneralDashboardPage() {
           caseData={selectedCase}
           onBack={() => navigate('cases')}
           onStatusChange={handleCaseStatusChange}
+          onSchedule={() => scheduleCase(selectedCase)}
         />
       ) : view === 'crematoriums' ? (
         <CrematoriumsPage onAddPartner={() => setView('new-crematorium')} cases={cases} onViewCase={viewCase} />
@@ -189,25 +203,8 @@ export function FuneralDashboardPage() {
         {/* ── Revenue ── */}
         {view === 'revenue' && <RevenuePage />}
 
-        {/* ── Book cremation ── */}
-        {view === 'book-cremation' && (
-          <BlankPage
-            title="Book Cremation"
-            description="Schedule and manage cremation bookings with partner crematories."
-            icon={<svg className="w-6 h-6 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3M16 7V3M3 11h18M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
-          />
-        )}
 
-        {/* ── Crematory editor ── */}
-        {view === 'crematory-editor' && (
-          <BlankPage
-            title="Crematory Editor"
-            description="Configure and manage crematory partner profiles and service details."
-            icon={<svg className="w-6 h-6 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>}
-          />
-        )}
-
-        {/* ── Family portal editor ── */}
+{/* ── Family portal editor ── */}
         {view === 'family-portal' && <FamilyPageEditorPage />}
 
         {/* ── Settings ── */}

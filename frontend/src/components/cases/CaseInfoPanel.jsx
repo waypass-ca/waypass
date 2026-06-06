@@ -3,7 +3,7 @@ import { StatusPill } from '../ui/StatusPill'
 import { InfoField } from '../ui/InfoField'
 import { InfoSection } from '../ui/InfoSection'
 
-export function CaseInfoPanel({ caseData, onBack, status, setActiveTab, onShowNote }) {
+export function CaseInfoPanel({ caseData, onBack, status, setActiveTab, onShowNote, onSchedule }) {
   return (
     <div className="w-[320px] flex-shrink-0 bg-white border-r border-line flex flex-col overflow-hidden">
 
@@ -24,7 +24,7 @@ export function CaseInfoPanel({ caseData, onBack, status, setActiveTab, onShowNo
 
           <div className="flex justify-around">
             {[
-              { icon: CalendarPlus, label: 'Schedule', onClick: () => setActiveTab('activity') },
+              { icon: CalendarPlus, label: 'Schedule', onClick: onSchedule ?? (() => setActiveTab('activity')) },
               { icon: StickyNote, label: 'Note', onClick: onShowNote },
               { icon: Mail, label: 'Email', onClick: () => {} },
               { icon: Phone, label: 'Call', onClick: () => {} },

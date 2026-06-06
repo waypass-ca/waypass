@@ -3,6 +3,7 @@ import { loadMapsLib } from '../../lib/api.js'
 import { StarRating } from '../ui/StarRating.jsx'
 import { DetailModal } from './DetailModal.jsx'
 import { MapView } from './MapView.jsx'
+import { FEATURES } from '../../lib/features.js'
 
 export function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, search, setSearch, onAdd }) {
   const [hoveredId, setHoveredId] = useState(null)
@@ -128,16 +129,18 @@ export function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationE
         </div>
 
         {/* Right: map */}
-        <div className="flex-1 min-w-0 bg-canvas">
-          <MapView
-            nearby={filtered}
-            userLocation={userLocation}
-            hoveredId={hoveredId}
-            selectedId={selectedId}
-            onMarkerClick={handleMarkerClick}
-            onMapClick={() => setSelectedId(null)}
-          />
-        </div>
+        {FEATURES.googleMaps && (
+          <div className="flex-1 min-w-0 bg-canvas">
+            <MapView
+              nearby={filtered}
+              userLocation={userLocation}
+              hoveredId={hoveredId}
+              selectedId={selectedId}
+              onMarkerClick={handleMarkerClick}
+              onMapClick={() => setSelectedId(null)}
+            />
+          </div>
+        )}
       </div>
     </div>
   )

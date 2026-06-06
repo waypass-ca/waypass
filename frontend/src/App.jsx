@@ -2,9 +2,16 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import { DarkModeProvider } from './context/DarkModeContext.jsx'
 import { LoginScreen } from './components/auth/LoginScreen.jsx'
 import { FuneralDashboardPage } from './pages/FuneralDashboardPage'
+import { CrematoriumResponsePage } from './pages/CrematoriumResponsePage.jsx'
 
 function AppInner() {
   const { session } = useAuth()
+
+  if (window.location.pathname.startsWith('/respond/')) {
+    const token = window.location.pathname.split('/respond/')[1]
+    return <CrematoriumResponsePage token={token} />
+  }
+
   if (session === undefined) return null
   if (!session) return <LoginScreen />
   return <FuneralDashboardPage />

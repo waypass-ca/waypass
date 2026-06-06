@@ -37,6 +37,7 @@ function shapeRow(row) {
     date: row.case_date ?? row.date,
     amount: row.amount_billed ?? row.amount,
     crematorium: row.crematorium_name,
+    crematoriumId: row.crematorium_id ?? null,
     removalStaff: row.removal_staff,
     removalTime: row.removal_time,
     folderId: row.folder?.id ?? row.folder_id ?? null,

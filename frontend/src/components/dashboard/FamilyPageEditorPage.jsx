@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { PageHeader } from '../layout/PageHeader'
 import { Button } from '../ui/Button'
 import { fetchPortalSettings, savePortalSettings } from '../../lib/api.js'
+import { FEATURES } from '../../lib/features.js'
 
 const FALLBACK_SETTINGS = {
   funeralHomeName: 'Evergreen Memorial',
@@ -46,6 +47,7 @@ const STATUS_ORDER = ['pending', 'transit', 'cremation', 'complete']
 // ─── Cloudinary upload ────────────────────────────────────────────────────────
 
 async function uploadToCloudinary(file) {
+  if (!FEATURES.cloudinary) throw new Error('Image upload is disabled (VITE_ENABLE_CLOUDINARY)')
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
   const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
   if (!cloudName || !uploadPreset) {

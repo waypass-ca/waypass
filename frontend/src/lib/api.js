@@ -1,5 +1,6 @@
 import { supabase } from './supabase.js'
 import { normalizeDbRecord } from './crematoriumUtils.js'
+import { FEATURES } from './features.js'
 
 const BASE = import.meta.env.VITE_API_URL
 
@@ -67,6 +68,7 @@ const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 // Bootstrap the Maps JS SDK once (no Places library needed — discovery is DB-backed)
 let mapsLibPromise = null
 export function loadMapsLib() {
+  if (!FEATURES.googleMaps) return Promise.reject(new Error('Google Maps is disabled'))
   if (mapsLibPromise) return mapsLibPromise
   mapsLibPromise = new Promise((resolve, reject) => {
     if (window.google?.maps) {
@@ -87,12 +89,32 @@ export function loadMapsLib() {
 }
 
 export async function fetchNearbyCrematoriums(lat, lng) {
+  if (!FEATURES.googleMaps) return []
   const hasCoords = lat !== 0 || lng !== 0
   const rows = hasCoords
     ? await request(`/api/crematoriums/nearby-db?lat=${lat}&lng=${lng}&radius_miles=100`)
     : await request('/api/crematoriums/db')
   return (rows ?? []).map(normalizeDbRecord)
 }
+
+// ── Bookings ──────────────────────────────────────────
+export const fetchBookings = () => mutate('/api/bookings')
+export const fetchBooking = (id) => mutate(`/api/bookings/${id}`)
+export const createBooking = (payload) =>
+  mutate('/api/bookings', { method: 'POST', body: JSON.stringify(payload) })
+export const confirmBooking = (id, slot) =>
+  mutate(`/api/bookings/${id}/confirm`, { method: 'POST', body: JSON.stringify({ slot }) })
+export const cancelBooking = (id) =>
+  mutate(`/api/bookings/${id}`, { method: 'DELETE' })
+// Public — no auth header
+export const fetchBookingByToken = (token) =>
+  request(`/api/bookings/respond/${token}`)
+export const respondToBooking = (token, slots) =>
+  request(`/api/bookings/respond/${token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ slots }),
+  })
 
 // ── Orders ────────────────────────────────────────────
 export const fetchOrders = () => request('/api/orders')
