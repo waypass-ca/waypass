@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, LayoutGrid, Rows3 } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { fetchBookings, confirmBooking, cancelBooking } from '../lib/api.js'
-import { objToKey, slotToLabel, slotKey, HOURS_LIST, getSundayOf, formatWeekRange } from '../lib/slotUtils.js'
+import { objToKey, slotToLabel, slotKey, getSundayOf, formatWeekRange } from '../lib/slotUtils.js'
+import { WeekGrid } from '../components/booking/WeekGrid.jsx'
 
 const STATUS_STYLES = {
   pending:   { chip: 'bg-amber-100 text-amber-800', dot: 'bg-amber-400' },
@@ -25,91 +26,6 @@ function buildMonthGrid(year, month) {
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-const WEEK_DAY_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-
-function formatHour(hour) {
-  if (hour === 0) return '12am'
-  if (hour === 12) return '12pm'
-  return hour < 12 ? `${hour}am` : `${hour - 12}pm`
-}
-
-function getWeekDates(weekStart) {
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart)
-    d.setDate(d.getDate() + i)
-    return d.toISOString().slice(0, 10)
-  })
-}
-
-function WeekView({ bookings, cases, weekStart, onSelectBooking }) {
-  const dayDates = getWeekDates(weekStart)
-  const today = new Date().toISOString().slice(0, 10)
-
-  const slotMap = {}
-  bookings
-    .filter(b => b.status === 'confirmed' && b.confirmedSlot)
-    .forEach(b => { slotMap[objToKey(b.confirmedSlot)] = b })
-
-  return (
-    <div className="flex-1 flex flex-col overflow-hidden border-l border-line">
-      {/* Day headers */}
-      <div className="grid flex-shrink-0 border-b border-line" style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}>
-        <div className="border-r border-line" />
-        {dayDates.map((date, i) => {
-          const d = new Date(date + 'T12:00:00')
-          const isToday = date === today
-          return (
-            <div key={date} className={`border-r border-line last:border-r-0 py-2 text-center ${isToday ? 'bg-primary/5' : ''}`}>
-              <div className={`font-sans text-[11px] uppercase tracking-wide ${isToday ? 'text-primary font-semibold' : 'text-muted'}`}>
-                {WEEK_DAY_LABELS[i]}
-              </div>
-              <div className={`font-sans text-[13px] font-medium ${isToday ? 'text-primary' : 'text-ink'}`}>
-                {d.getDate()}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* All hour rows in one grid so they stretch to fill remaining height */}
-      <div
-        className="flex-1 grid overflow-hidden"
-        style={{
-          gridTemplateColumns: '52px repeat(7, 1fr)',
-          gridTemplateRows: `repeat(${HOURS_LIST.length}, 1fr)`,
-        }}
-      >
-        {HOURS_LIST.flatMap(hour => [
-          <div key={`lbl-${hour}`} className="border-r border-b border-line flex items-start justify-end pr-2 pt-1">
-            <span className="font-sans text-[10px] text-muted">{formatHour(hour)}</span>
-          </div>,
-          ...dayDates.map(date => {
-            const key = slotKey(date, hour)
-            const booking = slotMap[key]
-            const isToday = date === today
-            return (
-              <div key={key} className={`border-r border-b border-line last:border-r-0 p-0.5 ${isToday ? 'bg-primary/5' : ''}`}>
-                {booking && (
-                  <button
-                    onClick={() => onSelectBooking(booking)}
-                    className="w-full h-full rounded px-1.5 flex flex-col justify-center bg-emerald-100 hover:bg-emerald-200 transition-colors text-left overflow-hidden"
-                  >
-                    <span className="font-sans text-[10px] font-semibold text-emerald-800 truncate leading-tight">
-                      {cases.find(c => c.id === booking.caseId)?.deceased ?? booking.caseId}
-                    </span>
-                    <span className="font-sans text-[9px] text-emerald-600 truncate leading-tight">
-                      {booking.crematoriumName}
-                    </span>
-                  </button>
-                )}
-              </div>
-            )
-          }),
-        ])}
-      </div>
-    </div>
-  )
-}
 
 function BookingChip({ booking, onClick }) {
   const styles = STATUS_STYLES[booking.status] ?? STATUS_STYLES.cancelled
@@ -284,17 +200,15 @@ export function CalendarPage({ cases = [] }) {
           <div className="flex items-center gap-1 p-0.5 rounded-lg border border-line bg-canvas">
             <button
               onClick={() => setViewMode('month')}
-              title="Month view"
-              className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${viewMode === 'month' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
+              className={`flex items-center justify-center px-3 h-7 rounded-md transition-colors text-[13px] font-medium ${viewMode === 'month' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
             >
-              <LayoutGrid size={14} strokeWidth={1.8} />
+              Month
             </button>
             <button
               onClick={() => setViewMode('week')}
-              title="Week view"
-              className={`flex items-center justify-center w-8 h-8 rounded-md transition-colors ${viewMode === 'week' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
+              className={`flex items-center justify-center px-3 h-7 rounded-md transition-colors text-[13px] font-medium ${viewMode === 'week' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
             >
-              <Rows3 size={14} strokeWidth={1.8} />
+              Week
             </button>
           </div>
         </div>
@@ -335,14 +249,35 @@ export function CalendarPage({ cases = [] }) {
         <div className="flex-1 flex items-center justify-center">
           <p className="font-sans text-[13px] text-muted">Loading…</p>
         </div>
-      ) : viewMode === 'week' ? (
-        <WeekView
-          bookings={bookings}
-          cases={cases}
-          weekStart={weekStart}
-          onSelectBooking={setSelectedBooking}
-        />
-      ) : (
+      ) : viewMode === 'week' ? (() => {
+        const slotMap = {}
+        bookings
+          .filter(b => b.status === 'confirmed' && b.confirmedSlot)
+          .forEach(b => { slotMap[objToKey(b.confirmedSlot)] = b })
+        return (
+          <WeekGrid
+            weekStart={weekStart}
+            className="border-l border-line bg-white"
+            renderCell={(key, date, hour, isToday) => (
+              <div key={key} className={`border-r border-b border-line last:border-r-0 p-0.5 ${isToday ? 'bg-primary/5' : ''}`}>
+                {slotMap[key] && (
+                  <button
+                    onClick={() => setSelectedBooking(slotMap[key])}
+                    className="w-full h-full rounded px-1.5 flex flex-col justify-center bg-emerald-100 hover:bg-emerald-200 transition-colors text-left overflow-hidden"
+                  >
+                    <span className="font-sans text-[10px] font-semibold text-emerald-800 truncate leading-tight">
+                      {cases.find(c => c.id === slotMap[key].caseId)?.deceased ?? slotMap[key].caseId}
+                    </span>
+                    <span className="font-sans text-[9px] text-emerald-600 truncate leading-tight">
+                      {slotMap[key].crematoriumName}
+                    </span>
+                  </button>
+                )}
+              </div>
+            )}
+          />
+        )
+      })() : (
         <div className="flex-1 flex flex-col overflow-auto min-h-0 border-l border-line bg-white">
 
           {/* Day labels */}

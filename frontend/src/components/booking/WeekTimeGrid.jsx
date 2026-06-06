@@ -96,18 +96,18 @@ export function WeekTimeGrid({
       onMouseLeave={commitDrag}
     >
       {/* Week nav */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-center gap-1 mb-3">
         <button
           onClick={prevWeek}
           disabled={isCurrentWeek}
-          className="p-1 rounded hover:bg-ink/5 text-muted hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
         >
           <ChevronLeft size={16} strokeWidth={2} />
         </button>
-        <span className="font-sans text-[13px] font-medium text-ink">{formatWeekRange(weekStart)}</span>
+        <span className="font-sans text-[13px] font-medium text-ink w-48 text-center">{formatWeekRange(weekStart)}</span>
         <button
           onClick={nextWeek}
-          className="p-1 rounded hover:bg-ink/5 text-muted hover:text-ink transition-colors"
+          className="p-1.5 rounded-lg hover:bg-ink/5 text-muted hover:text-ink transition-colors"
         >
           <ChevronRight size={16} strokeWidth={2} />
         </button>
