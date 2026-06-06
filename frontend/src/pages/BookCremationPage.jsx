@@ -98,13 +98,13 @@ function BookingPanelRow({ booking, onConfirm, onCancel }) {
   )
 }
 
-export function BookCremationPage({ cases }) {
+export function BookCremationPage({ cases, preselectedCase }) {
   const [crematoriums, setCrematoriums] = useState([])
   const [existingBookings, setExistingBookings] = useState([])
 
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(preselectedCase?.deceased ?? preselectedCase?.id ?? '')
   const [showDropdown, setShowDropdown] = useState(false)
-  const [selectedCase, setSelectedCase] = useState(null)
+  const [selectedCase, setSelectedCase] = useState(preselectedCase ?? null)
   const [matchedCrem, setMatchedCrem] = useState(null)
   const searchRef = useRef(null)
 
@@ -121,9 +121,23 @@ export function BookCremationPage({ cases }) {
   const pendingSlots = useRef(null)
 
   useEffect(() => {
-    fetchCrematoriums().then(setCrematoriums).catch(() => {})
+    fetchCrematoriums().then(list => {
+      setCrematoriums(list)
+      if (preselectedCase?.crematoriumId) {
+        setMatchedCrem(list.find(cr => cr.id === preselectedCase.crematoriumId) ?? null)
+      }
+    }).catch(() => {})
     fetchBookings().then(setExistingBookings).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    const hasPending = existingBookings.some(b => b.status === 'pending')
+    if (!hasPending) return
+    const id = setInterval(() => {
+      fetchBookings().then(setExistingBookings).catch(() => {})
+    }, 10_000)
+    return () => clearInterval(id)
+  }, [existingBookings])
 
   useEffect(() => {
     function onDown(e) {
