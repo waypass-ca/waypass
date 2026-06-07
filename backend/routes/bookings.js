@@ -124,7 +124,38 @@ router.post('/respond/:token', async (req, res, next) => {
       .select()
       .single()
     if (error) throw error
-    res.json(shapeRow(data))
+
+    // Notify the funeral home in their inbox
+    const shaped = shapeRow(data)
+    const cremName = shaped.crematoriumName ?? 'Crematorium'
+    const slotCount = crematoriumSlots.length
+    const preview = `${cremName} has responded with ${slotCount} available time${slotCount === 1 ? '' : 's'}. Review and confirm a slot.`
+
+    supabase.from('inbox_items').insert({
+      user_id: shaped.funeralHomeId,
+      type: 'schedule',
+      sender: cremName,
+      subject: `Availability received`,
+      preview,
+      body: [
+        `${cremName} has reviewed your pickup request for case ${shaped.caseId} and submitted their available times.`,
+        ``,
+        `Available slots:`,
+        ...crematoriumSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
+        ``,
+        `Please log in to Passage to confirm a time slot.`,
+      ].join('\n'),
+      case_id: shaped.caseId,
+      booking_id: shaped.id,
+      severity: 'info',
+      scheduled_for: null,
+      read: false,
+      starred: false,
+    }).then(({ error: inboxErr }) => {
+      if (inboxErr) console.error('inbox_items insert failed:', inboxErr.message)
+    })
+
+    res.json(shaped)
   } catch (err) {
     next(err)
   }
@@ -187,9 +218,35 @@ router.post('/', async (req, res, next) => {
     if (error) throw error
 
     const shaped = shapeRow(data)
-    sendBookingInvite(shaped, deceasedName ?? 'Unknown').catch(err =>
-      console.error('Email send failed:', err.message)
-    )
+    const nameForDisplay = deceasedName ?? 'Unknown'
+    sendBookingInvite(shaped, nameForDisplay)
+      .then(sent => {
+        if (!sent) return
+        supabase.from('inbox_items').insert({
+          user_id: req.user.id,
+          type: 'schedule',
+          sender: shaped.crematoriumName ?? 'Crematorium',
+          subject: `Booking request sent`,
+          preview: `Availability request emailed to ${shaped.crematoriumName ?? 'the crematorium'} for ${nameForDisplay}.`,
+          body: [
+            `A pickup request for ${nameForDisplay} (case ${shaped.caseId}) has been sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
+            ``,
+            `Proposed slots:`,
+            ...shaped.proposedSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
+            ``,
+            `You will be notified when they respond.`,
+          ].join('\n'),
+          case_id: shaped.caseId,
+          booking_id: shaped.id,
+          severity: 'info',
+          scheduled_for: null,
+          read: false,
+          starred: false,
+        }).then(({ error: inboxErr }) => {
+          if (inboxErr) console.error('inbox_items insert failed:', inboxErr.message)
+        })
+      })
+      .catch(err => console.error('Email send failed:', err.message))
 
     res.status(201).json(shaped)
   } catch (err) {
@@ -227,7 +284,42 @@ router.post('/:id/confirm', async (req, res, next) => {
       .select()
       .single()
     if (error) throw error
-    res.json(shapeRow(data))
+
+    const shaped = shapeRow(data)
+    const cremName = shaped.crematoriumName ?? 'Crematorium'
+    const fmt = h => `${h > 12 ? h - 12 : h === 0 ? 12 : h}:00 ${h < 12 ? 'AM' : 'PM'}`
+    const slotStart = parseInt(slot.start.split(':')[0], 10)
+    const slotEnd = parseInt(slot.end.split(':')[0], 10)
+    const scheduledFor = `${slot.date} · ${fmt(slotStart)} – ${fmt(slotEnd)}`
+
+    supabase.from('inbox_items').insert({
+      user_id: req.user.id,
+      type: 'schedule',
+      sender: cremName,
+      subject: `Cremation scheduled`,
+      preview: `Cremation confirmed at ${cremName} for ${scheduledFor}.`,
+      body: [
+        `Dear Passage,`,
+        ``,
+        `This is to confirm that cremation services for case ${shaped.caseId} have been scheduled at ${cremName}.`,
+        ``,
+        `Date & Time: ${scheduledFor}`,
+        ``,
+        `Please ensure all required documentation has been submitted prior to this date. Ashes will be available for collection within 3–5 business days after completion.`,
+        ``,
+        cremName,
+      ].join('\n'),
+      case_id: shaped.caseId,
+      booking_id: shaped.id,
+      severity: 'info',
+      scheduled_for: scheduledFor,
+      read: false,
+      starred: false,
+    }).then(({ error: inboxErr }) => {
+      if (inboxErr) console.error('inbox_items insert failed:', inboxErr.message)
+    })
+
+    res.json(shaped)
   } catch (err) {
     next(err)
   }

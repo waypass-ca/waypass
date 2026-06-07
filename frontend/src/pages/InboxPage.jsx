@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Star, Search, TriangleAlert,
@@ -6,89 +6,9 @@ import {
   AlertCircle, Info, Inbox, Filter,
 } from 'lucide-react'
 import { InboxDetailPanel } from '../components/inbox/InboxDetailPanel'
-
-const INITIAL_ITEMS = [
-  {
-    id: 'a1', type: 'alert', read: false, starred: false,
-    from: 'System', subject: 'Authorization required — James Carter',
-    preview: 'The cremation authorization form for James Carter has not been signed. The case cannot proceed to cremation until this document is completed and uploaded.',
-    time: '10:24 AM', date: '2024-04-26', severity: 'warning', caseId: 'CASE-0042',
-    body: 'The cremation authorization form for James Carter (CASE-0042) has not been signed.\n\nThe case cannot proceed to cremation until this document is completed and uploaded by the next of kin.\n\nPlease follow up with the family contact: Patricia Carter at (415) 555-0183.\n\nAction required before: Apr 28, 2024.',
-  },
-  {
-    id: 'a2', type: 'alert', read: false, starred: false,
-    from: 'System', subject: 'Missing document — Margaret Thompson',
-    preview: 'Death certificate has not been uploaded for Margaret Thompson. This is required before transfer can be arranged.',
-    time: '9:15 AM', date: '2024-04-26', severity: 'danger', caseId: 'CASE-0039',
-    body: 'Death certificate has not been uploaded for Margaret Thompson (CASE-0039).\n\nThis document is legally required before body transfer can be arranged with the crematorium.\n\nPlease ensure the attending physician provides the certificate and that it is uploaded to the case documents.\n\nThis is marked as urgent.',
-  },
-  {
-    id: 'a3', type: 'alert', read: true, starred: true,
-    from: 'System', subject: 'Case status updated — Robert Hayes',
-    preview: 'Robert Hayes has been received at Riverside Crematorium and the case is now In Transit.',
-    time: 'Yesterday', date: '2024-04-25', severity: 'info', caseId: 'CASE-0038',
-    body: 'Case CASE-0038 for Robert Hayes has been updated.\n\nStatus changed: Pending → In Transit\n\nRobert Hayes has been received by Riverside Crematorium at 2:14 PM on April 25th. All chain-of-custody documentation has been logged.\n\nExpected cremation date: April 30, 2024.',
-  },
-  {
-    id: 'a4', type: 'alert', read: true, starred: false,
-    from: 'System', subject: 'New case submitted via widget',
-    preview: 'A new case has been submitted through the family booking widget. Review and assign to a case manager.',
-    time: 'Apr 24', date: '2024-04-24', severity: 'info', caseId: 'CASE-0043',
-    body: 'A new case has been submitted through the Passage family booking widget.\n\nDeceased: Eleanor Voss\nFamily contact: Thomas Voss\nPackage selected: Comfort — $1,895\n\nThe case has been automatically created as CASE-0043 and is awaiting assignment to a case manager.',
-  },
-  {
-    id: 'm1', type: 'message', read: false, starred: false,
-    from: 'Patricia Carter', subject: 'Re: James Carter arrangements',
-    preview: 'Thank you so much for walking us through everything. We wanted to confirm the time for the service and ask a quick question about the urn options.',
-    time: '11:02 AM', date: '2024-04-26', severity: null, caseId: 'CASE-0042',
-    body: 'Hi,\n\nThank you so much for walking us through everything yesterday. It meant a lot to our family to have someone so patient and kind guiding us.\n\nWe wanted to confirm the time for the service on the 30th — we have some family flying in from out of state and want to make sure they can attend.\n\nAlso, we had a quick question about the urn options. Is it possible to see them in person before making a final decision?\n\nThank you again,\nPatricia Carter',
-  },
-  {
-    id: 'm2', type: 'message', read: true, starred: false,
-    from: 'David Thompson', subject: 'Question about ashes return',
-    preview: 'Hi, I was wondering how long it typically takes for the ashes to be returned after cremation. We are planning a small gathering.',
-    time: 'Yesterday', date: '2024-04-25', severity: null, caseId: 'CASE-0039',
-    body: 'Hi,\n\nI hope this message finds you well. I was wondering how long it typically takes for the ashes to be returned after cremation. We are trying to plan a small gathering for our mother and want to make sure we have the timing right.\n\nAlso, do you provide a temporary urn while we decide on a permanent one?\n\nThank you,\nDavid Thompson',
-  },
-  {
-    id: 'm3', type: 'message', read: true, starred: true,
-    from: 'Susan Hayes', subject: 'Thank you',
-    preview: 'I just wanted to say thank you for everything your team did for our family during this difficult time. You made it so much easier.',
-    time: 'Apr 24', date: '2024-04-24', severity: null, caseId: 'CASE-0038',
-    body: 'Dear Team,\n\nI just wanted to take a moment to say thank you for everything your team did for our family during this incredibly difficult time.\n\nThe care and professionalism shown throughout the entire process made things so much easier than we expected. Robert would have been touched.\n\nWith gratitude,\nSusan Hayes',
-  },
-  {
-    id: 'm4', type: 'message', read: true, starred: false,
-    from: 'Michael Torres', subject: 'Documents ready for pickup',
-    preview: 'The family has confirmed they are ready to pick up the documentation. What are your office hours on weekends?',
-    time: 'Apr 23', date: '2024-04-23', severity: null, caseId: 'CASE-0035',
-    body: 'Hello,\n\nThe family has confirmed they are ready to pick up the documentation and ashes for Elena Torres. I was wondering what your office hours are, particularly on weekends, as some family members can only come Saturday.\n\nThank you,\nMichael Torres',
-  },
-  {
-    id: 's1', type: 'schedule', read: false, starred: false,
-    from: 'Riverside Crematorium', subject: 'Cremation confirmed — Robert Hayes',
-    preview: 'Cremation for Robert Hayes is confirmed for Tuesday April 30th at 9:00 AM. Please confirm receipt of this scheduling notice.',
-    time: '8:45 AM', date: '2024-04-26', severity: null, caseId: 'CASE-0038',
-    scheduledFor: 'Apr 30, 2024 · 9:00 AM',
-    body: 'Dear Evergreen Memorial,\n\nThis is to confirm that cremation services for Robert Hayes (CASE-0038) have been scheduled at Riverside Crematorium.\n\nDate: Tuesday, April 30, 2024\nTime: 9:00 AM\nLocation: Riverside Crematorium, 4400 River Rd, Sacramento, CA\n\nPlease ensure all required documentation has been submitted prior to this date. Ashes will be available for collection within 3–5 business days after completion.\n\nPlease reply to confirm you have received this scheduling notice.\n\nRiverside Crematorium',
-  },
-  {
-    id: 's2', type: 'schedule', read: true, starred: false,
-    from: 'Lakeside Memorial', subject: 'Rescheduled — James Carter cremation',
-    preview: 'Due to facility maintenance, the cremation originally scheduled for April 28th has been moved to May 2nd at 10:30 AM.',
-    time: 'Yesterday', date: '2024-04-25', severity: 'warning', caseId: 'CASE-0042',
-    scheduledFor: 'May 2, 2024 · 10:30 AM',
-    body: 'Dear Evergreen Memorial,\n\nWe regret to inform you that due to unplanned facility maintenance, the cremation for James Carter originally scheduled for April 28th, 2024 has been rescheduled.\n\nNew date: Thursday, May 2, 2024\nNew time: 10:30 AM\nLocation: Lakeside Memorial, 2200 Lake Shore Drive\n\nWe apologize for any inconvenience this may cause. Please inform the family of this change.\n\nLakeside Memorial Services',
-  },
-  {
-    id: 's3', type: 'schedule', read: true, starred: false,
-    from: 'Oakwood Services', subject: 'Pickup confirmed — Margaret Thompson',
-    preview: 'Body pickup from residence has been confirmed for April 27th between 2:00 PM and 4:00 PM.',
-    time: 'Apr 24', date: '2024-04-24', severity: null, caseId: 'CASE-0039',
-    scheduledFor: 'Apr 27, 2024 · 2:00–4:00 PM',
-    body: 'Dear Evergreen Memorial,\n\nThis is to confirm that the body pickup for Margaret Thompson (CASE-0039) from the residence at 845 Oak Lane, San Francisco has been scheduled.\n\nDate: Saturday, April 27, 2024\nArrival window: 2:00 PM – 4:00 PM\n\nPlease ensure someone from the family or a representative is present at the time of pickup. Our team will handle all transportation with care and dignity.\n\nOakwood Transfer Services',
-  },
-]
+import {
+  fetchInbox, markInboxItemRead, markAllInboxRead, starInboxItem, deleteInboxItem,
+} from '../lib/api.js'
 
 const SEVERITY_CONFIG = {
   danger:  { icon: AlertCircle, text: 'text-danger', bg: 'bg-danger-tint', border: 'border-danger/25', dot: 'bg-danger' },
@@ -100,6 +20,36 @@ const TYPE_CONFIG = {
   alert:    { label: 'Alert',    color: 'text-warning', dot: 'bg-warning' },
   message:  { label: 'Message',  color: 'text-primary',  dot: 'bg-primary' },
   schedule: { label: 'Schedule', color: 'text-info',    dot: 'bg-info' },
+}
+
+function formatTime(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const now = new Date()
+  const diffMs = now - d
+  const diffDays = Math.floor(diffMs / 86400000)
+  if (diffDays === 0) return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return d.toLocaleDateString('en-US', { weekday: 'short' })
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function shapeItem(raw) {
+  return {
+    id: raw.id,
+    type: raw.type,
+    read: raw.read,
+    starred: raw.starred,
+    from: raw.from,
+    subject: raw.subject,
+    preview: raw.preview,
+    body: raw.body,
+    time: formatTime(raw.createdAt),
+    date: raw.createdAt ? raw.createdAt.slice(0, 10) : '',
+    severity: raw.severity ?? null,
+    caseId: raw.caseId ?? null,
+    scheduledFor: raw.scheduledFor ?? null,
+  }
 }
 
 const StarIcon = ({ filled, size = 14, className = '' }) =>
@@ -376,12 +326,20 @@ function StatusFooter({ count, unread }) {
   )
 }
 
-export function InboxPage() {
-  const [items, setItems] = useState(INITIAL_ITEMS)
+export function InboxPage({ initialActiveId }) {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ types: new Set(), datePreset: '', readStatus: '' })
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
   const [activeId, setActiveId] = useState(null)
+
+  useEffect(() => {
+    fetchInbox()
+      .then(data => setItems(data.map(shapeItem)))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = useMemo(() => {
     let rows = items
@@ -412,33 +370,55 @@ export function InboxPage() {
 
   const activeItem = activeId ? items.find(i => i.id === activeId) : null
 
-  function openItem(id) {
+  const openItem = useCallback((id) => {
     setActiveId(id)
     setItems(prev => prev.map(i => i.id === id ? { ...i, read: true } : i))
-  }
+    markInboxItemRead(id).catch(console.error)
+  }, [])
 
-  function toggleStar(id) {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, starred: !i.starred } : i))
-  }
+  useEffect(() => {
+    if (!loading && initialActiveId) openItem(initialActiveId)
+  }, [loading, initialActiveId, openItem])
 
-  function markRead(id) {
+  const toggleStar = useCallback((id) => {
+    setItems(prev => prev.map(i => {
+      if (i.id !== id) return i
+      const starred = !i.starred
+      starInboxItem(id, starred).catch(console.error)
+      return { ...i, starred }
+    }))
+  }, [])
+
+  const markRead = useCallback((id) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, read: true } : i))
-  }
+    markInboxItemRead(id).catch(console.error)
+  }, [])
 
-  function markAllRead() {
+  const markAllRead = useCallback(() => {
     setItems(prev => prev.map(i =>
       (filters.types.size === 0 || filters.types.has(i.type)) ? { ...i, read: true } : i
     ))
-  }
+    markAllInboxRead().catch(console.error)
+  }, [filters.types])
 
-  function archiveSelected() {
+  const archiveSelected = useCallback(() => {
+    const toDelete = [...selected]
     setItems(prev => prev.filter(i => !selected.has(i.id)))
     if (selected.has(activeId)) setActiveId(null)
     setSelected(new Set())
-  }
+    toDelete.forEach(id => deleteInboxItem(id).catch(console.error))
+  }, [selected, activeId])
 
-  function toggleSelect(id) {
+  const toggleSelect = useCallback((id) => {
     setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-muted font-sans text-[13px]">
+        Loading…
+      </div>
+    )
   }
 
   return (

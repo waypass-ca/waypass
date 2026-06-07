@@ -116,6 +116,14 @@ export const respondToBooking = (token, slots) =>
     body: JSON.stringify({ slots }),
   })
 
+// ── Inbox ─────────────────────────────────────────────
+export const fetchInbox = () => mutate('/api/inbox')
+export const markInboxItemRead = (id) => mutate(`/api/inbox/${id}/read`, { method: 'PATCH' })
+export const markAllInboxRead = () => mutate('/api/inbox/mark-all-read', { method: 'PATCH' })
+export const starInboxItem = (id, starred) =>
+  mutate(`/api/inbox/${id}/star`, { method: 'PATCH', body: JSON.stringify({ starred }) })
+export const deleteInboxItem = (id) => mutate(`/api/inbox/${id}`, { method: 'DELETE' })
+
 // ── Orders ────────────────────────────────────────────
 export const fetchOrders = () => request('/api/orders')
 export const advanceOrder = (id) =>
