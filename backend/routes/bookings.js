@@ -11,6 +11,7 @@ function shapeRow(row) {
     crematoriumId: row.crematorium_id,
     crematoriumEmail: row.crematorium_email,
     crematoriumName: row.crematorium_name,
+    deceasedName: row.deceased_name ?? null,
     funeralHomeId: row.funeral_home_id,
     status: row.status,
     proposedSlots: row.proposed_slots ?? [],
@@ -128,8 +129,9 @@ router.post('/respond/:token', async (req, res, next) => {
     // Notify the funeral home in their inbox
     const shaped = shapeRow(data)
     const cremName = shaped.crematoriumName ?? 'Crematorium'
+    const deceased = shaped.deceasedName ?? shaped.caseId
     const slotCount = crematoriumSlots.length
-    const preview = `${cremName} has responded with ${slotCount} available time${slotCount === 1 ? '' : 's'}. Review and confirm a slot.`
+    const preview = `${deceased} · ${cremName} responded with ${slotCount} available time${slotCount === 1 ? '' : 's'}.`
 
     supabase.from('inbox_items').insert({
       user_id: shaped.funeralHomeId,
@@ -138,12 +140,12 @@ router.post('/respond/:token', async (req, res, next) => {
       subject: `Availability received`,
       preview,
       body: [
-        `${cremName} has reviewed your pickup request for case ${shaped.caseId} and submitted their available times.`,
+        `${cremName} submitted their available times for ${deceased}.`,
         ``,
         `Available slots:`,
         ...crematoriumSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
         ``,
-        `Please log in to Passage to confirm a time slot.`,
+        `Review and confirm a slot in Passage.`,
       ].join('\n'),
       case_id: shaped.caseId,
       booking_id: shaped.id,
@@ -210,6 +212,7 @@ router.post('/', async (req, res, next) => {
         crematorium_id: crematoriumId,
         crematorium_email: crematoriumEmail,
         crematorium_name: crematoriumName,
+        deceased_name: deceasedName ?? null,
         funeral_home_id: req.user.id,
         proposed_slots: proposedSlots,
       })
@@ -227,14 +230,14 @@ router.post('/', async (req, res, next) => {
           type: 'schedule',
           sender: shaped.crematoriumName ?? 'Crematorium',
           subject: `Booking request sent`,
-          preview: `Availability request emailed to ${shaped.crematoriumName ?? 'the crematorium'} for ${nameForDisplay}.`,
+          preview: `${nameForDisplay} · Request sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
           body: [
-            `A pickup request for ${nameForDisplay} (case ${shaped.caseId}) has been sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
+            `A pickup request for ${nameForDisplay} has been sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
             ``,
             `Proposed slots:`,
             ...shaped.proposedSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
             ``,
-            `You will be notified when they respond.`,
+            `You'll be notified when they respond.`,
           ].join('\n'),
           case_id: shaped.caseId,
           booking_id: shaped.id,
@@ -287,6 +290,7 @@ router.post('/:id/confirm', async (req, res, next) => {
 
     const shaped = shapeRow(data)
     const cremName = shaped.crematoriumName ?? 'Crematorium'
+    const deceased = shaped.deceasedName ?? shaped.caseId
     const fmt = h => `${h > 12 ? h - 12 : h === 0 ? 12 : h}:00 ${h < 12 ? 'AM' : 'PM'}`
     const slotStart = parseInt(slot.start.split(':')[0], 10)
     const slotEnd = parseInt(slot.end.split(':')[0], 10)
@@ -297,17 +301,11 @@ router.post('/:id/confirm', async (req, res, next) => {
       type: 'schedule',
       sender: cremName,
       subject: `Cremation scheduled`,
-      preview: `Cremation confirmed at ${cremName} for ${scheduledFor}.`,
+      preview: `${deceased} · ${scheduledFor} at ${cremName}.`,
       body: [
-        `Dear Passage,`,
-        ``,
-        `This is to confirm that cremation services for case ${shaped.caseId} have been scheduled at ${cremName}.`,
+        `Cremation for ${deceased} has been confirmed at ${cremName}.`,
         ``,
         `Date & Time: ${scheduledFor}`,
-        ``,
-        `Please ensure all required documentation has been submitted prior to this date. Ashes will be available for collection within 3–5 business days after completion.`,
-        ``,
-        cremName,
       ].join('\n'),
       case_id: shaped.caseId,
       booking_id: shaped.id,

@@ -48,6 +48,7 @@ function shapeItem(raw) {
     date: raw.createdAt ? raw.createdAt.slice(0, 10) : '',
     severity: raw.severity ?? null,
     caseId: raw.caseId ?? null,
+    bookingId: raw.bookingId ?? null,
     scheduledFor: raw.scheduledFor ?? null,
   }
 }
