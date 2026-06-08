@@ -159,7 +159,7 @@ export function FuneralDashboardPage() {
       ) : view === 'book-cremation' ? (
         <BookCremationPage cases={cases} preselectedCase={bookingPreselect} />
       ) : view === 'inbox' ? (
-        <InboxPage initialActiveId={initialInboxId} />
+        <InboxPage initialActiveId={initialInboxId} onViewCase={viewCase} />
       ) : view === 'cases' ? (
         <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} onCaseFolderAssign={handleCaseFolderAssign} onCasesChange={setCases} />
       ) : view === 'documents' ? (

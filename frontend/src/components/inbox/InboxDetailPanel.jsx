@@ -123,7 +123,7 @@ function SlotPicker({ bookingId, onConfirmed }) {
   )
 }
 
-export function InboxDetailPanel({ item, onClose, onStar, onMarkRead }) {
+export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onViewCase }) {
   if (!item) return (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8 bg-white border-l border-line">
       <div className="w-12 h-12 rounded-xl bg-canvas border border-line flex items-center justify-center">
@@ -191,7 +191,16 @@ export function InboxDetailPanel({ item, onClose, onStar, onMarkRead }) {
         </p>
       </div>
 
-      {item.type === 'message' && (
+      {item.type === 'message' && item.caseId ? (
+        <div className="px-5 py-3 border-t border-line shrink-0">
+          <button
+            onClick={() => onViewCase?.(item.caseId)}
+            className="h-8 px-4 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer transition-colors"
+          >
+            Open case
+          </button>
+        </div>
+      ) : item.type === 'message' ? (
         <div className="px-5 py-3 border-t border-line shrink-0">
           <textarea
             placeholder="Reply…"
@@ -204,10 +213,21 @@ export function InboxDetailPanel({ item, onClose, onStar, onMarkRead }) {
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
       {item.type === 'schedule' && item.bookingId && (
         <SlotPicker bookingId={item.bookingId} />
+      )}
+
+      {item.type === 'alert' && item.caseId && (
+        <div className="px-5 py-3 border-t border-line shrink-0">
+          <button
+            onClick={() => onViewCase?.(item.caseId)}
+            className="h-8 px-4 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer transition-colors"
+          >
+            Open case
+          </button>
+        </div>
       )}
     </div>
   )

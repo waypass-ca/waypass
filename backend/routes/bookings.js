@@ -326,12 +326,36 @@ router.post('/:id/confirm', async (req, res, next) => {
 // ── DELETE /api/bookings/:id ─────────────────────
 router.delete('/:id', async (req, res, next) => {
   try {
+    const { data: existing, error: fetchErr } = await supabase
+      .from('cremation_bookings').select('*')
+      .eq('id', req.params.id).eq('funeral_home_id', req.user.id).single()
+    if (fetchErr || !existing) return res.status(404).json({ error: 'Booking not found' })
+    if (existing.status === 'cancelled') return res.status(204).send()
+
     const { error } = await supabase
       .from('cremation_bookings')
       .update({ status: 'cancelled' })
       .eq('id', req.params.id)
       .eq('funeral_home_id', req.user.id)
     if (error) throw error
+
+    const shaped = shapeRow(existing)
+    const cremName = shaped.crematoriumName ?? 'Crematorium'
+    const deceased = shaped.deceasedName ?? shaped.caseId
+    supabase.from('inbox_items').insert({
+      user_id: req.user.id,
+      type: 'schedule',
+      sender: cremName,
+      subject: 'Booking cancelled',
+      preview: `${deceased} · Booking with ${cremName} cancelled.`,
+      body: `The cremation booking for ${deceased} with ${cremName} has been cancelled.`,
+      case_id: shaped.caseId,
+      booking_id: shaped.id,
+      severity: 'warning',
+      read: false,
+      starred: false,
+    }).then(({ error: e }) => { if (e) console.error('inbox_items insert failed:', e.message) })
+
     res.status(204).send()
   } catch (err) {
     next(err)

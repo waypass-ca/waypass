@@ -1,7 +1,6 @@
 import { useRef } from 'react'
 import { TriangleAlert, Upload } from 'lucide-react'
 import { DocRow } from './DocRow'
-import { ScheduleTransportCard } from './ScheduleTransportCard'
 
 export function CaseDocumentsTab({ documents, uploading, docsActionNeeded, authorizationComplete, onShowAuth, onUpload, onPreview }) {
   const uploadInputRef = useRef(null)
@@ -47,7 +46,6 @@ export function CaseDocumentsTab({ documents, uploading, docsActionNeeded, autho
           <p className="font-sans text-xs text-muted mt-1">Use the Upload button above to add files.</p>
         </div>
       )}
-      <ScheduleTransportCard show={authorizationComplete} />
     </div>
   )
 }

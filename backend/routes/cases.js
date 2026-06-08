@@ -332,6 +332,42 @@ router.put('/:id/custody/:stage', requireAuth, async (req, res, next) => {
       .single()
 
     if (error) throw error
+
+    const NOTIFY_STAGES = {
+      2: 'Transported to Crematory',
+      4: 'Cremation Started',
+      5: 'Cremation Completed',
+      7: 'Returned to Funeral Home',
+      8: 'Delivered to Family',
+    }
+
+    if (completed && NOTIFY_STAGES[stage]) {
+      const stageLabel = NOTIFY_STAGES[stage]
+      const staffName = staff ?? 'Staff'
+      const caseId = req.params.id
+      ;(async () => {
+        try {
+          const { data: caseRow } = await supabase
+            .from('cases').select('deceased').eq('id', caseId).single()
+          const deceasedName = caseRow?.deceased ?? caseId
+          await supabase.from('inbox_items').insert({
+            user_id: req.user.id,
+            type: 'alert',
+            sender: staffName,
+            subject: stageLabel,
+            preview: `${staffName} marked ${deceasedName} as ${stageLabel}.`,
+            body: `${staffName} logged the following custody milestone for ${deceasedName}:\n\n${stageLabel}`,
+            case_id: caseId,
+            severity: 'info',
+            read: false,
+            starred: false,
+          })
+        } catch (err) {
+          console.error('custody inbox insert failed:', err.message)
+        }
+      })()
+    }
+
     res.json({
       completed: data.completed,
       staff: data.staff_label ?? data.staff,

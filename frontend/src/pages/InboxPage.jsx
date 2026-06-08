@@ -327,7 +327,7 @@ function StatusFooter({ count, unread }) {
   )
 }
 
-export function InboxPage({ initialActiveId }) {
+export function InboxPage({ initialActiveId, onViewCase }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ types: new Set(), datePreset: '', readStatus: '' })
@@ -467,6 +467,7 @@ export function InboxPage({ initialActiveId }) {
               onClose={() => setActiveId(null)}
               onStar={toggleStar}
               onMarkRead={markRead}
+              onViewCase={onViewCase}
             />
           )}
         </div>
