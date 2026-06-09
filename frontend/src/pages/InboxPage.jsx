@@ -433,24 +433,27 @@ export function InboxPage({ initialActiveId, onViewCase }) {
 
   const activeItem = activeId ? items.find(i => i.id === activeId) : null
 
-  const openItem = useCallback((id) => {
-    setActiveId(id)
+  const markRead = useCallback((id) => {
+    setItems(prev => {
+      const item = prev.find(i => i.id === id)
+      if (!item || item.read) return prev
+      markInboxItemRead(id).catch(console.error)
+      return prev.map(i => i.id === id ? { ...i, read: true } : i)
+    })
   }, [])
 
-  // Set active item from toast navigation once data is loaded
-  useEffect(() => {
-    if (!loading && initialActiveId) setActiveId(initialActiveId)
-  }, [loading, initialActiveId])
+  const openItem = useCallback((id) => {
+    setActiveId(id)
+    markRead(id)
+  }, [markRead])
 
-  // Mark as read whenever an unread item is open
+  // Open and mark as read when navigating from a toast
   useEffect(() => {
-    if (!activeId || loading) return
-    const item = items.find(i => i.id === activeId)
-    if (!item || item.read) return
-    setItems(prev => prev.map(i => i.id === activeId ? { ...i, read: true } : i))
-    markInboxItemRead(activeId).catch(console.error)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeId, loading])
+    if (!loading && initialActiveId) {
+      setActiveId(initialActiveId)
+      markRead(initialActiveId)
+    }
+  }, [loading, initialActiveId, markRead])
 
   const toggleStar = useCallback((id) => {
     setItems(prev => prev.map(i => {
@@ -459,11 +462,6 @@ export function InboxPage({ initialActiveId, onViewCase }) {
       starInboxItem(id, starred).catch(console.error)
       return { ...i, starred }
     }))
-  }, [])
-
-  const markRead = useCallback((id) => {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, read: true } : i))
-    markInboxItemRead(id).catch(console.error)
   }, [])
 
   const markUnread = useCallback((id) => {

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { X } from 'lucide-react'
 import { supabase } from '../../lib/supabase.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { markInboxItemRead } from '../../lib/api.js'
 
 const TYPE_DOT = {
   alert: 'bg-warning',
@@ -14,7 +15,7 @@ function Toast({ toast, onDismiss, onView }) {
 
   return (
     <div
-      onClick={() => { onView(toast.id); onDismiss(toast.id) }}
+      onClick={() => { markInboxItemRead(toast.id).catch(console.error); onView(toast.id); onDismiss(toast.id) }}
       className="w-72 bg-white border border-line rounded-xl shadow-md flex items-center gap-3 px-4 py-3 cursor-pointer animate-in slide-in-from-top-3 fade-in duration-200 hover:bg-canvas transition-colors"
     >
       <div className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
