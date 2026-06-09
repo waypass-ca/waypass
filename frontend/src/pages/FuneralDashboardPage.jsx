@@ -182,6 +182,7 @@ export function FuneralDashboardPage() {
             cases={cases}
             onViewCase={viewCase}
             onNewCase={() => setView('new-case')}
+            onViewInbox={(itemId) => { setInitialInboxId(itemId); setView('inbox') }}
           />
         )}
 
