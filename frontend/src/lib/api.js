@@ -119,6 +119,7 @@ export const respondToBooking = (token, slots) =>
 // ── Inbox ─────────────────────────────────────────────
 export const fetchInbox = () => mutate('/api/inbox')
 export const markInboxItemRead = (id) => mutate(`/api/inbox/${id}/read`, { method: 'PATCH' })
+export const markInboxItemUnread = (id) => mutate(`/api/inbox/${id}/read`, { method: 'PATCH', body: JSON.stringify({ read: false }) })
 export const markAllInboxRead = () => mutate('/api/inbox/mark-all-read', { method: 'PATCH' })
 export const starInboxItem = (id, starred) =>
   mutate(`/api/inbox/${id}/star`, { method: 'PATCH', body: JSON.stringify({ starred }) })

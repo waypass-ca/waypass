@@ -2,13 +2,15 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Star, Search, TriangleAlert,
-  Check, Archive, X, Mail, Clock, CheckCheck, ChevronRight,
+  Check, Archive, X, Mail, MailOpen, Clock, CheckCheck, ChevronRight,
   AlertCircle, Info, Inbox, Filter,
 } from 'lucide-react'
 import { InboxDetailPanel } from '../components/inbox/InboxDetailPanel'
 import {
-  fetchInbox, markInboxItemRead, markAllInboxRead, starInboxItem, deleteInboxItem,
+  fetchInbox, markInboxItemRead, markInboxItemUnread, markAllInboxRead, starInboxItem, deleteInboxItem,
 } from '../lib/api.js'
+import { supabase } from '../lib/supabase.js'
+import { useAuth } from '../context/AuthContext.jsx'
 
 const SEVERITY_CONFIG = {
   danger:  { icon: AlertCircle, text: 'text-danger', bg: 'bg-danger-tint', border: 'border-danger/25', dot: 'bg-danger' },
@@ -68,7 +70,7 @@ function TypeBadge({ type }) {
   )
 }
 
-function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRead, onArchiveSelected, onClearSelected, totalCount, unreadCount }) {
+function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRead, onMarkSelectedUnread, onArchiveSelected, onClearSelected, totalCount, unreadCount }) {
   const [filterOpen, setFilterOpen] = useState(false)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
   const filterRef = useRef(null)
@@ -112,6 +114,12 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
         {selected.size > 0 ? (
           <div className="flex-1 flex items-center gap-2">
             <span className="font-sans text-[12.5px] text-secondary">{selected.size} selected</span>
+            <button
+              onClick={onMarkSelectedUnread}
+              className="h-8 px-3 rounded-lg border border-line hover:bg-canvas text-secondary font-sans text-[12px] flex items-center gap-1.5 cursor-pointer"
+            >
+              <MailOpen size={13} /> Mark as unread
+            </button>
             <button
               onClick={onArchiveSelected}
               className="h-8 px-3 rounded-lg border border-line hover:bg-canvas text-secondary font-sans text-[12px] flex items-center gap-1.5 cursor-pointer"
@@ -288,23 +296,23 @@ function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar }) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <span className={`font-sans text-[13px] truncate ${item.read ? 'text-secondary font-normal' : 'text-ink font-semibold'}`}>
+          <span className={`font-sans text-[11px] truncate ${item.read ? 'text-secondary font-normal' : 'text-ink font-semibold'}`}>
             {item.from}
           </span>
           <TypeBadge type={item.type} />
           {item.scheduledFor && (
-            <span className="flex items-center gap-1 font-sans text-[10.5px] text-info bg-info-tint border border-info/20 rounded px-1.5 py-px flex-shrink-0">
+            <span className="flex items-center gap-1 font-sans text-[11px] text-info bg-info-tint border border-info/20 rounded px-1.5 py-px flex-shrink-0">
               <Clock size={10} />
               {item.scheduledFor}
             </span>
           )}
         </div>
         <div className="flex items-baseline gap-2 min-w-0">
-          <span className={`font-sans text-[12.5px] truncate ${item.read ? 'text-secondary' : 'text-ink font-medium'}`}>
+          <span className={`font-sans text-[13px] truncate ${item.read ? 'text-secondary' : 'text-ink font-medium'}`}>
             {item.subject}
           </span>
           <span className="font-sans text-[12px] text-muted truncate flex-1 hidden sm:block">
-            — {item.preview}
+            - {item.preview}
           </span>
         </div>
       </div>
@@ -327,13 +335,51 @@ function StatusFooter({ count, unread }) {
   )
 }
 
+function shapeFromDb(row) {
+  return shapeItem({
+    id: row.id,
+    type: row.type,
+    from: row.sender,
+    subject: row.subject,
+    preview: row.preview,
+    body: row.body,
+    caseId: row.case_id,
+    bookingId: row.booking_id,
+    severity: row.severity,
+    scheduledFor: row.scheduled_for,
+    read: row.read,
+    starred: row.starred,
+    createdAt: row.created_at,
+  })
+}
+
 export function InboxPage({ initialActiveId, onViewCase }) {
+  const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ types: new Set(), datePreset: '', readStatus: '' })
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
   const [activeId, setActiveId] = useState(null)
+  const [panelWidth, setPanelWidth] = useState(520)
+  const containerRef = useRef(null)
+
+  const startDrag = useCallback((e) => {
+    e.preventDefault()
+    const startX = e.clientX
+    const startWidth = panelWidth
+    const onMove = (e) => {
+      const containerWidth = containerRef.current?.offsetWidth ?? window.innerWidth
+      const newWidth = Math.max(320, Math.min(containerWidth * 0.8, startWidth + (startX - e.clientX)))
+      setPanelWidth(newWidth)
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [panelWidth])
 
   useEffect(() => {
     fetchInbox()
@@ -341,6 +387,22 @@ export function InboxPage({ initialActiveId, onViewCase }) {
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!user) return
+    const channel = supabase
+      .channel(`inbox-page-${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'inbox_items',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        setItems(prev => [shapeFromDb(payload.new), ...prev])
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [user])
 
   const filtered = useMemo(() => {
     let rows = items
@@ -373,13 +435,22 @@ export function InboxPage({ initialActiveId, onViewCase }) {
 
   const openItem = useCallback((id) => {
     setActiveId(id)
-    setItems(prev => prev.map(i => i.id === id ? { ...i, read: true } : i))
-    markInboxItemRead(id).catch(console.error)
   }, [])
 
+  // Set active item from toast navigation once data is loaded
   useEffect(() => {
-    if (!loading && initialActiveId) openItem(initialActiveId)
-  }, [loading, initialActiveId, openItem])
+    if (!loading && initialActiveId) setActiveId(initialActiveId)
+  }, [loading, initialActiveId])
+
+  // Mark as read whenever an unread item is open
+  useEffect(() => {
+    if (!activeId || loading) return
+    const item = items.find(i => i.id === activeId)
+    if (!item || item.read) return
+    setItems(prev => prev.map(i => i.id === activeId ? { ...i, read: true } : i))
+    markInboxItemRead(activeId).catch(console.error)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, loading])
 
   const toggleStar = useCallback((id) => {
     setItems(prev => prev.map(i => {
@@ -394,6 +465,18 @@ export function InboxPage({ initialActiveId, onViewCase }) {
     setItems(prev => prev.map(i => i.id === id ? { ...i, read: true } : i))
     markInboxItemRead(id).catch(console.error)
   }, [])
+
+  const markUnread = useCallback((id) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, read: false } : i))
+    markInboxItemUnread(id).catch(console.error)
+  }, [])
+
+  const markSelectedUnread = useCallback(() => {
+    const toMark = [...selected]
+    setItems(prev => prev.map(i => selected.has(i.id) ? { ...i, read: false } : i))
+    setSelected(new Set())
+    toMark.forEach(id => markInboxItemUnread(id).catch(console.error))
+  }, [selected])
 
   const markAllRead = useCallback(() => {
     setItems(prev => prev.map(i =>
@@ -432,13 +515,14 @@ export function InboxPage({ initialActiveId, onViewCase }) {
           setFilters={setFilters}
           selected={selected}
           onMarkAllRead={markAllRead}
+          onMarkSelectedUnread={markSelectedUnread}
           onArchiveSelected={archiveSelected}
           onClearSelected={() => setSelected(new Set())}
           totalCount={filtered.length}
           unreadCount={filtered.filter(i => !i.read).length}
         />
 
-        <div className="flex-1 flex min-h-0 overflow-hidden">
+        <div className="flex-1 flex min-h-0 overflow-hidden" ref={containerRef}>
           <div className="flex-1 overflow-auto min-h-0">
             {filtered.length === 0 ? (
               <div className="py-16 text-center">
@@ -462,13 +546,21 @@ export function InboxPage({ initialActiveId, onViewCase }) {
           </div>
 
           {activeId && (
-            <InboxDetailPanel
-              item={activeItem}
-              onClose={() => setActiveId(null)}
-              onStar={toggleStar}
-              onMarkRead={markRead}
-              onViewCase={onViewCase}
-            />
+            <>
+              <div
+                onMouseDown={startDrag}
+                className="w-1 shrink-0 cursor-col-resize bg-line hover:bg-primary/40 transition-colors"
+              />
+              <InboxDetailPanel
+                item={activeItem}
+                onClose={() => setActiveId(null)}
+                onStar={toggleStar}
+                onMarkRead={markRead}
+                onMarkUnread={markUnread}
+                onViewCase={onViewCase}
+                style={{ width: panelWidth }}
+              />
+            </>
           )}
         </div>
 

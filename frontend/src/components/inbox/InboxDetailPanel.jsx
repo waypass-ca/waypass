@@ -123,9 +123,9 @@ function SlotPicker({ bookingId, onConfirmed }) {
   )
 }
 
-export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onViewCase }) {
+export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onMarkUnread, onViewCase, style }) {
   if (!item) return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-8 bg-white border-l border-line">
+    <div style={style} className="flex flex-col items-center justify-center gap-3 text-center p-8 bg-white shrink-0">
       <div className="w-12 h-12 rounded-xl bg-canvas border border-line flex items-center justify-center">
         <Mail size={22} className="text-muted" />
       </div>
@@ -137,7 +137,7 @@ export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onViewCase
   )
 
   return (
-    <div className="w-[420px] border-l border-line bg-white flex flex-col overflow-hidden shrink-0">
+    <div style={style} className="border-l border-line bg-white flex flex-col overflow-hidden shrink-0">
       {item.scheduledFor && (
         <div className="px-5 py-2.5 flex items-center gap-2 bg-info-tint border-b border-info/20">
           <Clock size={13} className="text-info" />
@@ -155,15 +155,6 @@ export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onViewCase
             >
               <StarIcon filled={item.starred} size={14} />
             </button>
-            {!item.read && (
-              <button
-                onClick={() => onMarkRead(item.id)}
-                className="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer border-0 bg-transparent hover:bg-canvas text-muted hover:text-ink transition-colors"
-                title="Mark as read"
-              >
-                <Check size={14} />
-              </button>
-            )}
             <button
               onClick={onClose}
               className="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer border-0 bg-transparent hover:bg-canvas text-muted hover:text-ink transition-colors"
@@ -195,7 +186,7 @@ export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onViewCase
         <div className="px-5 py-3 border-t border-line shrink-0">
           <button
             onClick={() => onViewCase?.(item.caseId)}
-            className="h-8 px-4 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer transition-colors"
+            className="w-full max-w-[400px] h-9 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer transition-colors"
           >
             Open case
           </button>
@@ -220,10 +211,10 @@ export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onViewCase
       )}
 
       {item.type === 'alert' && item.caseId && (
-        <div className="px-5 py-3 border-t border-line shrink-0">
+        <div className="px-5 py-3 border-t border-line shrink-0 w-full flex items-center justify-center">
           <button
             onClick={() => onViewCase?.(item.caseId)}
-            className="h-8 px-4 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer transition-colors"
+            className="w-full max-w-[400px] h-9 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer transition-colors"
           >
             Open case
           </button>

@@ -55,9 +55,10 @@ router.patch('/mark-all-read', requireAuth, async (req, res, next) => {
 // PATCH /api/inbox/:id/read
 router.patch('/:id/read', requireAuth, async (req, res, next) => {
   try {
+    const read = req.body?.read !== undefined ? !!req.body.read : true
     const { error } = await supabase
       .from('inbox_items')
-      .update({ read: true })
+      .update({ read })
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)
     if (error) throw error
