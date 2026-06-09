@@ -270,7 +270,7 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
   )
 }
 
-function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar }) {
+function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar, compact }) {
   return (
     <div
       onClick={() => onOpen(item.id)}
@@ -300,7 +300,7 @@ function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar }) {
             {item.from}
           </span>
           <TypeBadge type={item.type} />
-          {item.scheduledFor && (
+          {item.scheduledFor && !compact && (
             <span className="flex items-center gap-1 font-sans text-[11px] text-info bg-info-tint border border-info/20 rounded px-1.5 py-px flex-shrink-0">
               <Clock size={10} />
               {item.scheduledFor}
@@ -362,16 +362,23 @@ export function InboxPage({ initialActiveId, onViewCase }) {
   const [selected, setSelected] = useState(new Set())
   const [activeId, setActiveId] = useState(null)
   const [panelWidth, setPanelWidth] = useState(520)
+  const [panelFull, setPanelFull] = useState(false)
   const containerRef = useRef(null)
 
   const startDrag = useCallback((e) => {
     e.preventDefault()
     const startX = e.clientX
-    const startWidth = panelWidth
+    const containerWidth = containerRef.current?.offsetWidth ?? window.innerWidth
+    const startWidth = panelFull ? containerWidth : panelWidth
     const onMove = (e) => {
-      const containerWidth = containerRef.current?.offsetWidth ?? window.innerWidth
-      const newWidth = Math.max(320, Math.min(containerWidth * 0.8, startWidth + (startX - e.clientX)))
-      setPanelWidth(newWidth)
+      const cw = containerRef.current?.offsetWidth ?? window.innerWidth
+      const rawWidth = startWidth + (startX - e.clientX)
+      if (rawWidth >= cw * 0.8) {
+        setPanelFull(true)
+      } else {
+        setPanelFull(false)
+        setPanelWidth(Math.max(320, Math.min(cw * 0.75, rawWidth)))
+      }
     }
     const onUp = () => {
       document.removeEventListener('mousemove', onMove)
@@ -379,7 +386,7 @@ export function InboxPage({ initialActiveId, onViewCase }) {
     }
     document.addEventListener('mousemove', onMove)
     document.addEventListener('mouseup', onUp)
-  }, [panelWidth])
+  }, [panelWidth, panelFull])
 
   useEffect(() => {
     fetchInbox()
@@ -495,6 +502,10 @@ export function InboxPage({ initialActiveId, onViewCase }) {
     setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
   }, [])
 
+  const listWidth = activeId && !panelFull
+    ? (containerRef.current?.offsetWidth ?? 0) - panelWidth - 1
+    : Infinity
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center text-muted font-sans text-[13px]">
@@ -521,27 +532,30 @@ export function InboxPage({ initialActiveId, onViewCase }) {
         />
 
         <div className="flex-1 flex min-h-0 overflow-hidden" ref={containerRef}>
-          <div className="flex-1 overflow-auto min-h-0">
-            {filtered.length === 0 ? (
-              <div className="py-16 text-center">
-                <Inbox size={32} className="mx-auto text-muted/40 mb-3" />
-                <p className="font-display text-[17px] text-secondary">Nothing here</p>
-                <p className="font-sans text-[12px] text-muted mt-1">
-                  {search ? 'Try a different search term.' : 'You\'re all caught up.'}
-                </p>
-              </div>
-            ) : filtered.map(item => (
-              <InboxRow
-                key={item.id}
-                item={item}
-                isSelected={selected.has(item.id)}
-                isActive={activeId === item.id}
-                onSelect={toggleSelect}
-                onOpen={openItem}
-                onStar={toggleStar}
-              />
-            ))}
-          </div>
+          {(!panelFull || !activeId) && (
+            <div className="flex-1 overflow-auto min-h-0">
+              {filtered.length === 0 ? (
+                <div className="py-16 text-center">
+                  <Inbox size={32} className="mx-auto text-muted/40 mb-3" />
+                  <p className="font-display text-[17px] text-secondary">Nothing here</p>
+                  <p className="font-sans text-[12px] text-muted mt-1">
+                    {search ? 'Try a different search term.' : 'You\'re all caught up.'}
+                  </p>
+                </div>
+              ) : filtered.map(item => (
+                <InboxRow
+                  key={item.id}
+                  item={item}
+                  isSelected={selected.has(item.id)}
+                  isActive={activeId === item.id}
+                  onSelect={toggleSelect}
+                  onOpen={openItem}
+                  onStar={toggleStar}
+                  compact={listWidth < 550}
+                />
+              ))}
+            </div>
+          )}
 
           {activeId && (
             <>
@@ -556,7 +570,7 @@ export function InboxPage({ initialActiveId, onViewCase }) {
                 onMarkRead={markRead}
                 onMarkUnread={markUnread}
                 onViewCase={onViewCase}
-                style={{ width: panelWidth }}
+                style={panelFull ? { flex: 1 } : { width: panelWidth }}
               />
             </>
           )}
