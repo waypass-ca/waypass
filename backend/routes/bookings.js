@@ -2,6 +2,12 @@ import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 
+const withLastName = (name, subject) => {
+  if (!name) return subject
+  const parts = name.trim().split(/\s+/)
+  return `${parts[parts.length - 1]} ${subject}`
+}
+
 const router = Router()
 
 function shapeRow(row) {
@@ -137,7 +143,7 @@ router.post('/respond/:token', async (req, res, next) => {
       user_id: shaped.funeralHomeId,
       type: 'schedule',
       sender: cremName,
-      subject: `Availability received`,
+      subject: withLastName(deceased, 'Availability received'),
       preview,
       body: [
         `${cremName} submitted their available times for ${deceased}.`,
@@ -229,7 +235,7 @@ router.post('/', async (req, res, next) => {
           user_id: req.user.id,
           type: 'schedule',
           sender: shaped.crematoriumName ?? 'Crematorium',
-          subject: `Booking request sent`,
+          subject: withLastName(nameForDisplay, 'Booking request sent'),
           preview: `${nameForDisplay} · Request sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
           body: [
             `A pickup request for ${nameForDisplay} has been sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
@@ -300,7 +306,7 @@ router.post('/:id/confirm', async (req, res, next) => {
       user_id: req.user.id,
       type: 'schedule',
       sender: cremName,
-      subject: `Cremation scheduled`,
+      subject: withLastName(deceased, 'Cremation scheduled'),
       preview: `${deceased} · ${scheduledFor} at ${cremName}.`,
       body: [
         `Cremation for ${deceased} has been confirmed at ${cremName}.`,
@@ -346,7 +352,7 @@ router.delete('/:id', async (req, res, next) => {
       user_id: req.user.id,
       type: 'schedule',
       sender: cremName,
-      subject: 'Booking cancelled',
+      subject: withLastName(deceased, 'Booking cancelled'),
       preview: `${deceased} · Booking with ${cremName} cancelled.`,
       body: `The cremation booking for ${deceased} with ${cremName} has been cancelled.`,
       case_id: shaped.caseId,

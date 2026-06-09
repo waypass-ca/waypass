@@ -2,6 +2,16 @@ import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 
+const lastName = (name) => {
+  if (!name) return null
+  const parts = name.trim().split(/\s+/)
+  return parts[parts.length - 1]
+}
+const withLastName = (name, subject) => {
+  const ln = lastName(name)
+  return ln ? `${ln} ${subject}` : subject
+}
+
 const router = Router()
 
 const CASE_SELECT =
@@ -354,7 +364,7 @@ router.put('/:id/custody/:stage', requireAuth, async (req, res, next) => {
             user_id: req.user.id,
             type: 'alert',
             sender: staffName,
-            subject: stageLabel,
+            subject: withLastName(deceasedName, stageLabel),
             preview: `${staffName} marked ${deceasedName} as ${stageLabel}.`,
             body: `${staffName} logged the following custody milestone for ${deceasedName}:\n\n${stageLabel}`,
             case_id: caseId,
