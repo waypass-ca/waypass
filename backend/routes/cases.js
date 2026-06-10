@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { createInboxItem } from '../lib/notifications.js'
 
 const lastName = (name) => {
   if (!name) return null
@@ -355,27 +356,19 @@ router.put('/:id/custody/:stage', requireAuth, async (req, res, next) => {
       const stageLabel = NOTIFY_STAGES[stage]
       const staffName = staff ?? 'Staff'
       const caseId = req.params.id
-      ;(async () => {
-        try {
-          const { data: caseRow } = await supabase
-            .from('cases').select('deceased').eq('id', caseId).single()
-          const deceasedName = caseRow?.deceased ?? caseId
-          await supabase.from('inbox_items').insert({
-            user_id: req.user.id,
-            type: 'alert',
-            sender: staffName,
-            subject: withLastName(deceasedName, stageLabel),
-            preview: `${staffName} marked ${deceasedName} as ${stageLabel}.`,
-            body: `${staffName} logged the following custody milestone for ${deceasedName}:\n\n${stageLabel}`,
-            case_id: caseId,
-            severity: 'info',
-            read: false,
-            starred: false,
-          })
-        } catch (err) {
-          console.error('custody inbox insert failed:', err.message)
-        }
-      })()
+      const { data: caseRow } = await supabase
+        .from('cases').select('deceased').eq('id', caseId).single()
+      const deceasedName = caseRow?.deceased ?? caseId
+      await createInboxItem({
+        userId: req.user.id,
+        type: 'alert',
+        sender: staffName,
+        subject: withLastName(deceasedName, stageLabel),
+        preview: `${staffName} marked ${deceasedName} as ${stageLabel}.`,
+        body: `${staffName} logged the following custody milestone for ${deceasedName}:\n\n${stageLabel}`,
+        caseId,
+        severity: 'info',
+      })
     }
 
     res.json({

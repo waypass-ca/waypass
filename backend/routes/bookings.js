@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { createInboxItem, shouldEmail } from '../lib/notifications.js'
 
 const withLastName = (name, subject) => {
   if (!name) return subject
@@ -139,8 +140,8 @@ router.post('/respond/:token', async (req, res, next) => {
     const slotCount = crematoriumSlots.length
     const preview = `${deceased} · ${cremName} responded with ${slotCount} available time${slotCount === 1 ? '' : 's'}.`
 
-    supabase.from('inbox_items').insert({
-      user_id: shaped.funeralHomeId,
+    await createInboxItem({
+      userId: shaped.funeralHomeId,
       type: 'schedule',
       sender: cremName,
       subject: withLastName(deceased, 'Availability received'),
@@ -153,14 +154,9 @@ router.post('/respond/:token', async (req, res, next) => {
         ``,
         `Review and confirm a slot in Passage.`,
       ].join('\n'),
-      case_id: shaped.caseId,
-      booking_id: shaped.id,
+      caseId: shaped.caseId,
+      bookingId: shaped.id,
       severity: 'info',
-      scheduled_for: null,
-      read: false,
-      starred: false,
-    }).then(({ error: inboxErr }) => {
-      if (inboxErr) console.error('inbox_items insert failed:', inboxErr.message)
     })
 
     res.json(shaped)
@@ -228,34 +224,36 @@ router.post('/', async (req, res, next) => {
 
     const shaped = shapeRow(data)
     const nameForDisplay = deceasedName ?? 'Unknown'
-    sendBookingInvite(shaped, nameForDisplay)
-      .then(sent => {
-        if (!sent) return
-        supabase.from('inbox_items').insert({
-          user_id: req.user.id,
-          type: 'schedule',
-          sender: shaped.crematoriumName ?? 'Crematorium',
-          subject: withLastName(nameForDisplay, 'Booking request sent'),
-          preview: `${nameForDisplay} · Request sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
-          body: [
-            `A pickup request for ${nameForDisplay} has been sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
-            ``,
-            `Proposed slots:`,
-            ...shaped.proposedSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
-            ``,
-            `You'll be notified when they respond.`,
-          ].join('\n'),
-          case_id: shaped.caseId,
-          booking_id: shaped.id,
-          severity: 'info',
-          scheduled_for: null,
-          read: false,
-          starred: false,
-        }).then(({ error: inboxErr }) => {
-          if (inboxErr) console.error('inbox_items insert failed:', inboxErr.message)
-        })
+
+    let sent = false
+    if (await shouldEmail(req.user.id, 'new_crematorium_request')) {
+      try {
+        sent = await sendBookingInvite(shaped, nameForDisplay)
+      } catch (emailErr) {
+        console.error('Email send failed:', emailErr.message)
+      }
+    }
+
+    if (sent) {
+      await createInboxItem({
+        userId: req.user.id,
+        type: 'schedule',
+        sender: shaped.crematoriumName ?? 'Crematorium',
+        subject: withLastName(nameForDisplay, 'Booking request sent'),
+        preview: `${nameForDisplay} · Request sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
+        body: [
+          `A pickup request for ${nameForDisplay} has been sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
+          ``,
+          `Proposed slots:`,
+          ...shaped.proposedSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
+          ``,
+          `You'll be notified when they respond.`,
+        ].join('\n'),
+        caseId: shaped.caseId,
+        bookingId: shaped.id,
+        severity: 'info',
       })
-      .catch(err => console.error('Email send failed:', err.message))
+    }
 
     res.status(201).json(shaped)
   } catch (err) {
@@ -300,27 +298,24 @@ router.post('/:id/confirm', async (req, res, next) => {
     const fmt = h => `${h > 12 ? h - 12 : h === 0 ? 12 : h}:00 ${h < 12 ? 'AM' : 'PM'}`
     const slotStart = parseInt(slot.start.split(':')[0], 10)
     const slotEnd = parseInt(slot.end.split(':')[0], 10)
-    const scheduledFor = `${slot.date} · ${fmt(slotStart)} – ${fmt(slotEnd)}`
+    const displayWhen = `${slot.date} · ${fmt(slotStart)} – ${fmt(slotEnd)}`
+    const scheduledFor = new Date(`${slot.date}T${slot.start}:00`).toISOString()
 
-    supabase.from('inbox_items').insert({
-      user_id: req.user.id,
+    await createInboxItem({
+      userId: req.user.id,
       type: 'schedule',
       sender: cremName,
       subject: withLastName(deceased, 'Cremation scheduled'),
-      preview: `${deceased} · ${scheduledFor} at ${cremName}.`,
+      preview: `${deceased} · ${displayWhen} at ${cremName}.`,
       body: [
         `Cremation for ${deceased} has been confirmed at ${cremName}.`,
         ``,
-        `Date & Time: ${scheduledFor}`,
+        `Date & Time: ${displayWhen}`,
       ].join('\n'),
-      case_id: shaped.caseId,
-      booking_id: shaped.id,
+      caseId: shaped.caseId,
+      bookingId: shaped.id,
       severity: 'info',
-      scheduled_for: scheduledFor,
-      read: false,
-      starred: false,
-    }).then(({ error: inboxErr }) => {
-      if (inboxErr) console.error('inbox_items insert failed:', inboxErr.message)
+      scheduledFor,
     })
 
     res.json(shaped)
@@ -348,19 +343,17 @@ router.delete('/:id', async (req, res, next) => {
     const shaped = shapeRow(existing)
     const cremName = shaped.crematoriumName ?? 'Crematorium'
     const deceased = shaped.deceasedName ?? shaped.caseId
-    supabase.from('inbox_items').insert({
-      user_id: req.user.id,
+    await createInboxItem({
+      userId: req.user.id,
       type: 'schedule',
       sender: cremName,
       subject: withLastName(deceased, 'Booking cancelled'),
       preview: `${deceased} · Booking with ${cremName} cancelled.`,
       body: `The cremation booking for ${deceased} with ${cremName} has been cancelled.`,
-      case_id: shaped.caseId,
-      booking_id: shaped.id,
+      caseId: shaped.caseId,
+      bookingId: shaped.id,
       severity: 'warning',
-      read: false,
-      starred: false,
-    }).then(({ error: e }) => { if (e) console.error('inbox_items insert failed:', e.message) })
+    })
 
     res.status(204).send()
   } catch (err) {

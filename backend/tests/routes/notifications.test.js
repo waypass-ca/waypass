@@ -7,7 +7,7 @@ vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
 const { default: app } = await import('../../server.js')
 
-const USER_ID = 'user-uuid-1'
+const USER_ID = authedUser.data.user.id
 
 const dbNotification = {
   id: 'notif-uuid-1',
@@ -33,7 +33,7 @@ const shapedNotification = {
   familyMessageReceived: true,
 }
 
-describe('GET /api/notifications/:userId', () => {
+describe('GET /api/notifications', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     supabase.auth.getUser.mockResolvedValue(authedUser)
@@ -44,31 +44,32 @@ describe('GET /api/notifications/:userId', () => {
 
   it('returns 401 without auth', async () => {
     supabase.auth.getUser.mockResolvedValue(badToken)
-    const res = await request(app).get(`/api/notifications/${USER_ID}`)
+    const res = await request(app).get('/api/notifications')
     expect(res.status).toBe(401)
   })
 
-  it('returns 200 with shaped notification prefs', async () => {
-    const res = await request(app).get(`/api/notifications/${USER_ID}`).set(authHeader)
+  it('returns 200 with shaped notification prefs for the authed user', async () => {
+    const res = await request(app).get('/api/notifications').set(authHeader)
     expect(res.status).toBe(200)
     expect(res.body).toEqual(shapedNotification)
+    expect(chain.eq).toHaveBeenCalledWith('user_id', USER_ID)
   })
 
   it('returns 200 with null when no prefs exist yet', async () => {
     chain.maybeSingle.mockResolvedValue({ data: null, error: null })
-    const res = await request(app).get(`/api/notifications/${USER_ID}`).set(authHeader)
+    const res = await request(app).get('/api/notifications').set(authHeader)
     expect(res.status).toBe(200)
     expect(res.body).toBeNull()
   })
 
   it('returns 500 on DB error', async () => {
     chain.maybeSingle.mockResolvedValue({ data: null, error: new Error('DB error') })
-    const res = await request(app).get(`/api/notifications/${USER_ID}`).set(authHeader)
+    const res = await request(app).get('/api/notifications').set(authHeader)
     expect(res.status).toBe(500)
   })
 })
 
-describe('PUT /api/notifications/:userId', () => {
+describe('PUT /api/notifications', () => {
   const payload = {
     newCaseSubmitted: true,
     caseStatusUpdated: false,
@@ -88,14 +89,14 @@ describe('PUT /api/notifications/:userId', () => {
 
   it('returns 401 without auth', async () => {
     supabase.auth.getUser.mockResolvedValue(badToken)
-    const res = await request(app).put(`/api/notifications/${USER_ID}`).send(payload)
+    const res = await request(app).put('/api/notifications').send(payload)
     expect(res.status).toBe(401)
   })
 
-  it('returns 200 with shaped notification prefs after upsert', async () => {
+  it('upserts with user_id from auth context, not URL', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     const res = await request(app)
-      .put(`/api/notifications/${USER_ID}`)
+      .put('/api/notifications')
       .set(authHeader)
       .send(payload)
     expect(res.status).toBe(200)
@@ -110,7 +111,7 @@ describe('PUT /api/notifications/:userId', () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.single.mockResolvedValue({ data: null, error: new Error('DB error') })
     const res = await request(app)
-      .put(`/api/notifications/${USER_ID}`)
+      .put('/api/notifications')
       .set(authHeader)
       .send(payload)
     expect(res.status).toBe(500)

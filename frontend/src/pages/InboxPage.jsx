@@ -1,28 +1,20 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  Star, Search, TriangleAlert,
-  Check, Archive, X, Mail, MailOpen, Clock, CheckCheck, ChevronRight,
-  AlertCircle, Info, Inbox, Filter,
+  Star, Search,
+  Check, Archive, X, MailOpen, Clock, CheckCheck,
+  Inbox, Filter, Undo2,
 } from 'lucide-react'
 import { InboxDetailPanel } from '../components/inbox/InboxDetailPanel'
 import {
-  fetchInbox, markInboxItemRead, markInboxItemUnread, markAllInboxRead, starInboxItem, deleteInboxItem,
+  fetchInbox, markInboxItemRead, markInboxItemUnread, markAllInboxRead, starInboxItem,
+  archiveInboxItem, unarchiveInboxItem,
 } from '../lib/api.js'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import { TYPE_CONFIG, formatScheduledFor } from '../components/notifications/notificationConfig.js'
 
-const SEVERITY_CONFIG = {
-  danger:  { icon: AlertCircle, text: 'text-danger', bg: 'bg-danger-tint', border: 'border-danger/25', dot: 'bg-danger' },
-  warning: { icon: TriangleAlert, text: 'text-warning', bg: 'bg-warning-light', border: 'border-warning/25', dot: 'bg-warning' },
-  info:    { icon: Info, text: 'text-info', bg: 'bg-info-tint', border: 'border-info/25', dot: 'bg-info' },
-}
-
-const TYPE_CONFIG = {
-  alert:    { label: 'Alert',    color: 'text-warning', dot: 'bg-warning' },
-  message:  { label: 'Message',  color: 'text-primary',  dot: 'bg-primary' },
-  schedule: { label: 'Schedule', color: 'text-info',    dot: 'bg-info' },
-}
+const PAGE_SIZE = 50
 
 function formatTime(iso) {
   if (!iso) return ''
@@ -52,6 +44,8 @@ function shapeItem(raw) {
     caseId: raw.caseId ?? null,
     bookingId: raw.bookingId ?? null,
     scheduledFor: raw.scheduledFor ?? null,
+    scheduledForLabel: formatScheduledFor(raw.scheduledFor),
+    createdAt: raw.createdAt ?? null,
   }
 }
 
@@ -83,8 +77,13 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
       const inDropdown = dropdownRef.current?.contains(e.target)
       if (!inButton && !inDropdown) setFilterOpen(false)
     }
+    const esc = e => { if (e.key === 'Escape') setFilterOpen(false) }
     document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('mousedown', h)
+      document.removeEventListener('keydown', esc)
+    }
   }, [filterOpen])
 
   const toggleType = (type) => setFilters(f => {
@@ -141,6 +140,8 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search inbox…"
+                aria-label="Search inbox"
+                type="search"
                 className="w-full pl-9 pr-4 h-9 rounded-lg border border-line bg-white text-[13px] text-ink font-sans placeholder:text-muted outline-none focus:border-ink/60 transition"
               />
             </div>
@@ -155,6 +156,9 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
                     }
                     setFilterOpen(o => !o)
                   }}
+                  aria-label={`Filters${filtersActive ? ` (${filtersActive} active)` : ''}`}
+                  aria-expanded={filterOpen}
+                  aria-haspopup="dialog"
                   className={`relative h-9 w-9 rounded-lg border bg-white hover:bg-surface flex items-center justify-center cursor-pointer transition
                     ${filterOpen || filtersActive ? 'border-ink text-ink' : 'border-line text-secondary'}`}
                 >
@@ -169,6 +173,8 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
                 {filterOpen && createPortal(
                   <div
                     ref={dropdownRef}
+                    role="dialog"
+                    aria-label="Inbox filters"
                     style={{ position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }}
                     className="w-72 bg-surface border border-line rounded-xl shadow-[0_12px_32px_-8px_rgba(28,28,30,0.18)] overflow-hidden flex flex-col"
                   >
@@ -274,13 +280,22 @@ function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar, compac
   return (
     <div
       onClick={() => onOpen(item.id)}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(item.id) }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-pressed={isActive}
+      aria-label={`${item.read ? '' : 'Unread. '}${item.from}: ${item.subject}`}
       className={`relative flex items-center gap-3 px-4 py-3 border-b border-line/60 cursor-pointer transition-all group
-        hover:shadow-[0_2px_12px_-2px_rgba(28,28,30,0.15)] hover:z-10
+        hover:shadow-[0_2px_12px_-2px_rgba(28,28,30,0.15)] hover:z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/30
         ${isSelected || isActive ? 'shadow-[0_2px_12px_-2px_rgba(28,28,30,0.2)] z-10' : ''}
         ${isSelected ? 'bg-primary' : isActive ? 'bg-primary-light/40' : item.read ? 'bg-surface' : 'bg-white'}`}
     >
       <button
         onClick={e => { e.stopPropagation(); onSelect(item.id) }}
+        aria-label={isSelected ? 'Deselect' : 'Select'}
+        aria-pressed={isSelected}
         className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 cursor-pointer transition
           ${isSelected ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}
       >
@@ -289,6 +304,8 @@ function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar, compac
 
       <button
         onClick={e => { e.stopPropagation(); onStar(item.id) }}
+        aria-label={item.starred ? 'Unstar' : 'Star'}
+        aria-pressed={item.starred}
         className="flex-shrink-0 cursor-pointer border-0 bg-transparent p-0"
       >
         <StarIcon filled={item.starred} size={14} />
@@ -300,10 +317,10 @@ function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar, compac
             {item.from}
           </span>
           <TypeBadge type={item.type} />
-          {item.scheduledFor && !compact && (
+          {item.scheduledForLabel && !compact && (
             <span className="flex items-center gap-1 font-sans text-[11px] text-info bg-info-tint border border-info/20 rounded px-1.5 py-px flex-shrink-0">
               <Clock size={10} />
-              {item.scheduledFor}
+              {item.scheduledForLabel}
             </span>
           )}
         </div>
@@ -357,12 +374,16 @@ export function InboxPage({ initialActiveId, onViewCase }) {
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [filters, setFilters] = useState({ types: new Set(), datePreset: '', readStatus: '' })
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
   const [activeId, setActiveId] = useState(null)
   const [panelWidth, setPanelWidth] = useState(520)
   const [panelFull, setPanelFull] = useState(false)
+  const [undo, setUndo] = useState(null) // { ids: string[], expiresAt }
+  const undoTimerRef = useRef(null)
   const containerRef = useRef(null)
 
   const startDrag = useCallback((e) => {
@@ -389,23 +410,62 @@ export function InboxPage({ initialActiveId, onViewCase }) {
   }, [panelWidth, panelFull])
 
   useEffect(() => {
-    fetchInbox()
-      .then(data => setItems(data.map(shapeItem)))
+    fetchInbox({ limit: PAGE_SIZE })
+      .then(data => {
+        setItems(data.map(shapeItem))
+        setHasMore(data.length === PAGE_SIZE)
+      })
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [])
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || items.length === 0) return
+    setLoadingMore(true)
+    try {
+      const oldest = items[items.length - 1]
+      const data = await fetchInbox({ limit: PAGE_SIZE, before: oldest.createdAt })
+      setItems(prev => [...prev, ...data.map(shapeItem)])
+      setHasMore(data.length === PAGE_SIZE)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [loadingMore, hasMore, items])
 
   useEffect(() => {
     if (!user) return
     const channel = supabase
       .channel(`inbox-page-${user.id}`)
       .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'inbox_items',
+        event: 'INSERT', schema: 'public', table: 'inbox_items',
         filter: `user_id=eq.${user.id}`,
       }, (payload) => {
-        setItems(prev => [shapeFromDb(payload.new), ...prev])
+        if (payload.new.archived_at) return
+        setItems(prev => prev.some(i => i.id === payload.new.id)
+          ? prev
+          : [shapeFromDb(payload.new), ...prev])
+      })
+      // Sync read/star/archive from other tabs.
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'inbox_items',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        const row = payload.new
+        if (row.archived_at) {
+          setItems(prev => prev.filter(i => i.id !== row.id))
+          setActiveId(curr => curr === row.id ? null : curr)
+          return
+        }
+        setItems(prev => prev.map(i => i.id === row.id ? shapeFromDb(row) : i))
+      })
+      .on('postgres_changes', {
+        event: 'DELETE', schema: 'public', table: 'inbox_items',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        setItems(prev => prev.filter(i => i.id !== payload.old.id))
+        setActiveId(curr => curr === payload.old.id ? null : curr)
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
@@ -490,13 +550,39 @@ export function InboxPage({ initialActiveId, onViewCase }) {
     markAllInboxRead().catch(console.error)
   }, [filters.types])
 
+  const clearUndo = useCallback(() => {
+    if (undoTimerRef.current) { clearTimeout(undoTimerRef.current); undoTimerRef.current = null }
+    setUndo(null)
+  }, [])
+
   const archiveSelected = useCallback(() => {
-    const toDelete = [...selected]
+    const ids = [...selected]
+    if (ids.length === 0) return
+    const removed = items.filter(i => selected.has(i.id))
     setItems(prev => prev.filter(i => !selected.has(i.id)))
     if (selected.has(activeId)) setActiveId(null)
     setSelected(new Set())
-    toDelete.forEach(id => deleteInboxItem(id).catch(console.error))
-  }, [selected, activeId])
+    Promise.all(ids.map(id => archiveInboxItem(id).catch(console.error)))
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+    setUndo({ ids, items: removed })
+    undoTimerRef.current = setTimeout(() => setUndo(null), 8000)
+  }, [selected, activeId, items])
+
+  const handleUndo = useCallback(async () => {
+    if (!undo) return
+    const restore = undo.items
+    clearUndo()
+    setItems(prev => {
+      const ids = new Set(prev.map(i => i.id))
+      const additions = restore.filter(i => !ids.has(i.id))
+      return [...additions, ...prev].sort((a, b) =>
+        (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+      )
+    })
+    await Promise.all(undo.ids.map(id => unarchiveInboxItem(id).catch(console.error)))
+  }, [undo, clearUndo])
+
+  useEffect(() => () => clearUndo(), [clearUndo])
 
   const toggleSelect = useCallback((id) => {
     setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
@@ -542,18 +628,33 @@ export function InboxPage({ initialActiveId, onViewCase }) {
                     {search ? 'Try a different search term.' : 'You\'re all caught up.'}
                   </p>
                 </div>
-              ) : filtered.map(item => (
-                <InboxRow
-                  key={item.id}
-                  item={item}
-                  isSelected={selected.has(item.id)}
-                  isActive={activeId === item.id}
-                  onSelect={toggleSelect}
-                  onOpen={openItem}
-                  onStar={toggleStar}
-                  compact={listWidth < 550}
-                />
-              ))}
+              ) : (
+                <>
+                  {filtered.map(item => (
+                    <InboxRow
+                      key={item.id}
+                      item={item}
+                      isSelected={selected.has(item.id)}
+                      isActive={activeId === item.id}
+                      onSelect={toggleSelect}
+                      onOpen={openItem}
+                      onStar={toggleStar}
+                      compact={listWidth < 550}
+                    />
+                  ))}
+                  {hasMore && (
+                    <div className="py-4 text-center">
+                      <button
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        className="h-8 px-4 rounded-lg border border-line bg-white hover:bg-canvas text-secondary font-sans text-[12px] cursor-pointer disabled:opacity-50"
+                      >
+                        {loadingMore ? 'Loading…' : 'Load more'}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 
@@ -578,6 +679,31 @@ export function InboxPage({ initialActiveId, onViewCase }) {
 
         <StatusFooter count={filtered.length} unread={filtered.filter(i => !i.read).length} />
       </div>
+
+      {undo && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-ink text-surface rounded-xl px-4 py-2.5 shadow-lg"
+        >
+          <span className="font-sans text-[13px]">
+            Archived {undo.ids.length} {undo.ids.length === 1 ? 'item' : 'items'}
+          </span>
+          <button
+            onClick={handleUndo}
+            className="flex items-center gap-1.5 font-sans text-[12.5px] font-medium underline-offset-2 hover:underline cursor-pointer border-0 bg-transparent text-surface"
+          >
+            <Undo2 size={13} /> Undo
+          </button>
+          <button
+            onClick={clearUndo}
+            aria-label="Dismiss"
+            className="text-surface/60 hover:text-surface cursor-pointer border-0 bg-transparent"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

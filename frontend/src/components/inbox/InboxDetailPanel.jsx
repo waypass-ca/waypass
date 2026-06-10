@@ -1,34 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Star, Check, X, Clock, AlertCircle, Info, Mail, CheckCircle2 } from 'lucide-react'
-import { TriangleAlert } from 'lucide-react'
+import { Star, Check, X, Clock, Mail, CheckCircle2 } from 'lucide-react'
 import { fetchBooking, confirmBooking } from '../../lib/api.js'
-
-const SEVERITY_CONFIG = {
-  danger:  { icon: AlertCircle,    text: 'text-danger',  bg: 'bg-danger-tint',    border: 'border-danger/25',  dot: 'bg-danger'  },
-  warning: { icon: TriangleAlert,  text: 'text-warning', bg: 'bg-warning-light',  border: 'border-warning/25', dot: 'bg-warning' },
-  info:    { icon: Info,           text: 'text-info',    bg: 'bg-info-tint',      border: 'border-info/25',    dot: 'bg-info'    },
-}
-
-const TYPE_CONFIG = {
-  alert:    { label: 'Alert',    color: 'text-warning', dot: 'bg-warning' },
-  message:  { label: 'Message',  color: 'text-primary',  dot: 'bg-primary' },
-  schedule: { label: 'Schedule', color: 'text-info',    dot: 'bg-info'    },
-}
+import { formatScheduledFor } from '../notifications/notificationConfig.js'
 
 const StarIcon = ({ filled, size = 14, className = '' }) =>
   filled
     ? <Star size={size} className={`[&_*]:fill-current [&_*]:stroke-current text-warning ${className}`} />
     : <Star size={size} className={`text-muted hover:text-warning ${className}`} />
-
-function TypeBadge({ type }) {
-  const cfg = TYPE_CONFIG[type]
-  return (
-    <span className={`inline-flex items-center gap-1.5 font-sans text-[10.5px] font-medium ${cfg.color}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-      {cfg.label}
-    </span>
-  )
-}
 
 function formatSlotDate(date) {
   return new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -124,6 +102,13 @@ function SlotPicker({ bookingId, onConfirmed }) {
 }
 
 export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onMarkUnread, onViewCase, style }) {
+  useEffect(() => {
+    if (!item) return
+    const h = e => { if (e.key === 'Escape') onClose?.() }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [item, onClose])
+
   if (!item) return (
     <div style={style} className="flex flex-col items-center justify-center gap-3 text-center p-8 bg-white shrink-0">
       <div className="w-12 h-12 rounded-xl bg-canvas border border-line flex items-center justify-center">
@@ -141,7 +126,9 @@ export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onMarkUnre
       {item.scheduledFor && (
         <div className="px-5 py-2.5 flex items-center gap-2 bg-info-tint border-b border-info/20">
           <Clock size={13} className="text-info" />
-          <span className="font-sans text-[12px] font-medium text-info">Scheduled: {item.scheduledFor}</span>
+          <span className="font-sans text-[12px] font-medium text-info">
+            Scheduled: {formatScheduledFor(item.scheduledFor) ?? item.scheduledFor}
+          </span>
         </div>
       )}
 
@@ -151,12 +138,15 @@ export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onMarkUnre
           <div className="flex items-start">
             <button
               onClick={() => onStar(item.id)}
+              aria-label={item.starred ? 'Unstar' : 'Star'}
+              aria-pressed={item.starred}
               className="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer border-0 bg-transparent hover:bg-canvas transition-colors"
             >
               <StarIcon filled={item.starred} size={14} />
             </button>
             <button
               onClick={onClose}
+              aria-label="Close detail panel"
               className="w-7 h-7 rounded-md flex items-center justify-center cursor-pointer border-0 bg-transparent hover:bg-canvas text-muted hover:text-ink transition-colors"
             >
               <X size={15} />
@@ -192,9 +182,13 @@ export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onMarkUnre
           </button>
         </div>
       ) : item.type === 'message' ? (
+        // TODO(messaging-feature): reply textarea is scaffolding only —
+        // the Send button has no handler. Wire up when the messaging
+        // backend (POST endpoint + `message`-type creation) ships.
         <div className="px-5 py-3 border-t border-line shrink-0">
           <textarea
             placeholder="Reply…"
+            aria-label="Reply to message"
             className="w-full border border-line rounded-lg px-3 py-2.5 text-[13px] font-sans text-ink placeholder:text-muted outline-none focus:border-ink/60 transition resize-none"
             rows={2}
           />
