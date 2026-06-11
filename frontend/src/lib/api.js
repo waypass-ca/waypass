@@ -116,6 +116,30 @@ export const respondToBooking = (token, slots) =>
     body: JSON.stringify({ slots }),
   })
 
+// ── Inbox ─────────────────────────────────────────────
+export const fetchInbox = ({ limit = 50, before, archived = false } = {}) => {
+  const params = new URLSearchParams()
+  params.set('limit', String(limit))
+  if (before) params.set('before', before)
+  if (archived) params.set('archived', 'true')
+  return mutate(`/api/inbox?${params.toString()}`)
+}
+export const fetchInboxUnreadCount = () => mutate('/api/inbox/unread-count')
+export const markInboxItemRead = (id) => mutate(`/api/inbox/${id}/read`, { method: 'PATCH' })
+export const markInboxItemUnread = (id) => mutate(`/api/inbox/${id}/read`, { method: 'PATCH', body: JSON.stringify({ read: false }) })
+export const markAllInboxRead = () => mutate('/api/inbox/mark-all-read', { method: 'PATCH' })
+export const starInboxItem = (id, starred) =>
+  mutate(`/api/inbox/${id}/star`, { method: 'PATCH', body: JSON.stringify({ starred }) })
+export const archiveInboxItem = (id) => mutate(`/api/inbox/${id}`, { method: 'DELETE' })
+export const unarchiveInboxItem = (id) => mutate(`/api/inbox/${id}/unarchive`, { method: 'POST' })
+// Back-compat alias — InboxPage used to call this.
+export const deleteInboxItem = archiveInboxItem
+
+// ── Notification preferences (email) ─────────────────
+export const fetchNotificationPrefs = () => mutate('/api/notifications')
+export const saveNotificationPrefs = (prefs) =>
+  mutate('/api/notifications', { method: 'PUT', body: JSON.stringify(prefs) })
+
 // ── Orders ────────────────────────────────────────────
 export const fetchOrders = () => request('/api/orders')
 export const advanceOrder = (id) =>

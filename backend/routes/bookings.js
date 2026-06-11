@@ -1,6 +1,13 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { createInboxItem, shouldEmail } from '../lib/notifications.js'
+
+const withLastName = (name, subject) => {
+  if (!name) return subject
+  const parts = name.trim().split(/\s+/)
+  return `${parts[parts.length - 1]} ${subject}`
+}
 
 const router = Router()
 
@@ -11,6 +18,7 @@ function shapeRow(row) {
     crematoriumId: row.crematorium_id,
     crematoriumEmail: row.crematorium_email,
     crematoriumName: row.crematorium_name,
+    deceasedName: row.deceased_name ?? null,
     funeralHomeId: row.funeral_home_id,
     status: row.status,
     proposedSlots: row.proposed_slots ?? [],
@@ -124,7 +132,34 @@ router.post('/respond/:token', async (req, res, next) => {
       .select()
       .single()
     if (error) throw error
-    res.json(shapeRow(data))
+
+    // Notify the funeral home in their inbox
+    const shaped = shapeRow(data)
+    const cremName = shaped.crematoriumName ?? 'Crematorium'
+    const deceased = shaped.deceasedName ?? shaped.caseId
+    const slotCount = crematoriumSlots.length
+    const preview = `${deceased} · ${cremName} responded with ${slotCount} available time${slotCount === 1 ? '' : 's'}.`
+
+    await createInboxItem({
+      userId: shaped.funeralHomeId,
+      type: 'schedule',
+      sender: cremName,
+      subject: withLastName(deceased, 'Availability received'),
+      preview,
+      body: [
+        `${cremName} submitted their available times for ${deceased}.`,
+        ``,
+        `Available slots:`,
+        ...crematoriumSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
+        ``,
+        `Review and confirm a slot in Passage.`,
+      ].join('\n'),
+      caseId: shaped.caseId,
+      bookingId: shaped.id,
+      severity: 'info',
+    })
+
+    res.json(shaped)
   } catch (err) {
     next(err)
   }
@@ -179,6 +214,7 @@ router.post('/', async (req, res, next) => {
         crematorium_id: crematoriumId,
         crematorium_email: crematoriumEmail,
         crematorium_name: crematoriumName,
+        deceased_name: deceasedName ?? null,
         funeral_home_id: req.user.id,
         proposed_slots: proposedSlots,
       })
@@ -187,9 +223,37 @@ router.post('/', async (req, res, next) => {
     if (error) throw error
 
     const shaped = shapeRow(data)
-    sendBookingInvite(shaped, deceasedName ?? 'Unknown').catch(err =>
-      console.error('Email send failed:', err.message)
-    )
+    const nameForDisplay = deceasedName ?? 'Unknown'
+
+    let sent = false
+    if (await shouldEmail(req.user.id, 'new_crematorium_request')) {
+      try {
+        sent = await sendBookingInvite(shaped, nameForDisplay)
+      } catch (emailErr) {
+        console.error('Email send failed:', emailErr.message)
+      }
+    }
+
+    if (sent) {
+      await createInboxItem({
+        userId: req.user.id,
+        type: 'schedule',
+        sender: shaped.crematoriumName ?? 'Crematorium',
+        subject: withLastName(nameForDisplay, 'Booking request sent'),
+        preview: `${nameForDisplay} · Request sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
+        body: [
+          `A pickup request for ${nameForDisplay} has been sent to ${shaped.crematoriumName ?? 'the crematorium'}.`,
+          ``,
+          `Proposed slots:`,
+          ...shaped.proposedSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
+          ``,
+          `You'll be notified when they respond.`,
+        ].join('\n'),
+        caseId: shaped.caseId,
+        bookingId: shaped.id,
+        severity: 'info',
+      })
+    }
 
     res.status(201).json(shaped)
   } catch (err) {
@@ -227,7 +291,34 @@ router.post('/:id/confirm', async (req, res, next) => {
       .select()
       .single()
     if (error) throw error
-    res.json(shapeRow(data))
+
+    const shaped = shapeRow(data)
+    const cremName = shaped.crematoriumName ?? 'Crematorium'
+    const deceased = shaped.deceasedName ?? shaped.caseId
+    const fmt = h => `${h > 12 ? h - 12 : h === 0 ? 12 : h}:00 ${h < 12 ? 'AM' : 'PM'}`
+    const slotStart = parseInt(slot.start.split(':')[0], 10)
+    const slotEnd = parseInt(slot.end.split(':')[0], 10)
+    const displayWhen = `${slot.date} · ${fmt(slotStart)} – ${fmt(slotEnd)}`
+    const scheduledFor = new Date(`${slot.date}T${slot.start}:00`).toISOString()
+
+    await createInboxItem({
+      userId: req.user.id,
+      type: 'schedule',
+      sender: cremName,
+      subject: withLastName(deceased, 'Cremation scheduled'),
+      preview: `${deceased} · ${displayWhen} at ${cremName}.`,
+      body: [
+        `Cremation for ${deceased} has been confirmed at ${cremName}.`,
+        ``,
+        `Date & Time: ${displayWhen}`,
+      ].join('\n'),
+      caseId: shaped.caseId,
+      bookingId: shaped.id,
+      severity: 'info',
+      scheduledFor,
+    })
+
+    res.json(shaped)
   } catch (err) {
     next(err)
   }
@@ -236,12 +327,34 @@ router.post('/:id/confirm', async (req, res, next) => {
 // ── DELETE /api/bookings/:id ─────────────────────
 router.delete('/:id', async (req, res, next) => {
   try {
+    const { data: existing, error: fetchErr } = await supabase
+      .from('cremation_bookings').select('*')
+      .eq('id', req.params.id).eq('funeral_home_id', req.user.id).single()
+    if (fetchErr || !existing) return res.status(404).json({ error: 'Booking not found' })
+    if (existing.status === 'cancelled') return res.status(204).send()
+
     const { error } = await supabase
       .from('cremation_bookings')
       .update({ status: 'cancelled' })
       .eq('id', req.params.id)
       .eq('funeral_home_id', req.user.id)
     if (error) throw error
+
+    const shaped = shapeRow(existing)
+    const cremName = shaped.crematoriumName ?? 'Crematorium'
+    const deceased = shaped.deceasedName ?? shaped.caseId
+    await createInboxItem({
+      userId: req.user.id,
+      type: 'schedule',
+      sender: cremName,
+      subject: withLastName(deceased, 'Booking cancelled'),
+      preview: `${deceased} · Booking with ${cremName} cancelled.`,
+      body: `The cremation booking for ${deceased} with ${cremName} has been cancelled.`,
+      caseId: shaped.caseId,
+      bookingId: shaped.id,
+      severity: 'warning',
+    })
+
     res.status(204).send()
   } catch (err) {
     next(err)

@@ -1,6 +1,17 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { createInboxItem } from '../lib/notifications.js'
+
+const lastName = (name) => {
+  if (!name) return null
+  const parts = name.trim().split(/\s+/)
+  return parts[parts.length - 1]
+}
+const withLastName = (name, subject) => {
+  const ln = lastName(name)
+  return ln ? `${ln} ${subject}` : subject
+}
 
 const router = Router()
 
@@ -332,6 +343,34 @@ router.put('/:id/custody/:stage', requireAuth, async (req, res, next) => {
       .single()
 
     if (error) throw error
+
+    const NOTIFY_STAGES = {
+      2: 'Transported to Crematory',
+      4: 'Cremation Started',
+      5: 'Cremation Completed',
+      7: 'Returned to Funeral Home',
+      8: 'Delivered to Family',
+    }
+
+    if (completed && NOTIFY_STAGES[stage]) {
+      const stageLabel = NOTIFY_STAGES[stage]
+      const staffName = staff ?? 'Staff'
+      const caseId = req.params.id
+      const { data: caseRow } = await supabase
+        .from('cases').select('deceased').eq('id', caseId).single()
+      const deceasedName = caseRow?.deceased ?? caseId
+      await createInboxItem({
+        userId: req.user.id,
+        type: 'alert',
+        sender: staffName,
+        subject: withLastName(deceasedName, stageLabel),
+        preview: `${staffName} marked ${deceasedName} as ${stageLabel}.`,
+        body: `${staffName} logged the following custody milestone for ${deceasedName}:\n\n${stageLabel}`,
+        caseId,
+        severity: 'info',
+      })
+    }
+
     res.json({
       completed: data.completed,
       staff: data.staff_label ?? data.staff,

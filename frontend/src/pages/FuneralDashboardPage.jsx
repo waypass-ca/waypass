@@ -16,6 +16,7 @@ import { FamilyPageEditorPage } from '../components/dashboard/FamilyPageEditorPa
 import { BookCremationPage } from './BookCremationPage'
 import { CalendarPage } from './CalendarPage'
 import { Button } from '../components/ui/Button'
+import { NotificationToast } from '../components/notifications/NotificationToast'
 
 // Map sidebar ids to internal views
 const SIDEBAR_TO_VIEW = {
@@ -75,6 +76,7 @@ export function FuneralDashboardPage() {
   const [view, setView] = useState('dashboard')
   const [selectedCaseId, setSelectedCaseId] = useState(null)
   const [bookingPreselect, setBookingPreselect] = useState(null)
+  const [initialInboxId, setInitialInboxId] = useState(null)
   const [cases, setCases] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -90,6 +92,7 @@ export function FuneralDashboardPage() {
     setView(v)
     setSelectedCaseId(null)
     setBookingPreselect(null)
+    setInitialInboxId(null)
   }
 
   function scheduleCase(c) {
@@ -142,6 +145,7 @@ export function FuneralDashboardPage() {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      <NotificationToast onViewInbox={(itemId) => { setInitialInboxId(itemId); setView('inbox') }} />
       <Sidebar
         activeItem={activeSidebarItem(view)}
         onItemChange={id => {
@@ -155,7 +159,7 @@ export function FuneralDashboardPage() {
       ) : view === 'book-cremation' ? (
         <BookCremationPage cases={cases} preselectedCase={bookingPreselect} />
       ) : view === 'inbox' ? (
-        <InboxPage />
+        <InboxPage initialActiveId={initialInboxId} onViewCase={viewCase} />
       ) : view === 'cases' ? (
         <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} onCaseFolderAssign={handleCaseFolderAssign} onCasesChange={setCases} />
       ) : view === 'documents' ? (
@@ -178,6 +182,7 @@ export function FuneralDashboardPage() {
             cases={cases}
             onViewCase={viewCase}
             onNewCase={() => setView('new-case')}
+            onViewInbox={(itemId) => { setInitialInboxId(itemId); setView('inbox') }}
           />
         )}
 

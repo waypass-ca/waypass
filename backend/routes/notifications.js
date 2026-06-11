@@ -18,13 +18,13 @@ function shapeRow(row) {
   }
 }
 
-// GET /api/notifications/:userId
-router.get('/:userId', requireAuth, async (req, res, next) => {
+// GET /api/notifications — current user's email prefs
+router.get('/', requireAuth, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', req.params.userId)
+      .eq('user_id', req.user.id)
       .maybeSingle()
     if (error) throw error
     res.json(data ? shapeRow(data) : null)
@@ -33,15 +33,15 @@ router.get('/:userId', requireAuth, async (req, res, next) => {
   }
 })
 
-// PUT /api/notifications/:userId
-router.put('/:userId', requireAuth, async (req, res, next) => {
+// PUT /api/notifications — upsert current user's email prefs
+router.put('/', requireAuth, async (req, res, next) => {
   try {
     const body = req.body
     const { data, error } = await supabase
       .from('notifications')
       .upsert(
         {
-          user_id: req.params.userId,
+          user_id: req.user.id,
           new_case_submitted: body.newCaseSubmitted,
           case_status_updated: body.caseStatusUpdated,
           document_uploaded: body.documentUploaded,
@@ -49,6 +49,7 @@ router.put('/:userId', requireAuth, async (req, res, next) => {
           new_crematorium_request: body.newCrematoriumRequest,
           weekly_revenue_summary: body.weeklyRevenueSummary,
           family_message_received: body.familyMessageReceived,
+          updated_at: new Date().toISOString(),
         },
         { onConflict: 'user_id' }
       )
