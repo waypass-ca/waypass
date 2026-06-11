@@ -14,6 +14,8 @@ import caseDocumentsRouter from './routes/case_documents.js'
 import caseFamilyMessagesRouter from './routes/case_family_messages.js'
 import notificationsRouter from './routes/notifications.js'
 import foldersRouter from './routes/folders.js'
+import bookingsRouter from './routes/bookings.js'
+import inboxRouter from './routes/inbox.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -34,6 +36,8 @@ app.use('/api/portal-settings', portalRouter)
 app.use('/api/users', usersRouter)
 app.use('/api/notifications', notificationsRouter)
 app.use('/api/folders', foldersRouter)
+app.use('/api/bookings', bookingsRouter)
+app.use('/api/inbox', inboxRouter)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 

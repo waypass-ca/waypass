@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import {
   Search, Home, Inbox, Archive, Building2, UserPen,
-  CalendarPlus, MapPinPen, FileText, Landmark, Settings, ChevronDown,
+  CalendarPlus, CalendarDays, FileText, Landmark, Settings, ChevronDown,
   ArrowLeftToLine, ArrowRightToLine,
 } from 'lucide-react'
+import { useInboxUnreadCount } from '../notifications/useInboxUnreadCount.js'
 
-function NavItem({ id, label, icon: Icon, badge, isActive, onClick, collapsed }) {
+function NavItem({ id, label, icon: Icon, badge, badgeProminent, isActive, onClick, collapsed }) {
+  const badgeText = badge && badge > 99 ? '99+' : badge
   return (
     <button
       onClick={() => onClick(id)}
-      title={collapsed ? label : undefined}
+      title={collapsed ? `${label}${badge ? ` (${badge})` : ''}` : undefined}
+      aria-label={badge ? `${label}, ${badge} unread` : label}
       className={`
-        w-full flex items-center rounded-md text-[13px] font-sans mb-px text-left transition-colors cursor-pointer border-0 outline-none
+        w-full flex items-center rounded-md text-[13px] font-sans mb-px text-left transition-colors cursor-pointer border-0 outline-none relative
         ${collapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5'}
         ${isActive
           ? 'bg-ink/[0.06] text-ink font-medium'
@@ -20,14 +23,27 @@ function NavItem({ id, label, icon: Icon, badge, isActive, onClick, collapsed })
       `}
     >
       <Icon size={14} className={`flex-shrink-0 ${isActive ? 'text-ink' : 'text-muted'}`} strokeWidth={1.8} />
+      {collapsed && badge ? (
+        <span
+          className={`absolute top-1 right-1 min-w-[14px] h-[14px] px-1 rounded-full text-[9px] font-semibold leading-none flex items-center justify-center ${
+            badgeProminent ? 'bg-ink text-surface' : 'bg-line text-muted'
+          }`}
+        >
+          {badgeText}
+        </span>
+      ) : null}
       {!collapsed && (
         <>
           <span className="flex-1 truncate">{label}</span>
-          {badge && (
-            <span className="font-sans text-[10px] font-semibold text-muted bg-line rounded-full px-1.5 py-px leading-none">
-              {badge}
+          {badge ? (
+            <span
+              className={`font-sans text-[10px] font-semibold rounded-full px-1.5 py-px leading-none ${
+                badgeProminent ? 'bg-ink text-surface' : 'bg-line text-muted'
+              }`}
+            >
+              {badgeText}
             </span>
-          )}
+          ) : null}
         </>
       )}
     </button>
@@ -56,6 +72,7 @@ function SectionHeader({ label, collapsed: sectionCollapsed, onToggle, sidebarCo
 export function Sidebar({ activeItem = 'home', onItemChange }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [collapsed, setCollapsed] = useState({ patients: false, crematoriums: false })
+  const inboxUnread = useInboxUnreadCount()
 
   function toggle(id) {
     setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))
@@ -84,9 +101,10 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
 
       {/* Nav */}
       <nav className={`py-3 flex-1 overflow-y-auto overflow-x-hidden ${sidebarCollapsed ? 'px-1.5' : 'px-2.5'}`}>
-        <NavItem id="search"  label="Search"  icon={Search}  isActive={activeItem === 'search'}  onClick={onItemChange} collapsed={sidebarCollapsed} />
-        <NavItem id="home"    label="Home"    icon={Home}    isActive={activeItem === 'home'}    onClick={onItemChange} collapsed={sidebarCollapsed} />
-        <NavItem id="inbox"   label="Inbox"   icon={Inbox}   isActive={activeItem === 'inbox'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="search"          label="Search"   icon={Search}      isActive={activeItem === 'search'}          onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="home"            label="Home"     icon={Home}        isActive={activeItem === 'home'}            onClick={onItemChange} collapsed={sidebarCollapsed} />
+        <NavItem id="inbox"           label="Inbox"    icon={Inbox}       isActive={activeItem === 'inbox'}           onClick={onItemChange} collapsed={sidebarCollapsed} badge={inboxUnread || null} badgeProminent />
+        <NavItem id="pickup-calendar" label="Calendar" icon={CalendarDays} isActive={activeItem === 'pickup-calendar'} onClick={onItemChange} collapsed={sidebarCollapsed} />
 
         <SectionHeader label="Patients" collapsed={collapsed.patients} onToggle={() => toggle('patients')} sidebarCollapsed={sidebarCollapsed} />
         {!collapsed.patients && (
@@ -99,9 +117,8 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
         <SectionHeader label="Crematoriums" collapsed={collapsed.crematoriums} onToggle={() => toggle('crematoriums')} sidebarCollapsed={sidebarCollapsed} />
         {!collapsed.crematoriums && (
           <>
-            <NavItem id="partners"         label="Partners"         icon={Building2}   isActive={activeItem === 'partners'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="book-cremation"   label="Book Cremation"   icon={CalendarPlus} isActive={activeItem === 'book-cremation'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="crematory-editor" label="Crematory Editor" icon={MapPinPen}    isActive={activeItem === 'crematory-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="partners"         label="Partners"        icon={Building2}    isActive={activeItem === 'partners'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="book-cremation"   label="Book Cremation"  icon={CalendarPlus} isActive={activeItem === 'book-cremation'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
           </>
         )}
 

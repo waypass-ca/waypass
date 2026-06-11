@@ -1,105 +1,52 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  Star, Search, TriangleAlert,
-  Check, Archive, X, Mail, Clock, CheckCheck, ChevronRight,
-  AlertCircle, Info, Inbox, Filter,
+  Star, Search,
+  Check, Archive, X, MailOpen, Clock, CheckCheck,
+  Inbox, Filter, Undo2,
 } from 'lucide-react'
 import { InboxDetailPanel } from '../components/inbox/InboxDetailPanel'
+import {
+  fetchInbox, markInboxItemRead, markInboxItemUnread, markAllInboxRead, starInboxItem,
+  archiveInboxItem, unarchiveInboxItem,
+} from '../lib/api.js'
+import { supabase } from '../lib/supabase.js'
+import { useAuth } from '../context/AuthContext.jsx'
+import { TYPE_CONFIG, formatScheduledFor } from '../components/notifications/notificationConfig.js'
 
-const INITIAL_ITEMS = [
-  {
-    id: 'a1', type: 'alert', read: false, starred: false,
-    from: 'System', subject: 'Authorization required — James Carter',
-    preview: 'The cremation authorization form for James Carter has not been signed. The case cannot proceed to cremation until this document is completed and uploaded.',
-    time: '10:24 AM', date: '2024-04-26', severity: 'warning', caseId: 'CASE-0042',
-    body: 'The cremation authorization form for James Carter (CASE-0042) has not been signed.\n\nThe case cannot proceed to cremation until this document is completed and uploaded by the next of kin.\n\nPlease follow up with the family contact: Patricia Carter at (415) 555-0183.\n\nAction required before: Apr 28, 2024.',
-  },
-  {
-    id: 'a2', type: 'alert', read: false, starred: false,
-    from: 'System', subject: 'Missing document — Margaret Thompson',
-    preview: 'Death certificate has not been uploaded for Margaret Thompson. This is required before transfer can be arranged.',
-    time: '9:15 AM', date: '2024-04-26', severity: 'danger', caseId: 'CASE-0039',
-    body: 'Death certificate has not been uploaded for Margaret Thompson (CASE-0039).\n\nThis document is legally required before body transfer can be arranged with the crematorium.\n\nPlease ensure the attending physician provides the certificate and that it is uploaded to the case documents.\n\nThis is marked as urgent.',
-  },
-  {
-    id: 'a3', type: 'alert', read: true, starred: true,
-    from: 'System', subject: 'Case status updated — Robert Hayes',
-    preview: 'Robert Hayes has been received at Riverside Crematorium and the case is now In Transit.',
-    time: 'Yesterday', date: '2024-04-25', severity: 'info', caseId: 'CASE-0038',
-    body: 'Case CASE-0038 for Robert Hayes has been updated.\n\nStatus changed: Pending → In Transit\n\nRobert Hayes has been received by Riverside Crematorium at 2:14 PM on April 25th. All chain-of-custody documentation has been logged.\n\nExpected cremation date: April 30, 2024.',
-  },
-  {
-    id: 'a4', type: 'alert', read: true, starred: false,
-    from: 'System', subject: 'New case submitted via widget',
-    preview: 'A new case has been submitted through the family booking widget. Review and assign to a case manager.',
-    time: 'Apr 24', date: '2024-04-24', severity: 'info', caseId: 'CASE-0043',
-    body: 'A new case has been submitted through the Passage family booking widget.\n\nDeceased: Eleanor Voss\nFamily contact: Thomas Voss\nPackage selected: Comfort — $1,895\n\nThe case has been automatically created as CASE-0043 and is awaiting assignment to a case manager.',
-  },
-  {
-    id: 'm1', type: 'message', read: false, starred: false,
-    from: 'Patricia Carter', subject: 'Re: James Carter arrangements',
-    preview: 'Thank you so much for walking us through everything. We wanted to confirm the time for the service and ask a quick question about the urn options.',
-    time: '11:02 AM', date: '2024-04-26', severity: null, caseId: 'CASE-0042',
-    body: 'Hi,\n\nThank you so much for walking us through everything yesterday. It meant a lot to our family to have someone so patient and kind guiding us.\n\nWe wanted to confirm the time for the service on the 30th — we have some family flying in from out of state and want to make sure they can attend.\n\nAlso, we had a quick question about the urn options. Is it possible to see them in person before making a final decision?\n\nThank you again,\nPatricia Carter',
-  },
-  {
-    id: 'm2', type: 'message', read: true, starred: false,
-    from: 'David Thompson', subject: 'Question about ashes return',
-    preview: 'Hi, I was wondering how long it typically takes for the ashes to be returned after cremation. We are planning a small gathering.',
-    time: 'Yesterday', date: '2024-04-25', severity: null, caseId: 'CASE-0039',
-    body: 'Hi,\n\nI hope this message finds you well. I was wondering how long it typically takes for the ashes to be returned after cremation. We are trying to plan a small gathering for our mother and want to make sure we have the timing right.\n\nAlso, do you provide a temporary urn while we decide on a permanent one?\n\nThank you,\nDavid Thompson',
-  },
-  {
-    id: 'm3', type: 'message', read: true, starred: true,
-    from: 'Susan Hayes', subject: 'Thank you',
-    preview: 'I just wanted to say thank you for everything your team did for our family during this difficult time. You made it so much easier.',
-    time: 'Apr 24', date: '2024-04-24', severity: null, caseId: 'CASE-0038',
-    body: 'Dear Team,\n\nI just wanted to take a moment to say thank you for everything your team did for our family during this incredibly difficult time.\n\nThe care and professionalism shown throughout the entire process made things so much easier than we expected. Robert would have been touched.\n\nWith gratitude,\nSusan Hayes',
-  },
-  {
-    id: 'm4', type: 'message', read: true, starred: false,
-    from: 'Michael Torres', subject: 'Documents ready for pickup',
-    preview: 'The family has confirmed they are ready to pick up the documentation. What are your office hours on weekends?',
-    time: 'Apr 23', date: '2024-04-23', severity: null, caseId: 'CASE-0035',
-    body: 'Hello,\n\nThe family has confirmed they are ready to pick up the documentation and ashes for Elena Torres. I was wondering what your office hours are, particularly on weekends, as some family members can only come Saturday.\n\nThank you,\nMichael Torres',
-  },
-  {
-    id: 's1', type: 'schedule', read: false, starred: false,
-    from: 'Riverside Crematorium', subject: 'Cremation confirmed — Robert Hayes',
-    preview: 'Cremation for Robert Hayes is confirmed for Tuesday April 30th at 9:00 AM. Please confirm receipt of this scheduling notice.',
-    time: '8:45 AM', date: '2024-04-26', severity: null, caseId: 'CASE-0038',
-    scheduledFor: 'Apr 30, 2024 · 9:00 AM',
-    body: 'Dear Evergreen Memorial,\n\nThis is to confirm that cremation services for Robert Hayes (CASE-0038) have been scheduled at Riverside Crematorium.\n\nDate: Tuesday, April 30, 2024\nTime: 9:00 AM\nLocation: Riverside Crematorium, 4400 River Rd, Sacramento, CA\n\nPlease ensure all required documentation has been submitted prior to this date. Ashes will be available for collection within 3–5 business days after completion.\n\nPlease reply to confirm you have received this scheduling notice.\n\nRiverside Crematorium',
-  },
-  {
-    id: 's2', type: 'schedule', read: true, starred: false,
-    from: 'Lakeside Memorial', subject: 'Rescheduled — James Carter cremation',
-    preview: 'Due to facility maintenance, the cremation originally scheduled for April 28th has been moved to May 2nd at 10:30 AM.',
-    time: 'Yesterday', date: '2024-04-25', severity: 'warning', caseId: 'CASE-0042',
-    scheduledFor: 'May 2, 2024 · 10:30 AM',
-    body: 'Dear Evergreen Memorial,\n\nWe regret to inform you that due to unplanned facility maintenance, the cremation for James Carter originally scheduled for April 28th, 2024 has been rescheduled.\n\nNew date: Thursday, May 2, 2024\nNew time: 10:30 AM\nLocation: Lakeside Memorial, 2200 Lake Shore Drive\n\nWe apologize for any inconvenience this may cause. Please inform the family of this change.\n\nLakeside Memorial Services',
-  },
-  {
-    id: 's3', type: 'schedule', read: true, starred: false,
-    from: 'Oakwood Services', subject: 'Pickup confirmed — Margaret Thompson',
-    preview: 'Body pickup from residence has been confirmed for April 27th between 2:00 PM and 4:00 PM.',
-    time: 'Apr 24', date: '2024-04-24', severity: null, caseId: 'CASE-0039',
-    scheduledFor: 'Apr 27, 2024 · 2:00–4:00 PM',
-    body: 'Dear Evergreen Memorial,\n\nThis is to confirm that the body pickup for Margaret Thompson (CASE-0039) from the residence at 845 Oak Lane, San Francisco has been scheduled.\n\nDate: Saturday, April 27, 2024\nArrival window: 2:00 PM – 4:00 PM\n\nPlease ensure someone from the family or a representative is present at the time of pickup. Our team will handle all transportation with care and dignity.\n\nOakwood Transfer Services',
-  },
-]
+const PAGE_SIZE = 50
 
-const SEVERITY_CONFIG = {
-  danger:  { icon: AlertCircle, text: 'text-danger', bg: 'bg-danger-tint', border: 'border-danger/25', dot: 'bg-danger' },
-  warning: { icon: TriangleAlert, text: 'text-warning', bg: 'bg-warning-light', border: 'border-warning/25', dot: 'bg-warning' },
-  info:    { icon: Info, text: 'text-info', bg: 'bg-info-tint', border: 'border-info/25', dot: 'bg-info' },
+function formatTime(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const now = new Date()
+  const diffMs = now - d
+  const diffDays = Math.floor(diffMs / 86400000)
+  if (diffDays === 0) return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return d.toLocaleDateString('en-US', { weekday: 'short' })
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-const TYPE_CONFIG = {
-  alert:    { label: 'Alert',    color: 'text-warning', dot: 'bg-warning' },
-  message:  { label: 'Message',  color: 'text-primary',  dot: 'bg-primary' },
-  schedule: { label: 'Schedule', color: 'text-info',    dot: 'bg-info' },
+function shapeItem(raw) {
+  return {
+    id: raw.id,
+    type: raw.type,
+    read: raw.read,
+    starred: raw.starred,
+    from: raw.from,
+    subject: raw.subject,
+    preview: raw.preview,
+    body: raw.body,
+    time: formatTime(raw.createdAt),
+    date: raw.createdAt ? raw.createdAt.slice(0, 10) : '',
+    severity: raw.severity ?? null,
+    caseId: raw.caseId ?? null,
+    bookingId: raw.bookingId ?? null,
+    scheduledFor: raw.scheduledFor ?? null,
+    scheduledForLabel: formatScheduledFor(raw.scheduledFor),
+    createdAt: raw.createdAt ?? null,
+  }
 }
 
 const StarIcon = ({ filled, size = 14, className = '' }) =>
@@ -117,7 +64,7 @@ function TypeBadge({ type }) {
   )
 }
 
-function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRead, onArchiveSelected, onClearSelected, totalCount, unreadCount }) {
+function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRead, onMarkSelectedUnread, onArchiveSelected, onClearSelected, totalCount, unreadCount }) {
   const [filterOpen, setFilterOpen] = useState(false)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
   const filterRef = useRef(null)
@@ -130,8 +77,13 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
       const inDropdown = dropdownRef.current?.contains(e.target)
       if (!inButton && !inDropdown) setFilterOpen(false)
     }
+    const esc = e => { if (e.key === 'Escape') setFilterOpen(false) }
     document.addEventListener('mousedown', h)
-    return () => document.removeEventListener('mousedown', h)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('mousedown', h)
+      document.removeEventListener('keydown', esc)
+    }
   }, [filterOpen])
 
   const toggleType = (type) => setFilters(f => {
@@ -162,6 +114,12 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
           <div className="flex-1 flex items-center gap-2">
             <span className="font-sans text-[12.5px] text-secondary">{selected.size} selected</span>
             <button
+              onClick={onMarkSelectedUnread}
+              className="h-8 px-3 rounded-lg border border-line hover:bg-canvas text-secondary font-sans text-[12px] flex items-center gap-1.5 cursor-pointer"
+            >
+              <MailOpen size={13} /> Mark as unread
+            </button>
+            <button
               onClick={onArchiveSelected}
               className="h-8 px-3 rounded-lg border border-line hover:bg-canvas text-secondary font-sans text-[12px] flex items-center gap-1.5 cursor-pointer"
             >
@@ -182,6 +140,8 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search inbox…"
+                aria-label="Search inbox"
+                type="search"
                 className="w-full pl-9 pr-4 h-9 rounded-lg border border-line bg-white text-[13px] text-ink font-sans placeholder:text-muted outline-none focus:border-ink/60 transition"
               />
             </div>
@@ -196,6 +156,9 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
                     }
                     setFilterOpen(o => !o)
                   }}
+                  aria-label={`Filters${filtersActive ? ` (${filtersActive} active)` : ''}`}
+                  aria-expanded={filterOpen}
+                  aria-haspopup="dialog"
                   className={`relative h-9 w-9 rounded-lg border bg-white hover:bg-surface flex items-center justify-center cursor-pointer transition
                     ${filterOpen || filtersActive ? 'border-ink text-ink' : 'border-line text-secondary'}`}
                 >
@@ -210,6 +173,8 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
                 {filterOpen && createPortal(
                   <div
                     ref={dropdownRef}
+                    role="dialog"
+                    aria-label="Inbox filters"
                     style={{ position: 'fixed', top: dropdownPos.top, right: dropdownPos.right, zIndex: 9999 }}
                     className="w-72 bg-surface border border-line rounded-xl shadow-[0_12px_32px_-8px_rgba(28,28,30,0.18)] overflow-hidden flex flex-col"
                   >
@@ -311,17 +276,26 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
   )
 }
 
-function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar }) {
+function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar, compact }) {
   return (
     <div
       onClick={() => onOpen(item.id)}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(item.id) }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-pressed={isActive}
+      aria-label={`${item.read ? '' : 'Unread. '}${item.from}: ${item.subject}`}
       className={`relative flex items-center gap-3 px-4 py-3 border-b border-line/60 cursor-pointer transition-all group
-        hover:shadow-[0_2px_12px_-2px_rgba(28,28,30,0.15)] hover:z-10
+        hover:shadow-[0_2px_12px_-2px_rgba(28,28,30,0.15)] hover:z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/30
         ${isSelected || isActive ? 'shadow-[0_2px_12px_-2px_rgba(28,28,30,0.2)] z-10' : ''}
         ${isSelected ? 'bg-primary' : isActive ? 'bg-primary-light/40' : item.read ? 'bg-surface' : 'bg-white'}`}
     >
       <button
         onClick={e => { e.stopPropagation(); onSelect(item.id) }}
+        aria-label={isSelected ? 'Deselect' : 'Select'}
+        aria-pressed={isSelected}
         className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 cursor-pointer transition
           ${isSelected ? 'border-ink bg-ink' : 'border-line bg-white hover:border-secondary'}`}
       >
@@ -330,6 +304,8 @@ function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar }) {
 
       <button
         onClick={e => { e.stopPropagation(); onStar(item.id) }}
+        aria-label={item.starred ? 'Unstar' : 'Star'}
+        aria-pressed={item.starred}
         className="flex-shrink-0 cursor-pointer border-0 bg-transparent p-0"
       >
         <StarIcon filled={item.starred} size={14} />
@@ -337,23 +313,23 @@ function InboxRow({ item, isSelected, isActive, onSelect, onOpen, onStar }) {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
-          <span className={`font-sans text-[13px] truncate ${item.read ? 'text-secondary font-normal' : 'text-ink font-semibold'}`}>
+          <span className={`font-sans text-[11px] truncate ${item.read ? 'text-secondary font-normal' : 'text-ink font-semibold'}`}>
             {item.from}
           </span>
           <TypeBadge type={item.type} />
-          {item.scheduledFor && (
-            <span className="flex items-center gap-1 font-sans text-[10.5px] text-info bg-info-tint border border-info/20 rounded px-1.5 py-px flex-shrink-0">
+          {item.scheduledForLabel && !compact && (
+            <span className="flex items-center gap-1 font-sans text-[11px] text-info bg-info-tint border border-info/20 rounded px-1.5 py-px flex-shrink-0">
               <Clock size={10} />
-              {item.scheduledFor}
+              {item.scheduledForLabel}
             </span>
           )}
         </div>
         <div className="flex items-baseline gap-2 min-w-0">
-          <span className={`font-sans text-[12.5px] truncate ${item.read ? 'text-secondary' : 'text-ink font-medium'}`}>
+          <span className={`font-sans text-[13px] truncate ${item.read ? 'text-secondary' : 'text-ink font-medium'}`}>
             {item.subject}
           </span>
           <span className="font-sans text-[12px] text-muted truncate flex-1 hidden sm:block">
-            — {item.preview}
+            - {item.preview}
           </span>
         </div>
       </div>
@@ -376,12 +352,124 @@ function StatusFooter({ count, unread }) {
   )
 }
 
-export function InboxPage() {
-  const [items, setItems] = useState(INITIAL_ITEMS)
+function shapeFromDb(row) {
+  return shapeItem({
+    id: row.id,
+    type: row.type,
+    from: row.sender,
+    subject: row.subject,
+    preview: row.preview,
+    body: row.body,
+    caseId: row.case_id,
+    bookingId: row.booking_id,
+    severity: row.severity,
+    scheduledFor: row.scheduled_for,
+    read: row.read,
+    starred: row.starred,
+    createdAt: row.created_at,
+  })
+}
+
+export function InboxPage({ initialActiveId, onViewCase }) {
+  const { user } = useAuth()
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [filters, setFilters] = useState({ types: new Set(), datePreset: '', readStatus: '' })
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
   const [activeId, setActiveId] = useState(null)
+  const [panelWidth, setPanelWidth] = useState(520)
+  const [panelFull, setPanelFull] = useState(false)
+  const [undo, setUndo] = useState(null) // { ids: string[], expiresAt }
+  const undoTimerRef = useRef(null)
+  const containerRef = useRef(null)
+
+  const startDrag = useCallback((e) => {
+    e.preventDefault()
+    const startX = e.clientX
+    const containerWidth = containerRef.current?.offsetWidth ?? window.innerWidth
+    const startWidth = panelFull ? containerWidth : panelWidth
+    const onMove = (e) => {
+      const cw = containerRef.current?.offsetWidth ?? window.innerWidth
+      const rawWidth = startWidth + (startX - e.clientX)
+      if (rawWidth >= cw * 0.8) {
+        setPanelFull(true)
+      } else {
+        setPanelFull(false)
+        setPanelWidth(Math.max(320, Math.min(cw * 0.75, rawWidth)))
+      }
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [panelWidth, panelFull])
+
+  useEffect(() => {
+    fetchInbox({ limit: PAGE_SIZE })
+      .then(data => {
+        setItems(data.map(shapeItem))
+        setHasMore(data.length === PAGE_SIZE)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || items.length === 0) return
+    setLoadingMore(true)
+    try {
+      const oldest = items[items.length - 1]
+      const data = await fetchInbox({ limit: PAGE_SIZE, before: oldest.createdAt })
+      setItems(prev => [...prev, ...data.map(shapeItem)])
+      setHasMore(data.length === PAGE_SIZE)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [loadingMore, hasMore, items])
+
+  useEffect(() => {
+    if (!user) return
+    const channel = supabase
+      .channel(`inbox-page-${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'inbox_items',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        if (payload.new.archived_at) return
+        setItems(prev => prev.some(i => i.id === payload.new.id)
+          ? prev
+          : [shapeFromDb(payload.new), ...prev])
+      })
+      // Sync read/star/archive from other tabs.
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'inbox_items',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        const row = payload.new
+        if (row.archived_at) {
+          setItems(prev => prev.filter(i => i.id !== row.id))
+          setActiveId(curr => curr === row.id ? null : curr)
+          return
+        }
+        setItems(prev => prev.map(i => i.id === row.id ? shapeFromDb(row) : i))
+      })
+      .on('postgres_changes', {
+        event: 'DELETE', schema: 'public', table: 'inbox_items',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        setItems(prev => prev.filter(i => i.id !== payload.old.id))
+        setActiveId(curr => curr === payload.old.id ? null : curr)
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [user])
 
   const filtered = useMemo(() => {
     let rows = items
@@ -412,33 +500,104 @@ export function InboxPage() {
 
   const activeItem = activeId ? items.find(i => i.id === activeId) : null
 
-  function openItem(id) {
+  const markRead = useCallback((id) => {
+    setItems(prev => {
+      const item = prev.find(i => i.id === id)
+      if (!item || item.read) return prev
+      markInboxItemRead(id).catch(console.error)
+      return prev.map(i => i.id === id ? { ...i, read: true } : i)
+    })
+  }, [])
+
+  const openItem = useCallback((id) => {
     setActiveId(id)
-    setItems(prev => prev.map(i => i.id === id ? { ...i, read: true } : i))
-  }
+    markRead(id)
+  }, [markRead])
 
-  function toggleStar(id) {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, starred: !i.starred } : i))
-  }
+  // Open and mark as read when navigating from a toast
+  useEffect(() => {
+    if (!loading && initialActiveId) {
+      setActiveId(initialActiveId)
+      markRead(initialActiveId)
+    }
+  }, [loading, initialActiveId, markRead])
 
-  function markRead(id) {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, read: true } : i))
-  }
+  const toggleStar = useCallback((id) => {
+    setItems(prev => prev.map(i => {
+      if (i.id !== id) return i
+      const starred = !i.starred
+      starInboxItem(id, starred).catch(console.error)
+      return { ...i, starred }
+    }))
+  }, [])
 
-  function markAllRead() {
+  const markUnread = useCallback((id) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, read: false } : i))
+    markInboxItemUnread(id).catch(console.error)
+  }, [])
+
+  const markSelectedUnread = useCallback(() => {
+    const toMark = [...selected]
+    setItems(prev => prev.map(i => selected.has(i.id) ? { ...i, read: false } : i))
+    setSelected(new Set())
+    toMark.forEach(id => markInboxItemUnread(id).catch(console.error))
+  }, [selected])
+
+  const markAllRead = useCallback(() => {
     setItems(prev => prev.map(i =>
       (filters.types.size === 0 || filters.types.has(i.type)) ? { ...i, read: true } : i
     ))
-  }
+    markAllInboxRead().catch(console.error)
+  }, [filters.types])
 
-  function archiveSelected() {
+  const clearUndo = useCallback(() => {
+    if (undoTimerRef.current) { clearTimeout(undoTimerRef.current); undoTimerRef.current = null }
+    setUndo(null)
+  }, [])
+
+  const archiveSelected = useCallback(() => {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    const removed = items.filter(i => selected.has(i.id))
     setItems(prev => prev.filter(i => !selected.has(i.id)))
     if (selected.has(activeId)) setActiveId(null)
     setSelected(new Set())
-  }
+    Promise.all(ids.map(id => archiveInboxItem(id).catch(console.error)))
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+    setUndo({ ids, items: removed })
+    undoTimerRef.current = setTimeout(() => setUndo(null), 8000)
+  }, [selected, activeId, items])
 
-  function toggleSelect(id) {
+  const handleUndo = useCallback(async () => {
+    if (!undo) return
+    const restore = undo.items
+    clearUndo()
+    setItems(prev => {
+      const ids = new Set(prev.map(i => i.id))
+      const additions = restore.filter(i => !ids.has(i.id))
+      return [...additions, ...prev].sort((a, b) =>
+        (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
+      )
+    })
+    await Promise.all(undo.ids.map(id => unarchiveInboxItem(id).catch(console.error)))
+  }, [undo, clearUndo])
+
+  useEffect(() => () => clearUndo(), [clearUndo])
+
+  const toggleSelect = useCallback((id) => {
     setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }, [])
+
+  const listWidth = activeId && !panelFull
+    ? (containerRef.current?.offsetWidth ?? 0) - panelWidth - 1
+    : Infinity
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-muted font-sans text-[13px]">
+        Loading…
+      </div>
+    )
   }
 
   return (
@@ -451,47 +610,100 @@ export function InboxPage() {
           setFilters={setFilters}
           selected={selected}
           onMarkAllRead={markAllRead}
+          onMarkSelectedUnread={markSelectedUnread}
           onArchiveSelected={archiveSelected}
           onClearSelected={() => setSelected(new Set())}
           totalCount={filtered.length}
           unreadCount={filtered.filter(i => !i.read).length}
         />
 
-        <div className="flex-1 flex min-h-0 overflow-hidden">
-          <div className="flex-1 overflow-auto min-h-0">
-            {filtered.length === 0 ? (
-              <div className="py-16 text-center">
-                <Inbox size={32} className="mx-auto text-muted/40 mb-3" />
-                <p className="font-display text-[17px] text-secondary">Nothing here</p>
-                <p className="font-sans text-[12px] text-muted mt-1">
-                  {search ? 'Try a different search term.' : 'You\'re all caught up.'}
-                </p>
-              </div>
-            ) : filtered.map(item => (
-              <InboxRow
-                key={item.id}
-                item={item}
-                isSelected={selected.has(item.id)}
-                isActive={activeId === item.id}
-                onSelect={toggleSelect}
-                onOpen={openItem}
-                onStar={toggleStar}
-              />
-            ))}
-          </div>
+        <div className="flex-1 flex min-h-0 overflow-hidden" ref={containerRef}>
+          {(!panelFull || !activeId) && (
+            <div className="flex-1 overflow-auto min-h-0">
+              {filtered.length === 0 ? (
+                <div className="py-16 text-center">
+                  <Inbox size={32} className="mx-auto text-muted/40 mb-3" />
+                  <p className="font-display text-[17px] text-secondary">Nothing here</p>
+                  <p className="font-sans text-[12px] text-muted mt-1">
+                    {search ? 'Try a different search term.' : 'You\'re all caught up.'}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {filtered.map(item => (
+                    <InboxRow
+                      key={item.id}
+                      item={item}
+                      isSelected={selected.has(item.id)}
+                      isActive={activeId === item.id}
+                      onSelect={toggleSelect}
+                      onOpen={openItem}
+                      onStar={toggleStar}
+                      compact={listWidth < 550}
+                    />
+                  ))}
+                  {hasMore && (
+                    <div className="py-4 text-center">
+                      <button
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        className="h-8 px-4 rounded-lg border border-line bg-white hover:bg-canvas text-secondary font-sans text-[12px] cursor-pointer disabled:opacity-50"
+                      >
+                        {loadingMore ? 'Loading…' : 'Load more'}
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           {activeId && (
-            <InboxDetailPanel
-              item={activeItem}
-              onClose={() => setActiveId(null)}
-              onStar={toggleStar}
-              onMarkRead={markRead}
-            />
+            <>
+              <div
+                onMouseDown={startDrag}
+                className="w-1 shrink-0 cursor-col-resize bg-line hover:bg-primary/40 transition-colors"
+              />
+              <InboxDetailPanel
+                item={activeItem}
+                onClose={() => setActiveId(null)}
+                onStar={toggleStar}
+                onMarkRead={markRead}
+                onMarkUnread={markUnread}
+                onViewCase={onViewCase}
+                style={panelFull ? { flex: 1 } : { width: panelWidth }}
+              />
+            </>
           )}
         </div>
 
         <StatusFooter count={filtered.length} unread={filtered.filter(i => !i.read).length} />
       </div>
+
+      {undo && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-ink text-surface rounded-xl px-4 py-2.5 shadow-lg"
+        >
+          <span className="font-sans text-[13px]">
+            Archived {undo.ids.length} {undo.ids.length === 1 ? 'item' : 'items'}
+          </span>
+          <button
+            onClick={handleUndo}
+            className="flex items-center gap-1.5 font-sans text-[12.5px] font-medium underline-offset-2 hover:underline cursor-pointer border-0 bg-transparent text-surface"
+          >
+            <Undo2 size={13} /> Undo
+          </button>
+          <button
+            onClick={clearUndo}
+            aria-label="Dismiss"
+            className="text-surface/60 hover:text-surface cursor-pointer border-0 bg-transparent"
+          >
+            <X size={13} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

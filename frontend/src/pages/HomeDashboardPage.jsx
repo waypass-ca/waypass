@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react'
 import { Clock, TriangleAlert, ChartColumnBig, FolderOpen, Plus } from 'lucide-react'
 import { StatusPill } from '../components/ui/StatusPill'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { fetchInbox } from '../lib/api.js'
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -36,30 +38,28 @@ function RecentCaseCard({ caseData, onClick }) {
   )
 }
 
-const MOCK_ALERTS = [
-  { caseId: 'CASE-2024-031', deceasedName: 'Margaret H. Caldwell', reason: 'Authorization unsigned — Day 3', severity: 'critical' },
-  { caseId: 'CASE-2024-029', deceasedName: 'Robert A. Nguyen',     reason: 'No crematory confirmation — 18 hrs', severity: 'critical' },
-  { caseId: 'CASE-2024-027', deceasedName: 'Eleanor J. Park',      reason: 'Cremation permit not uploaded', severity: 'warning' },
-  { caseId: 'CASE-2024-025', deceasedName: 'Thomas W. Brennan',    reason: 'Death certificate pending — Day 2', severity: 'warning' },
-]
+const SEV_DOT = { danger: 'bg-danger', warning: 'bg-warning', info: 'bg-info' }
+const SEV_BADGE = { danger: 'red', warning: 'warning', info: 'blue' }
+const SEV_LABEL = { danger: 'Critical', warning: 'Warning', info: 'Info' }
 
-function AlertRow({ caseId, deceasedName, reason, severity }) {
+function AlertRow({ item, onClick }) {
+  const sev = item.severity ?? 'info'
   return (
-    <div className="flex items-center justify-between py-3 border-b border-line last:border-0">
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-between px-5 py-3 border-b border-line last:border-0 text-left hover:bg-canvas transition-colors cursor-pointer"
+    >
       <div className="flex items-center gap-3">
-        <div className={`w-1.5 h-6 rounded-full flex-shrink-0 ${severity === 'critical' ? 'bg-danger' : 'bg-warning'}`} />
+        <div className={`w-1.5 h-6 rounded-full flex-shrink-0 ${SEV_DOT[sev] ?? 'bg-info'}`} />
         <div>
-          <p className="font-sans text-sm font-medium text-ink">{deceasedName}</p>
-          <p className="font-sans text-[11px] text-muted mt-0.5">{caseId}</p>
+          <p className="font-sans text-sm font-medium text-ink">{item.subject}</p>
+          <p className="font-sans text-[11px] text-muted mt-0.5">
+            {item.from}{item.caseId ? ` · ${item.caseId}` : ''}
+          </p>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <p className="font-sans text-sm text-secondary">{reason}</p>
-        <Badge variant={severity === 'critical' ? 'red' : 'warning'}>
-          {severity === 'critical' ? 'Critical' : 'Warning'}
-        </Badge>
-      </div>
-    </div>
+      <Badge variant={SEV_BADGE[sev] ?? 'blue'}>{SEV_LABEL[sev] ?? 'Info'}</Badge>
+    </button>
   )
 }
 
@@ -78,9 +78,16 @@ function SectionLabel({ icon: Icon, children }) {
   )
 }
 
-export function HomeDashboardPage({ cases, onViewCase, onNewCase }) {
-  const alerts = MOCK_ALERTS
-  const hasCritical = alerts.some(a => a.severity === 'critical')
+export function HomeDashboardPage({ cases, onViewCase, onNewCase, onViewInbox }) {
+  const [alerts, setAlerts] = useState([])
+
+  useEffect(() => {
+    fetchInbox()
+      .then(items => setAlerts(items.filter(i => i.type === 'alert')))
+      .catch(console.error)
+  }, [])
+
+  const hasCritical = alerts.some(a => a.severity === 'danger')
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -90,7 +97,7 @@ export function HomeDashboardPage({ cases, onViewCase, onNewCase }) {
         </h1>
         <p className="font-sans text-sm text-muted mt-3">
           {alerts.length > 0
-            ? `${alerts.length} case${alerts.length > 1 ? 's' : ''} need your attention today.`
+            ? `${alerts.length} alert${alerts.length > 1 ? 's' : ''} across your cases.`
             : 'Everything is on track — no alerts.'}
         </p>
       </div>
@@ -126,13 +133,15 @@ export function HomeDashboardPage({ cases, onViewCase, onNewCase }) {
             <Badge variant={hasCritical ? 'red' : 'warning'}>{alerts.length} flagged</Badge>
           )}
         </div>
-        <div className="bg-surface border border-line rounded-xl px-5 py-1">
+        <div className="bg-surface border border-line rounded-xl overflow-hidden">
           {alerts.length === 0 ? (
             <div className="py-8 text-center">
-              <p className="font-sans text-sm text-muted">No flagged cases — all clear.</p>
+              <p className="font-sans text-sm text-muted">No new alerts — all clear.</p>
             </div>
           ) : (
-            alerts.map(a => <AlertRow key={a.caseId} {...a} />)
+            alerts.map(a => (
+              <AlertRow key={a.id} item={a} onClick={() => onViewInbox?.(a.id)} />
+            ))
           )}
         </div>
       </section>
