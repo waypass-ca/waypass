@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   Search, Home, Inbox, Archive, Building2, UserPen,
   CalendarPlus, CalendarDays, FileText, Landmark, Settings, ChevronDown,
-  ArrowLeftToLine, ArrowRightToLine,
+  ArrowLeftToLine, ArrowRightToLine, Truck,
 } from 'lucide-react'
 import { useInboxUnreadCount } from '../notifications/useInboxUnreadCount.js'
 
@@ -71,7 +71,7 @@ function SectionHeader({ label, collapsed: sectionCollapsed, onToggle, sidebarCo
 
 export function Sidebar({ activeItem = 'home', onItemChange }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [collapsed, setCollapsed] = useState({ patients: false, crematoriums: false })
+  const [collapsed, setCollapsed] = useState({ patients: false, crematoriums: false, shipping: false })
   const inboxUnread = useInboxUnreadCount()
 
   function toggle(id) {
@@ -120,6 +120,11 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
             <NavItem id="partners"         label="Partners"        icon={Building2}    isActive={activeItem === 'partners'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
             <NavItem id="book-cremation"   label="Book Cremation"  icon={CalendarPlus} isActive={activeItem === 'book-cremation'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
           </>
+        )}
+
+        <SectionHeader label="Shipping" collapsed={collapsed.shipping} onToggle={() => toggle('shipping')} sidebarCollapsed={sidebarCollapsed} />
+        {!collapsed.shipping && (
+          <NavItem id="shipping-partners" label="Partners" icon={Truck} isActive={activeItem === 'shipping-partners'} onClick={onItemChange} collapsed={sidebarCollapsed} />
         )}
 
         <div className="border-t border-line my-3" />

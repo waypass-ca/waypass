@@ -6,6 +6,7 @@ import packagesRouter from './routes/packages.js'
 import addonsRouter from './routes/addons.js'
 import casesRouter from './routes/cases.js'
 import crematoriumsRouter from './routes/crematoriums.js'
+import shippingPartnersRouter from './routes/shippingPartners.js'
 import ordersRouter from './routes/orders.js'
 import portalRouter from './routes/portal.js'
 import usersRouter from './routes/users.js'
@@ -31,6 +32,7 @@ app.use('/api/cases/:caseId/contacts', caseContactsRouter)
 app.use('/api/cases/:caseId/documents', caseDocumentsRouter)
 app.use('/api/cases/:caseId/messages', caseFamilyMessagesRouter)
 app.use('/api/crematoriums', crematoriumsRouter)
+app.use('/api/shipping-partners', shippingPartnersRouter)
 app.use('/api/orders', ordersRouter)
 app.use('/api/portal-settings', portalRouter)
 app.use('/api/users', usersRouter)

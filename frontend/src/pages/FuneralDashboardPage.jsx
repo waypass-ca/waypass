@@ -7,6 +7,7 @@ import { CasesPage } from './CasesPage'
 import { CaseDetailPage } from './CaseDetailPage'
 import { NewCasePage } from './NewCasePage'
 import { CrematoriumsPage } from './CrematoriumsPage'
+import { ShippingPartnersPage } from './ShippingPartnersPage'
 import { NewCrematoriumPage } from './NewCrematoriumPage'
 import { RevenuePage } from './RevenuePage'
 import { InboxPage } from './InboxPage'
@@ -26,6 +27,7 @@ const SIDEBAR_TO_VIEW = {
   cases:              'cases',
   'family-editor':    'family-portal',
   partners:           'crematoriums',
+  'shipping-partners': 'shipping-partners',
   'book-cremation':    'book-cremation',
   'pickup-calendar':   'pickup-calendar',
   documents:          'documents',
@@ -39,6 +41,7 @@ function activeSidebarItem(view) {
   if (view === 'dashboard') return 'home'
   if (view === 'family-portal') return 'family-editor'
   if (view === 'crematoriums') return 'partners'
+  if (view === 'shipping-partners') return 'shipping-partners'
   if (view === 'revenue') return 'financials'
   const found = Object.entries(SIDEBAR_TO_VIEW).find(([, v]) => v === view)
   return found ? found[0] : 'home'
@@ -173,6 +176,8 @@ export function FuneralDashboardPage() {
         />
       ) : view === 'crematoriums' ? (
         <CrematoriumsPage onAddPartner={() => setView('new-crematorium')} cases={cases} onViewCase={viewCase} />
+      ) : view === 'shipping-partners' ? (
+        <ShippingPartnersPage cases={cases} onViewCase={viewCase} />
       ) : (
       <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
 

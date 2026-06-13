@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { updateCrematorium } from '../lib/api.js'
+import { updateCrematorium, updateShippingPartner } from '../lib/api.js'
 import { Badge } from '../components/ui/Badge'
 import { InfoField } from '../components/ui/InfoField'
 import { InfoSection } from '../components/ui/InfoSection'
 import { ChevronLeft, Pencil, TriangleAlert } from 'lucide-react'
 
-export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCase, onSave }) {
+export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCase, onSave, kind = 'crematorium' }) {
+  const updateFn = kind === 'shipping' ? updateShippingPartner : updateCrematorium
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -25,7 +26,7 @@ export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCas
   async function handleSave() {
     setSaving(true); setError(null)
     try {
-      const updated = await updateCrematorium(crm.id, {
+      const updated = await updateFn(crm.id, {
         name: form.name,
         location: form.location || null,
         contactName: form.contactName || null,

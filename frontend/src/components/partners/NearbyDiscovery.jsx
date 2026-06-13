@@ -5,7 +5,8 @@ import { DetailModal } from './DetailModal.jsx'
 import { MapView } from './MapView.jsx'
 import { FEATURES } from '../../lib/features.js'
 
-export function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, search, setSearch, onAdd }) {
+export function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, search, setSearch, onAdd, kind = 'crematorium' }) {
+  const partnerNoun = kind === 'shipping' ? 'shipping partners' : 'crematoriums'
   const [hoveredId, setHoveredId] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [detailCrm, setDetailCrm] = useState(null)
@@ -69,11 +70,11 @@ export function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationE
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
                 <p className="font-sans text-sm font-medium text-ink">Location access required</p>
-                <p className="font-sans text-xs text-muted mt-1">Enable location in your browser to find nearby crematoriums.</p>
+                <p className="font-sans text-xs text-muted mt-1">Enable location in your browser to find nearby {partnerNoun}.</p>
               </div>
             ) : filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                <p className="font-sans text-sm text-muted">No crematoriums found nearby.</p>
+                <p className="font-sans text-sm text-muted">No {partnerNoun} found nearby.</p>
                 <p className="font-sans text-xs text-muted mt-1 opacity-70">Try searching by name or city.</p>
               </div>
             ) : (
