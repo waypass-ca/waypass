@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Star, Search,
-  Check, Archive, X, MailOpen, Clock, CheckCheck,
+  Check, Archive, X, Mail, MailOpen, Clock, CheckCheck,
   Inbox, Filter, Undo2,
 } from 'lucide-react'
 import { InboxDetailPanel } from '../components/inbox/InboxDetailPanel'
@@ -64,7 +64,7 @@ function TypeBadge({ type }) {
   )
 }
 
-function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRead, onMarkSelectedUnread, onArchiveSelected, onClearSelected, totalCount, unreadCount }) {
+function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRead, onMarkSelectedRead, onMarkSelectedUnread, onArchiveSelected, onClearSelected, totalCount, unreadCount }) {
   const [filterOpen, setFilterOpen] = useState(false)
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 })
   const filterRef = useRef(null)
@@ -114,10 +114,16 @@ function TopBar({ search, setSearch, filters, setFilters, selected, onMarkAllRea
           <div className="flex-1 flex items-center gap-2">
             <span className="font-sans text-[12.5px] text-secondary">{selected.size} selected</span>
             <button
+              onClick={onMarkSelectedRead}
+              className="h-8 px-3 rounded-lg border border-line hover:bg-canvas text-secondary font-sans text-[12px] flex items-center gap-1.5 cursor-pointer"
+            >
+              <MailOpen size={13} /> Mark as read
+            </button>
+            <button
               onClick={onMarkSelectedUnread}
               className="h-8 px-3 rounded-lg border border-line hover:bg-canvas text-secondary font-sans text-[12px] flex items-center gap-1.5 cursor-pointer"
             >
-              <MailOpen size={13} /> Mark as unread
+              <Mail size={13} /> Mark as unread
             </button>
             <button
               onClick={onArchiveSelected}
@@ -543,6 +549,16 @@ export function InboxPage({ initialActiveId, onViewCase }) {
     toMark.forEach(id => markInboxItemUnread(id).catch(console.error))
   }, [selected])
 
+  const markSelectedRead = useCallback(() => {
+    const toMark = [...selected]
+    setItems(prev => {
+      const unreadIds = prev.filter(i => selected.has(i.id) && !i.read).map(i => i.id)
+      unreadIds.forEach(id => markInboxItemRead(id).catch(console.error))
+      return prev.map(i => selected.has(i.id) ? { ...i, read: true } : i)
+    })
+    setSelected(new Set())
+  }, [selected])
+
   const markAllRead = useCallback(() => {
     setItems(prev => prev.map(i =>
       (filters.types.size === 0 || filters.types.has(i.type)) ? { ...i, read: true } : i
@@ -610,6 +626,7 @@ export function InboxPage({ initialActiveId, onViewCase }) {
           setFilters={setFilters}
           selected={selected}
           onMarkAllRead={markAllRead}
+          onMarkSelectedRead={markSelectedRead}
           onMarkSelectedUnread={markSelectedUnread}
           onArchiveSelected={archiveSelected}
           onClearSelected={() => setSelected(new Set())}
