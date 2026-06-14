@@ -71,7 +71,7 @@ export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCas
   const mapQuery = encodeURIComponent(address ? `${crm.name} ${address}` : crm.name)
 
   const recentCases = cases
-    .filter(c => c.crematorium === crm.name)
+    .filter(c => kind === 'shipping' ? c.shippingPartnerId === crm.id : c.crematorium === crm.name)
     .slice(0, 5)
 
   return (

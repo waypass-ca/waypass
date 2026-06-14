@@ -78,7 +78,7 @@ function SlotPicker({ bookingId, onConfirmed }) {
 
   if (slots.length === 0) return (
     <div className="px-5 py-4 border-t border-line">
-      <p className="font-sans text-[12px] text-muted">No overlapping slots available.</p>
+      <p className="font-sans text-[12px] text-muted">No times work for all parties — cancel and rebook with new times.</p>
     </div>
   )
 

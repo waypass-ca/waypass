@@ -485,6 +485,9 @@ export function BookCremationPage({ cases, preselectedCase }) {
                 className="font-sans text-[13px] text-ink bg-transparent border-0 outline-none w-full text-right cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="">— Skip —</option>
+                {shippingPartners.length === 0 && (
+                  <option disabled>No shipping partners connected</option>
+                )}
                 {shippingPartners.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}

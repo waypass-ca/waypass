@@ -10,7 +10,7 @@ import { PartnerDetailPage } from './PartnerDetailPage'
 import { PartnersList } from '../components/partners/PartnersList'
 import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
-export function ShippingPartnersPage({ onAddPartner, cases = [], onViewCase }) {
+export function ShippingPartnersPage({ cases = [], onViewCase }) {
   const { user } = useAuth()
   const [tab, setTab] = useState('partners')
   const [partners, setPartners] = useState([])

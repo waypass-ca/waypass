@@ -65,6 +65,7 @@ const shapedCase = {
   amount: 2550,
   crematorium: null,
   crematoriumId: null,
+  shippingPartnerId: null,
   removalStaff: null,
   removalTime: null,
   folderId: null,

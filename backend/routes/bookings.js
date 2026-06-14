@@ -9,6 +9,9 @@ const withLastName = (name, subject) => {
   return `${parts[parts.length - 1]} ${subject}`
 }
 
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => HTML_ESCAPES[c])
+
 const router = Router()
 
 function shapeRow(row) {
@@ -52,7 +55,7 @@ function formatSlotLines(slots) {
     const startH = parseInt(s.start.split(':')[0], 10)
     const endH = parseInt(s.end.split(':')[0], 10)
     const fmt = h => `${h > 12 ? h - 12 : h === 0 ? 12 : h}:00 ${h < 12 ? 'AM' : 'PM'}`
-    return `<li>${dayLabel} · ${fmt(startH)} – ${fmt(endH)}</li>`
+    return `<li>${esc(dayLabel)} · ${esc(fmt(startH))} – ${esc(fmt(endH))}</li>`
   }).join('\n')
 }
 
@@ -85,8 +88,8 @@ async function sendBookingInvite(booking, deceasedName) {
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
         <p style="font-size:14px;color:#666">Passage Funeral Management</p>
-        <h2 style="margin:0 0 8px">Pickup Request: ${deceasedName}</h2>
-        <p style="font-size:14px;color:#444">Case ID: ${booking.caseId}</p>
+        <h2 style="margin:0 0 8px">Pickup Request: ${esc(deceasedName)}</h2>
+        <p style="font-size:14px;color:#444">Case ID: ${esc(booking.caseId)}</p>
         <p style="font-size:14px;margin:20px 0 8px"><strong>Proposed pickup times:</strong></p>
         <ul style="font-size:14px;color:#444;padding-left:20px;line-height:1.8">
           ${slotLines}
@@ -131,9 +134,9 @@ async function sendShippingInvite(booking, deceasedName) {
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
         <p style="font-size:14px;color:#666">Passage Funeral Management</p>
-        <h2 style="margin:0 0 8px">Transport Request: ${deceasedName}</h2>
-        <p style="font-size:14px;color:#444">Case ID: ${booking.caseId}</p>
-        <p style="font-size:14px;margin:20px 0 8px">${cremName} has confirmed availability for these windows. Please select the times that work for your transport team:</p>
+        <h2 style="margin:0 0 8px">Transport Request: ${esc(deceasedName)}</h2>
+        <p style="font-size:14px;color:#444">Case ID: ${esc(booking.caseId)}</p>
+        <p style="font-size:14px;margin:20px 0 8px">${esc(cremName)} has confirmed availability for these windows. Please select the times that work for your transport team:</p>
         <ul style="font-size:14px;color:#444;padding-left:20px;line-height:1.8">
           ${slotLines}
         </ul>
@@ -179,10 +182,10 @@ async function sendBookingConfirmation({ to, recipientLabel, deceasedName, booki
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
         <p style="font-size:14px;color:#666">Passage Funeral Management</p>
-        <h2 style="margin:0 0 8px">Pickup Confirmed: ${deceasedName}</h2>
-        <p style="font-size:14px;color:#444">Case ID: ${booking.caseId}</p>
+        <h2 style="margin:0 0 8px">Pickup Confirmed: ${esc(deceasedName)}</h2>
+        <p style="font-size:14px;color:#444">Case ID: ${esc(booking.caseId)}</p>
         <p style="font-size:14px;margin:20px 0 8px"><strong>Confirmed time:</strong></p>
-        <p style="font-size:15px;color:#1a1a1a;margin:0 0 20px"><strong>${whenLabel}</strong></p>
+        <p style="font-size:15px;color:#1a1a1a;margin:0 0 20px"><strong>${esc(whenLabel)}</strong></p>
         <p style="font-size:14px;color:#444;margin:0">The funeral home has confirmed this pickup window with all parties.</p>
         <p style="font-size:12px;color:#999;margin-top:24px">No action is required.</p>
       </div>
@@ -333,9 +336,8 @@ router.post('/respond-shipping/:token', async (req, res, next) => {
       .eq('shipping_response_token', req.params.token)
       .single()
     if (fetchErr || !existing) return res.status(404).json({ error: 'Booking not found' })
-    if (existing.status === 'cancelled') return res.status(410).json({ error: 'Booking was cancelled' })
-    if (existing.status === 'pending') {
-      return res.status(409).json({ error: 'Crematorium has not yet responded' })
+    if (existing.status !== 'awaiting_shipping') {
+      return res.status(409).json({ error: 'Shipping response is no longer accepted for this booking' })
     }
 
     const shippingSlots = slots.map(key => {
@@ -445,6 +447,18 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ error: 'caseId, crematoriumId, and proposedSlots are required' })
     }
 
+    if (shippingPartnerId) {
+      const { data: partner } = await supabase
+        .from('shipping_partners')
+        .select('connected_funeral_home_ids')
+        .eq('id', shippingPartnerId)
+        .is('deleted_at', null)
+        .single()
+      if (!partner?.connected_funeral_home_ids?.includes(req.user.id)) {
+        return res.status(400).json({ error: 'Shipping partner is not connected to your account' })
+      }
+    }
+
     const { data, error } = await supabase
       .from('cremation_bookings')
       .insert({
@@ -462,6 +476,19 @@ router.post('/', async (req, res, next) => {
       .select()
       .single()
     if (error) throw error
+
+    // Denormalize the chosen shipping partner onto the case so the
+    // shipping-partner detail page can list this case under "Recent Cases".
+    // Tolerate failures — the booking row is the source of truth.
+    if (shippingPartnerId) {
+      await supabase
+        .from('cases')
+        .update({ shipping_partner_id: shippingPartnerId })
+        .eq('id', caseId)
+        .then(({ error: updateErr }) => {
+          if (updateErr) console.error('Failed to denormalize shipping_partner_id onto case:', updateErr.message)
+        })
+    }
 
     const shaped = shapeRow(data)
     const nameForDisplay = deceasedName ?? 'Unknown'
