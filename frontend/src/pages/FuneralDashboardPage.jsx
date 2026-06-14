@@ -6,7 +6,7 @@ import { HomeDashboardPage } from './HomeDashboardPage'
 import { CasesPage } from './CasesPage'
 import { CaseDetailPage } from './CaseDetailPage'
 import { NewCasePage } from './NewCasePage'
-import { CrematoriumsPage } from './CrematoriumsPage'
+import { CrematoriumPartnersPage } from './CrematoriumPartnersPage'
 import { ShippingPartnersPage } from './ShippingPartnersPage'
 import { NewCrematoriumPage } from './NewCrematoriumPage'
 import { RevenuePage } from './RevenuePage'
@@ -175,7 +175,7 @@ export function FuneralDashboardPage() {
           onSchedule={() => scheduleCase(selectedCase)}
         />
       ) : view === 'crematoriums' ? (
-        <CrematoriumsPage onAddPartner={() => setView('new-crematorium')} cases={cases} onViewCase={viewCase} />
+        <CrematoriumPartnersPage onAddPartner={() => setView('new-crematorium')} cases={cases} onViewCase={viewCase} />
       ) : view === 'shipping-partners' ? (
         <ShippingPartnersPage cases={cases} onViewCase={viewCase} />
       ) : (

@@ -10,7 +10,7 @@ import { PartnerDetailPage } from './PartnerDetailPage'
 import { PartnersList } from '../components/partners/PartnersList'
 import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
-export function CrematoriumsPage({ onAddPartner, cases = [], onViewCase }) {
+export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }) {
   const { user } = useAuth()
   const [tab, setTab] = useState('partners')
   const [crematoriums, setCrematoriums] = useState([])
@@ -114,7 +114,7 @@ export function CrematoriumsPage({ onAddPartner, cases = [], onViewCase }) {
 
       <div className="border-b border-line bg-surface/80 backdrop-blur shrink-0 relative z-10">
         <div className="px-6 pt-6 pb-2 flex items-start justify-between gap-4">
-          <PageTitle className="leading-none">Partners</PageTitle>
+          <PageTitle className="leading-none">Crematorium Partners</PageTitle>
         </div>
         <div className="px-6 pb-3 flex items-end justify-between gap-2 flex-wrap">
           <div className="relative flex-1 min-w-[180px] max-w-sm">
