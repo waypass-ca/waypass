@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Search, X, CheckCircle2, Send, ChevronLeft, ChevronRight, Info, CalendarCheck } from 'lucide-react'
 import { fetchCrematoriums, fetchShippingPartners, fetchBookings, createBooking, confirmBooking, cancelBooking } from '../lib/api.js'
+import { useAuth } from '../context/AuthContext.jsx'
+import { getDefaultShippingPartnerId } from '../lib/preferences.js'
 import { getSundayOf, slotToObj, objToKey, slotKey, slotToLabel, formatWeekRange } from '../lib/slotUtils.js'
 import { Button } from '../components/ui/Button.jsx'
 import { WeekGrid } from '../components/booking/WeekGrid.jsx'
@@ -130,6 +132,7 @@ function BookingPanelRow({ booking, onConfirm, onCancel }) {
 }
 
 export function BookCremationPage({ cases, preselectedCase }) {
+  const { user } = useAuth()
   const [crematoriums, setCrematoriums] = useState([])
   const [shippingPartners, setShippingPartners] = useState([])
   const [existingBookings, setExistingBookings] = useState([])
@@ -160,7 +163,14 @@ export function BookCremationPage({ cases, preselectedCase }) {
         setMatchedCrem(list.find(cr => cr.id === preselectedCase.crematoriumId) ?? null)
       }
     }).catch(() => {})
-    fetchShippingPartners().then(setShippingPartners).catch(() => {})
+    fetchShippingPartners().then(list => {
+      setShippingPartners(list)
+      const defaultId = getDefaultShippingPartnerId(user?.id)
+      if (defaultId) {
+        const defaultPartner = list.find(p => p.id === defaultId)
+        if (defaultPartner) setSelectedShipping(defaultPartner)
+      }
+    }).catch(() => {})
     fetchBookings().then(setExistingBookings).catch(() => {})
   }, [])
 
@@ -215,7 +225,8 @@ export function BookCremationPage({ cases, preselectedCase }) {
   function clearCase() {
     setSelectedCase(null)
     setMatchedCrem(null)
-    setSelectedShipping(null)
+    const defaultId = getDefaultShippingPartnerId(user?.id)
+    setSelectedShipping(defaultId ? (shippingPartners.find(p => p.id === defaultId) ?? null) : null)
     setQuery('')
     setSelectedSlots(new Set())
     setError(null)

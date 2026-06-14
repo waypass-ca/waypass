@@ -147,6 +147,50 @@ async function sendShippingInvite(booking, deceasedName) {
   return true
 }
 
+async function sendBookingConfirmation({ to, recipientLabel, deceasedName, booking, slot }) {
+  if (process.env.ENABLE_RESEND === 'false') {
+    console.warn('Resend disabled (ENABLE_RESEND=false) — skipping confirmation email')
+    return false
+  }
+  if (!to) {
+    console.warn(`No ${recipientLabel} email — skipping confirmation`)
+    return false
+  }
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    console.warn('RESEND_API_KEY not set — skipping confirmation email')
+    return false
+  }
+
+  const { Resend } = await import('resend')
+  const resend = new Resend(apiKey)
+
+  const date = new Date(slot.date + 'T12:00:00')
+  const dayLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  const startH = parseInt(slot.start.split(':')[0], 10)
+  const endH = parseInt(slot.end.split(':')[0], 10)
+  const fmt = h => `${h > 12 ? h - 12 : h === 0 ? 12 : h}:00 ${h < 12 ? 'AM' : 'PM'}`
+  const whenLabel = `${dayLabel} · ${fmt(startH)} – ${fmt(endH)}`
+
+  await resend.emails.send({
+    from: process.env.RESEND_FROM ?? 'bookings@passagefunerals.com',
+    to,
+    subject: `Pickup Confirmed — ${deceasedName} (Case ${booking.caseId})`,
+    html: `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
+        <p style="font-size:14px;color:#666">Passage Funeral Management</p>
+        <h2 style="margin:0 0 8px">Pickup Confirmed: ${deceasedName}</h2>
+        <p style="font-size:14px;color:#444">Case ID: ${booking.caseId}</p>
+        <p style="font-size:14px;margin:20px 0 8px"><strong>Confirmed time:</strong></p>
+        <p style="font-size:15px;color:#1a1a1a;margin:0 0 20px"><strong>${whenLabel}</strong></p>
+        <p style="font-size:14px;color:#444;margin:0">The funeral home has confirmed this pickup window with all parties.</p>
+        <p style="font-size:12px;color:#999;margin-top:24px">No action is required.</p>
+      </div>
+    `,
+  })
+  return true
+}
+
 // ── Public: GET /api/bookings/respond/:token ─────
 router.get('/respond/:token', async (req, res, next) => {
   try {
@@ -520,6 +564,32 @@ router.post('/:id/confirm', async (req, res, next) => {
       severity: 'info',
       scheduledFor,
     })
+
+    // Notify both vendors that the time is locked in.
+    try {
+      await sendBookingConfirmation({
+        to: shaped.crematoriumEmail,
+        recipientLabel: 'crematorium',
+        deceasedName: deceased,
+        booking: shaped,
+        slot,
+      })
+    } catch (emailErr) {
+      console.error('Crematorium confirmation email failed:', emailErr.message)
+    }
+    if (shaped.shippingPartnerId) {
+      try {
+        await sendBookingConfirmation({
+          to: shaped.shippingPartnerEmail,
+          recipientLabel: 'shipping partner',
+          deceasedName: deceased,
+          booking: shaped,
+          slot,
+        })
+      } catch (emailErr) {
+        console.error('Shipping confirmation email failed:', emailErr.message)
+      }
+    }
 
     res.json(shaped)
   } catch (err) {

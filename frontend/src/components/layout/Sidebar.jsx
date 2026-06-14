@@ -71,7 +71,7 @@ function SectionHeader({ label, collapsed: sectionCollapsed, onToggle, sidebarCo
 
 export function Sidebar({ activeItem = 'home', onItemChange }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [collapsed, setCollapsed] = useState({ patients: false, crematoriums: false, shipping: false })
+  const [collapsed, setCollapsed] = useState({ patients: false, partners: false })
   const inboxUnread = useInboxUnreadCount()
 
   function toggle(id) {
@@ -114,17 +114,13 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
           </>
         )}
 
-        <SectionHeader label="Crematoriums" collapsed={collapsed.crematoriums} onToggle={() => toggle('crematoriums')} sidebarCollapsed={sidebarCollapsed} />
-        {!collapsed.crematoriums && (
+        <SectionHeader label="Partners" collapsed={collapsed.partners} onToggle={() => toggle('partners')} sidebarCollapsed={sidebarCollapsed} />
+        {!collapsed.partners && (
           <>
-            <NavItem id="partners"         label="Partners"        icon={Building2}    isActive={activeItem === 'partners'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="book-cremation"   label="Book Cremation"  icon={CalendarPlus} isActive={activeItem === 'book-cremation'}   onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="partners"          label="Crematoriums"   icon={Building2}    isActive={activeItem === 'partners'}          onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="shipping-partners" label="Shipping"       icon={Truck}        isActive={activeItem === 'shipping-partners'} onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="book-cremation"    label="Book Cremation" icon={CalendarPlus} isActive={activeItem === 'book-cremation'}    onClick={onItemChange} collapsed={sidebarCollapsed} />
           </>
-        )}
-
-        <SectionHeader label="Shipping" collapsed={collapsed.shipping} onToggle={() => toggle('shipping')} sidebarCollapsed={sidebarCollapsed} />
-        {!collapsed.shipping && (
-          <NavItem id="shipping-partners" label="Partners" icon={Truck} isActive={activeItem === 'shipping-partners'} onClick={onItemChange} collapsed={sidebarCollapsed} />
         )}
 
         <div className="border-t border-line my-3" />
