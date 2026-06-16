@@ -150,6 +150,20 @@ export const fetchPortalSettings = () => request('/api/portal-settings')
 export const savePortalSettings = (payload) =>
   mutate('/api/portal-settings', { method: 'PUT', body: JSON.stringify(payload) })
 
+// ── Email template ────────────────────────────────────
+export const fetchEmailTemplate = () => request('/api/email-template')
+export const saveEmailTemplate = (payload) =>
+  mutate('/api/email-template', { method: 'PUT', body: JSON.stringify(payload) })
+export const fetchEmailOverride = (caseId) =>
+  mutate(`/api/email-template/overrides/${caseId}`)
+export const saveEmailOverride = (caseId, overrides, logoStoragePath = null) =>
+  mutate(`/api/email-template/overrides/${caseId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ overrides, logoStoragePath }),
+  })
+export const deleteEmailOverride = (caseId) =>
+  mutate(`/api/email-template/overrides/${caseId}`, { method: 'DELETE' })
+
 // ── Folders ───────────────────────────────────────────
 export const fetchFolders = (type) => mutate(`/api/folders?type=${type}`)
 export const createFolder = (payload) => mutate('/api/folders', { method: 'POST', body: JSON.stringify(payload) })
