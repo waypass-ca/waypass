@@ -128,6 +128,8 @@ export const confirmBooking = (id, slot) =>
   mutate(`/api/bookings/${id}/confirm`, { method: 'POST', body: JSON.stringify({ slot }) })
 export const cancelBooking = (id) =>
   mutate(`/api/bookings/${id}`, { method: 'DELETE' })
+export const rescheduleBooking = (id, proposedSlots) =>
+  mutate(`/api/bookings/${id}/reschedule`, { method: 'POST', body: JSON.stringify({ proposedSlots }) })
 // Public — no auth header
 export const fetchBookingByToken = (token) =>
   request(`/api/bookings/respond/${token}`)

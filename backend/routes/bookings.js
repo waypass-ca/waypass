@@ -624,6 +624,80 @@ router.post('/:id/confirm', async (req, res, next) => {
   }
 })
 
+// ── POST /api/bookings/:id/reschedule ────────────
+router.post('/:id/reschedule', async (req, res, next) => {
+  try {
+    const { proposedSlots } = req.body
+    if (!Array.isArray(proposedSlots) || proposedSlots.length === 0) {
+      return res.status(400).json({ error: 'proposedSlots must be a non-empty array' })
+    }
+
+    const { data: existing, error: fetchErr } = await supabase
+      .from('cremation_bookings').select('*')
+      .eq('id', req.params.id).eq('funeral_home_id', req.user.id).single()
+    if (fetchErr || !existing) return res.status(404).json({ error: 'Booking not found' })
+
+    const hasShipping = Boolean(existing.shipping_partner_id)
+    const updates = {
+      proposed_slots: proposedSlots,
+      crematorium_slots: null,
+      shipping_slots: null,
+      confirmed_slot: null,
+      responded_at: null,
+      confirmed_at: null,
+      shipping_responded_at: null,
+      response_token: crypto.randomUUID(),
+      status: 'pending',
+    }
+    if (hasShipping) updates.shipping_response_token = crypto.randomUUID()
+
+    const { data, error } = await supabase
+      .from('cremation_bookings')
+      .update(updates)
+      .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.id)
+      .select()
+      .single()
+    if (error) throw error
+
+    const shaped = shapeRow(data)
+    const deceased = shaped.deceasedName ?? 'Unknown'
+
+    let sent = false
+    if (await shouldEmail(req.user.id, 'new_crematorium_request')) {
+      try {
+        sent = await sendBookingInvite(shaped, deceased)
+      } catch (emailErr) {
+        console.error('Reschedule email send failed:', emailErr.message)
+      }
+    }
+
+    const cremName = shaped.crematoriumName ?? 'Crematorium'
+    await createInboxItem({
+      userId: req.user.id,
+      type: 'schedule',
+      sender: cremName,
+      subject: withLastName(deceased, 'Booking rescheduled'),
+      preview: `${deceased} · New request sent to ${cremName}.`,
+      body: [
+        `The pickup request for ${deceased} has been rescheduled and resent to ${cremName}.`,
+        ``,
+        `New proposed slots:`,
+        ...shaped.proposedSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
+        ``,
+        sent ? `You'll be notified when they respond.` : `Email delivery is disabled — share the new link manually.`,
+      ].join('\n'),
+      caseId: shaped.caseId,
+      bookingId: shaped.id,
+      severity: 'info',
+    })
+
+    res.json(shaped)
+  } catch (err) {
+    next(err)
+  }
+})
+
 // ── DELETE /api/bookings/:id ─────────────────────
 router.delete('/:id', async (req, res, next) => {
   try {

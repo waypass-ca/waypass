@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
-import { addCaseNote, addCaseDocument, fetchCustody, updateCustodyStage } from '../lib/api.js'
+import { addCaseNote, addCaseDocument, fetchCustody, updateCustodyStage, fetchBookings } from '../lib/api.js'
+import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
+import { slotToLabel, objToKey } from '../lib/slotUtils.js'
 import { supabase } from '../lib/supabase.js'
 import { CUSTODY_STAGES, CUSTODY_STATUS_MILESTONES, EMPTY_CUSTODY } from '../lib/constants.js'
 import { DocumentPreviewModal } from '../components/ui/DocumentPreviewModal'
@@ -20,6 +22,8 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
   const [custody, setCustody] = useState(EMPTY_CUSTODY)
   const [authPending, setAuthPending] = useState(false)
   const [activeTab, setActiveTab] = useState('activity')
+  const [caseBookings, setCaseBookings] = useState([])
+  const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const [showNoteModal, setShowNoteModal] = useState(false)
   const [showLogModal, setShowLogModal] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -31,6 +35,9 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
     fetchCustody(caseData.id)
       .then(data => { setCustody(data); setAuthPending(!data[2]?.completed) })
       .catch(() => { setAuthPending(true) })
+    fetchBookings()
+      .then(all => setCaseBookings(all.filter(b => b.caseId === caseData.id)))
+      .catch(() => {})
   }, [caseData.id])
 
   const lastCompletedIdx = custody.reduce((acc, e, i) => e.completed ? i : acc, -1)
@@ -145,11 +152,18 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
 
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'activity' && (
-            <CaseActivityTab
-              activityFeed={activityFeed}
-              onShowNote={() => setShowNoteModal(true)}
-              onShowLog={() => setShowLogModal(true)}
-            />
+            <>
+              {caseBookings.length > 0 && (
+                <div className="px-8 pt-6">
+                  {caseBookings.map(b => <BookingCard key={b.id} booking={b} onReschedule={setRescheduleTarget} />)}
+                </div>
+              )}
+              <CaseActivityTab
+                activityFeed={activityFeed}
+                onShowNote={() => setShowNoteModal(true)}
+                onShowLog={() => setShowLogModal(true)}
+              />
+            </>
           )}
           {activeTab === 'documents' && (
             <CaseDocumentsTab
@@ -192,6 +206,60 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
       {previewDoc && (
         <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
       )}
+      {rescheduleTarget && (
+        <RescheduleBookingModal
+          booking={rescheduleTarget}
+          existingBookings={caseBookings}
+          onClose={() => setRescheduleTarget(null)}
+          onRescheduled={updated => setCaseBookings(prev => prev.map(b => b.id === updated.id ? updated : b))}
+        />
+      )}
+    </div>
+  )
+}
+
+const BOOKING_STATUS_STYLES = {
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  awaiting_shipping: 'bg-amber-50 text-amber-700 border-amber-200',
+  responded: 'bg-blue-50 text-blue-700 border-blue-200',
+  confirmed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  cancelled: 'bg-line text-muted border-line',
+}
+const BOOKING_STATUS_LABEL = {
+  pending: 'Pending',
+  awaiting_shipping: 'Awaiting shipping',
+  responded: 'Responded',
+  confirmed: 'Confirmed',
+  cancelled: 'Cancelled',
+}
+
+function BookingCard({ booking, onReschedule }) {
+  const chip = BOOKING_STATUS_STYLES[booking.status] ?? BOOKING_STATUS_STYLES.cancelled
+  return (
+    <div className="rounded-xl border border-line bg-white p-4 mb-4 flex items-center gap-4">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <p className="font-sans text-[10px] uppercase tracking-wide text-muted">Cremation booking</p>
+          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${chip}`}>
+            {BOOKING_STATUS_LABEL[booking.status] ?? booking.status}
+          </span>
+        </div>
+        <p className="font-sans text-[13px] font-medium text-ink">{booking.crematoriumName}</p>
+        {booking.status === 'confirmed' && booking.confirmedSlot && (
+          <p className="font-sans text-[12px] text-emerald-600 mt-0.5">
+            {slotToLabel(objToKey(booking.confirmedSlot))}
+          </p>
+        )}
+        {booking.shippingPartnerName && (
+          <p className="font-sans text-[11px] text-muted mt-0.5">via {booking.shippingPartnerName}</p>
+        )}
+      </div>
+      <button
+        onClick={() => onReschedule(booking)}
+        className="px-3 py-1.5 rounded-lg border border-line bg-white hover:bg-ink/5 font-sans text-[12px] font-medium text-ink transition-colors flex-shrink-0"
+      >
+        Change booking
+      </button>
     </div>
   )
 }

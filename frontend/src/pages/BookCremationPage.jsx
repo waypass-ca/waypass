@@ -6,6 +6,8 @@ import { getDefaultShippingPartnerId } from '../lib/preferences.js'
 import { getSundayOf, slotToObj, objToKey, slotKey, slotToLabel, formatWeekRange } from '../lib/slotUtils.js'
 import { Button } from '../components/ui/Button.jsx'
 import { WeekGrid } from '../components/booking/WeekGrid.jsx'
+import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
+import { ConfirmModal } from '../components/ui/ConfirmModal.jsx'
 
 const STATUS_DOT = {
   pending: 'bg-amber-400',
@@ -42,7 +44,7 @@ function StatusBadge({ status }) {
   )
 }
 
-function BookingPanelRow({ booking, onConfirm, onCancel }) {
+function BookingPanelRow({ booking, onConfirm, onCancel, onReschedule }) {
   const cremKeys = new Set((booking.crematoriumSlots ?? []).map(c => `${c.date}T${c.start}`))
   const shipKeys = booking.shippingPartnerId
     ? new Set((booking.shippingSlots ?? []).map(c => `${c.date}T${c.start}`))
@@ -119,12 +121,17 @@ function BookingPanelRow({ booking, onConfirm, onCancel }) {
               Crematorium responded — waiting on {booking.shippingPartnerName ?? 'shipping partner'}…
             </p>
           )}
-          {booking.status !== 'confirmed' && booking.status !== 'cancelled' && (
+          <div className="mt-3 flex items-center gap-4">
+            <button onClick={() => onReschedule(booking)}
+              className="font-sans text-[11px] text-ink hover:text-ink/70 transition-colors">
+              Change booking
+            </button>
             <button onClick={() => onCancel(booking.id)}
-              className="mt-3 font-sans text-[11px] text-danger hover:text-danger/70 transition-colors">
+              disabled={booking.status === 'cancelled'}
+              className="font-sans text-[11px] text-danger hover:text-danger/70 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
               Cancel booking
             </button>
-          )}
+          </div>
         </div>
       )}
     </div>
@@ -151,6 +158,8 @@ export function BookCremationPage({ cases, preselectedCase }) {
   const [sent, setSent] = useState(null)
   const [error, setError] = useState(null)
   const [showSidebar, setShowSidebar] = useState(true)
+  const [rescheduleTarget, setRescheduleTarget] = useState(null)
+  const [cancelTarget, setCancelTarget] = useState(null)
 
   const dragging = useRef(false)
   const dragMode = useRef(null)
@@ -527,12 +536,38 @@ export function BookCremationPage({ cases, preselectedCase }) {
               <p className="font-sans text-[12px] text-muted px-5 py-6">No active bookings.</p>
             ) : (
               activeBookings.map(b => (
-                <BookingPanelRow key={b.id} booking={b} onConfirm={handleConfirm} onCancel={handleCancel} />
+                <BookingPanelRow key={b.id} booking={b} onConfirm={handleConfirm} onCancel={() => setCancelTarget(b)} onReschedule={setRescheduleTarget} />
               ))
             )}
           </div>
         </div>
       </div>
+
+      {rescheduleTarget && (
+        <RescheduleBookingModal
+          booking={rescheduleTarget}
+          existingBookings={existingBookings}
+          onClose={() => setRescheduleTarget(null)}
+          onRescheduled={updated => {
+            setExistingBookings(prev => prev.map(b => b.id === updated.id ? updated : b))
+          }}
+        />
+      )}
+
+      {cancelTarget && (
+        <ConfirmModal
+          title="Cancel booking?"
+          message={`This will cancel the pickup request${cancelTarget.crematoriumName ? ` with ${cancelTarget.crematoriumName}` : ''}. You can reopen it later from the case page.`}
+          confirmLabel="Cancel booking"
+          cancelLabel="Keep booking"
+          destructive
+          onCancel={() => setCancelTarget(null)}
+          onConfirm={async () => {
+            await handleCancel(cancelTarget.id)
+            setCancelTarget(null)
+          }}
+        />
+      )}
 
     </div>
   )
