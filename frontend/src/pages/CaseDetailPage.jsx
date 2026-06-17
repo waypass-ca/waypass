@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
-import { addCaseNote, addCaseDocument, fetchCustody, updateCustodyStage, fetchBookings } from '../lib/api.js'
+import { addCaseNote, addCaseDocument, fetchCustody, updateCustodyStage, fetchBookings, cancelBooking } from '../lib/api.js'
 import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
+import { ConfirmModal } from '../components/ui/ConfirmModal.jsx'
 import { slotToLabel, objToKey } from '../lib/slotUtils.js'
 import { supabase } from '../lib/supabase.js'
 import { CUSTODY_STAGES, CUSTODY_STATUS_MILESTONES, EMPTY_CUSTODY } from '../lib/constants.js'
@@ -24,6 +25,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
   const [activeTab, setActiveTab] = useState('activity')
   const [caseBookings, setCaseBookings] = useState([])
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
+  const [cancelTarget, setCancelTarget] = useState(null)
   const [showNoteModal, setShowNoteModal] = useState(false)
   const [showLogModal, setShowLogModal] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
@@ -150,31 +152,42 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 flex flex-col min-h-0">
           {activeTab === 'activity' && (
             <>
+              <div className="flex-1 overflow-y-auto">
+                <CaseActivityTab
+                  activityFeed={activityFeed}
+                  onShowNote={() => setShowNoteModal(true)}
+                  onShowLog={() => setShowLogModal(true)}
+                />
+              </div>
               {caseBookings.length > 0 && (
-                <div className="px-8 pt-6">
-                  {caseBookings.map(b => <BookingCard key={b.id} booking={b} onReschedule={setRescheduleTarget} />)}
+                <div className="shrink-0 border-t border-line bg-white px-8 py-4 flex flex-col gap-2">
+                  {caseBookings.map(b => (
+                    <BookingCard
+                      key={b.id}
+                      booking={b}
+                      onReschedule={setRescheduleTarget}
+                      onCancel={setCancelTarget}
+                    />
+                  ))}
                 </div>
               )}
-              <CaseActivityTab
-                activityFeed={activityFeed}
-                onShowNote={() => setShowNoteModal(true)}
-                onShowLog={() => setShowLogModal(true)}
-              />
             </>
           )}
           {activeTab === 'documents' && (
-            <CaseDocumentsTab
-              documents={documents}
-              uploading={uploading}
-              docsActionNeeded={docsActionNeeded}
-              authorizationComplete={authorizationComplete}
-              onShowAuth={() => setShowAuthModal(true)}
-              onUpload={handleUpload}
-              onPreview={handlePreview}
-            />
+            <div className="flex-1 overflow-y-auto">
+              <CaseDocumentsTab
+                documents={documents}
+                uploading={uploading}
+                docsActionNeeded={docsActionNeeded}
+                authorizationComplete={authorizationComplete}
+                onShowAuth={() => setShowAuthModal(true)}
+                onUpload={handleUpload}
+                onPreview={handlePreview}
+              />
+            </div>
           )}
         </div>
       </div>
@@ -214,6 +227,21 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
           onRescheduled={updated => setCaseBookings(prev => prev.map(b => b.id === updated.id ? updated : b))}
         />
       )}
+      {cancelTarget && (
+        <ConfirmModal
+          title="Cancel booking?"
+          message={`This will cancel the pickup request${cancelTarget.crematoriumName ? ` with ${cancelTarget.crematoriumName}` : ''}. You can reopen it later via Change booking.`}
+          confirmLabel="Cancel booking"
+          cancelLabel="Keep booking"
+          destructive
+          onCancel={() => setCancelTarget(null)}
+          onConfirm={async () => {
+            await cancelBooking(cancelTarget.id)
+            setCaseBookings(prev => prev.map(b => b.id === cancelTarget.id ? { ...b, status: 'cancelled' } : b))
+            setCancelTarget(null)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -233,10 +261,10 @@ const BOOKING_STATUS_LABEL = {
   cancelled: 'Cancelled',
 }
 
-function BookingCard({ booking, onReschedule }) {
+function BookingCard({ booking, onReschedule, onCancel }) {
   const chip = BOOKING_STATUS_STYLES[booking.status] ?? BOOKING_STATUS_STYLES.cancelled
   return (
-    <div className="rounded-xl border border-line bg-white p-4 mb-4 flex items-center gap-4">
+    <div className="pb-2 flex items-center gap-4">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <p className="font-sans text-[10px] uppercase tracking-wide text-muted">Cremation booking</p>
@@ -254,12 +282,21 @@ function BookingCard({ booking, onReschedule }) {
           <p className="font-sans text-[11px] text-muted mt-0.5">via {booking.shippingPartnerName}</p>
         )}
       </div>
-      <button
-        onClick={() => onReschedule(booking)}
-        className="px-3 py-1.5 rounded-lg border border-line bg-white hover:bg-ink/5 font-sans text-[12px] font-medium text-ink transition-colors flex-shrink-0"
-      >
-        Change booking
-      </button>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <button
+          onClick={() => onReschedule(booking)}
+          className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-ink text-surface font-sans text-[12px] font-medium hover:opacity-90 transition-opacity"
+        >
+          Change Booking
+        </button>
+        <button
+          onClick={() => onCancel(booking)}
+          disabled={booking.status === 'cancelled'}
+          className="inline-flex items-center justify-center px-3 py-2 rounded-lg border border-danger/30 bg-surface text-danger font-sans text-[12px] font-medium hover:bg-danger/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   )
 }

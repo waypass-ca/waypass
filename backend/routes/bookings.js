@@ -447,6 +447,20 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ error: 'caseId, crematoriumId, and proposedSlots are required' })
     }
 
+    const { data: existingActive } = await supabase
+      .from('cremation_bookings')
+      .select('id')
+      .eq('case_id', caseId)
+      .eq('funeral_home_id', req.user.id)
+      .neq('status', 'cancelled')
+      .maybeSingle()
+    if (existingActive) {
+      return res.status(409).json({
+        error: 'This case already has an active booking. Change or cancel it before booking a new one.',
+        bookingId: existingActive.id,
+      })
+    }
+
     if (shippingPartnerId) {
       const { data: partner } = await supabase
         .from('shipping_partners')

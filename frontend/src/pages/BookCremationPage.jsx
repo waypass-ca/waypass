@@ -315,9 +315,12 @@ export function BookCremationPage({ cases, preselectedCase }) {
     const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(getSundayOf(d))
   }
 
-  const canSend = selectedCase && matchedCrem && selectedSlots.size > 0
-  const disabled = !selectedCase || !matchedCrem
   const activeBookings = existingBookings.filter(b => b.status !== 'cancelled')
+  const caseHasActiveBooking = selectedCase
+    ? activeBookings.find(b => b.caseId === selectedCase.id) ?? null
+    : null
+  const canSend = selectedCase && matchedCrem && selectedSlots.size > 0 && !caseHasActiveBooking
+  const disabled = !selectedCase || !matchedCrem || !!caseHasActiveBooking
 
   return (
     <div className="flex-1 flex overflow-hidden bg-surface">
@@ -432,6 +435,19 @@ export function BookCremationPage({ cases, preselectedCase }) {
             <p className="font-sans text-[12px] text-danger flex-1">{error}</p>
             <button onClick={() => setError(null)} className="text-danger/50 hover:text-danger transition-colors">
               <X size={13} />
+            </button>
+          </div>
+        )}
+        {caseHasActiveBooking && (
+          <div className="flex-shrink-0 flex items-start gap-3 px-6 py-3 bg-amber-50 border-b border-amber-200">
+            <Info size={15} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="font-sans text-[13px] text-amber-800 flex-1">
+              This case already has an active booking with <strong>{caseHasActiveBooking.crematoriumName}</strong>.
+              Change or cancel it from the sidebar before booking a new one.
+            </p>
+            <button onClick={() => setRescheduleTarget(caseHasActiveBooking)}
+              className="font-sans text-[12px] font-medium text-amber-800 hover:text-amber-900 underline underline-offset-2">
+              Change booking
             </button>
           </div>
         )}
