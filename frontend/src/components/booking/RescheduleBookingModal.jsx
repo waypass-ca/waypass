@@ -79,11 +79,13 @@ export function RescheduleBookingModal({ booking, existingBookings = [], onClose
             <div className="flex items-start gap-2 mb-4 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
               <Info size={13} className="text-amber-600 flex-shrink-0 mt-0.5" />
               <p className="font-sans text-[12px] text-amber-800">
-                This will reopen this cancelled booking and send a fresh request.
+                This will reopen the booking and send a fresh request.{booking.shippingPartnerId
+                  ? ` ${booking.shippingPartnerName ?? 'The shipping partner'} will be re-invited after the crematorium responds.`
+                  : ''}
               </p>
             </div>
           )}
-          {shippingNote && (
+          {shippingNote && booking.status !== 'cancelled' && (
             <div className="flex items-start gap-2 mb-4 px-3 py-2 rounded-lg bg-canvas border border-line">
               <Info size={13} className="text-muted flex-shrink-0 mt-0.5" />
               <p className="font-sans text-[12px] text-muted">{shippingNote}</p>

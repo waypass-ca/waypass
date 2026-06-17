@@ -46,9 +46,15 @@ function BookingChip({ booking, onClick }) {
 
 function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onReschedule, onClose }) {
   const styles = STATUS_STYLES[booking.status] ?? STATUS_STYLES.cancelled
-  const overlap = (booking.proposedSlots ?? []).filter(s =>
-    (booking.crematoriumSlots ?? []).some(c => `${c.date}T${c.start}` === `${s.date}T${s.start}`)
-  )
+  const hasShipping = Boolean(booking.shippingPartnerId)
+  const cremKeys = new Set((booking.crematoriumSlots ?? []).map(c => `${c.date}T${c.start}`))
+  const shipKeys = hasShipping ? new Set((booking.shippingSlots ?? []).map(c => `${c.date}T${c.start}`)) : null
+  const overlap = (booking.proposedSlots ?? []).filter(s => {
+    const k = `${s.date}T${s.start}`
+    if (!cremKeys.has(k)) return false
+    if (shipKeys && !shipKeys.has(k)) return false
+    return true
+  })
 
   return (
     <div className="fixed inset-y-0 right-0 w-80 bg-surface border-l border-line shadow-lg z-50 flex flex-col">
@@ -73,6 +79,16 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onReschedule,
             <p className="font-sans text-[13px] text-ink font-medium">{booking.crematoriumName}</p>
             <p className="font-sans text-[11px] text-muted">{booking.crematoriumEmail}</p>
           </div>
+
+          {hasShipping && (
+            <div>
+              <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-0.5">Shipping Partner</p>
+              <p className="font-sans text-[13px] text-ink font-medium">{booking.shippingPartnerName}</p>
+              {booking.shippingPartnerEmail && (
+                <p className="font-sans text-[11px] text-muted">{booking.shippingPartnerEmail}</p>
+              )}
+            </div>
+          )}
 
           {booking.confirmedSlot && (
             <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
@@ -111,6 +127,12 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onReschedule,
 
           {booking.status === 'pending' && (
             <p className="font-sans text-[11px] text-muted">Waiting for crematorium to respond…</p>
+          )}
+
+          {booking.status === 'awaiting_shipping' && (
+            <p className="font-sans text-[11px] text-muted">
+              Crematorium responded — waiting on {booking.shippingPartnerName ?? 'shipping partner'}…
+            </p>
           )}
 
           <div>

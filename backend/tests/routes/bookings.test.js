@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import request from 'supertest'
 import { makeSupabaseMock, authedUser, authHeader } from '../setup.js'
 
@@ -224,5 +224,186 @@ describe('POST /api/bookings/:id/reschedule', () => {
     expect(inbox.userId).toBe(USER_ID)
     expect(inbox.bookingId).toBe('booking-1')
     expect(inbox.subject).toMatch(/rescheduled/i)
+  })
+
+  it('sets rescheduled_at and resets token-invalidation columns', async () => {
+    chain.single
+      .mockResolvedValueOnce({ data: dbBooking(), error: null })
+      .mockResolvedValueOnce({ data: dbBooking({ status: 'pending' }), error: null })
+
+    await request(app).post('/api/bookings/booking-1/reschedule')
+      .set(authHeader)
+      .send({ proposedSlots: newSlots })
+
+    const updateArgs = chain.update.mock.calls.at(-1)[0]
+    expect(typeof updateArgs.rescheduled_at).toBe('string')
+    expect(updateArgs.response_token_invalidated_at).toBeNull()
+    expect(updateArgs.shipping_response_token_invalidated_at).toBeNull()
+  })
+})
+
+describe('POST /api/bookings/respond/:token — token invalidation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    chain.select.mockReturnThis()
+    chain.update.mockReturnThis()
+    chain.eq.mockReturnThis()
+    shouldEmail.mockResolvedValue(false)
+    createInboxItem.mockResolvedValue(null)
+  })
+
+  const slots = [`2026-07-01T09:00`]
+
+  it('returns 410 when token has already been invalidated', async () => {
+    chain.single.mockResolvedValueOnce({
+      data: dbBooking({ response_token_invalidated_at: '2026-06-01T00:00:00Z' }),
+      error: null,
+    })
+
+    const res = await request(app).post('/api/bookings/respond/token-old').send({ slots })
+    expect(res.status).toBe(410)
+  })
+
+  it('GET 410 when token has been invalidated', async () => {
+    chain.single.mockResolvedValueOnce({
+      data: dbBooking({ response_token_invalidated_at: '2026-06-01T00:00:00Z' }),
+      error: null,
+    })
+
+    const res = await request(app).get('/api/bookings/respond/token-old')
+    expect(res.status).toBe(410)
+  })
+
+  it('invalidates the token after a successful response', async () => {
+    chain.single
+      .mockResolvedValueOnce({ data: dbBooking({ status: 'pending' }), error: null })
+      .mockResolvedValueOnce({ data: dbBooking({ status: 'responded' }), error: null })
+
+    const res = await request(app).post('/api/bookings/respond/token-old').send({ slots })
+    expect(res.status).toBe(200)
+    const updateArgs = chain.update.mock.calls.at(-1)[0]
+    expect(typeof updateArgs.response_token_invalidated_at).toBe('string')
+  })
+})
+
+describe('POST /api/bookings/respond-shipping/:token', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    chain.select.mockReturnThis()
+    chain.update.mockReturnThis()
+    chain.eq.mockReturnThis()
+    shouldEmail.mockResolvedValue(false)
+    createInboxItem.mockResolvedValue(null)
+  })
+
+  const cremSlots = [slot('2026-07-01', 9), slot('2026-07-01', 10)]
+
+  it('returns 410 when shipping token is invalidated', async () => {
+    chain.single.mockResolvedValueOnce({
+      data: dbBooking({
+        status: 'awaiting_shipping',
+        crematorium_slots: cremSlots,
+        shipping_partner_id: 'ship-1',
+        shipping_response_token: 'ship-old',
+        shipping_response_token_invalidated_at: '2026-06-01T00:00:00Z',
+      }),
+      error: null,
+    })
+
+    const res = await request(app).post('/api/bookings/respond-shipping/ship-old')
+      .send({ slots: ['2026-07-01T09:00'] })
+    expect(res.status).toBe(410)
+  })
+
+  it('rejects slots that fall outside the crematorium window', async () => {
+    chain.single.mockResolvedValueOnce({
+      data: dbBooking({
+        status: 'awaiting_shipping',
+        crematorium_slots: cremSlots,
+        shipping_partner_id: 'ship-1',
+        shipping_response_token: 'ship-old',
+      }),
+      error: null,
+    })
+
+    const res = await request(app).post('/api/bookings/respond-shipping/ship-old')
+      .send({ slots: ['2026-07-01T14:00'] })
+    expect(res.status).toBe(400)
+  })
+
+  it('accepts slots within the crematorium window and invalidates the token', async () => {
+    chain.single
+      .mockResolvedValueOnce({
+        data: dbBooking({
+          status: 'awaiting_shipping',
+          crematorium_slots: cremSlots,
+          shipping_partner_id: 'ship-1',
+          shipping_partner_name: 'Ship Co',
+          shipping_response_token: 'ship-old',
+        }),
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: dbBooking({
+          status: 'responded',
+          crematorium_slots: cremSlots,
+          shipping_partner_id: 'ship-1',
+          shipping_slots: [slot('2026-07-01', 9)],
+        }),
+        error: null,
+      })
+
+    const res = await request(app).post('/api/bookings/respond-shipping/ship-old')
+      .send({ slots: ['2026-07-01T09:00'] })
+    expect(res.status).toBe(200)
+    const updateArgs = chain.update.mock.calls.at(-1)[0]
+    expect(updateArgs.status).toBe('responded')
+    expect(typeof updateArgs.shipping_response_token_invalidated_at).toBe('string')
+  })
+})
+
+describe('DELETE /api/bookings/:id with shipping partner', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    chain.select.mockReturnThis()
+    chain.update.mockReturnThis()
+    chain.eq.mockReturnThis()
+    shouldEmail.mockResolvedValue(false)
+    createInboxItem.mockResolvedValue(null)
+    // The cases denorm cleanup awaits the chain directly via `.then(cb)`.
+    // Mock the chain as thenable so awaiting it resolves to no-error.
+    chain.then = vi.fn(onResolve => Promise.resolve({ data: null, error: null }).then(onResolve))
+  })
+
+  afterEach(() => {
+    delete chain.then
+  })
+
+  it('clears cases.shipping_partner_id and notifies the partner', async () => {
+    shouldEmail.mockResolvedValueOnce(true) // allow shipping cancellation path
+
+    chain.single.mockResolvedValueOnce({
+      data: dbBooking({
+        status: 'confirmed',
+        shipping_partner_id: 'ship-1',
+        shipping_partner_email: 'ship@example.com',
+        shipping_partner_name: 'Ship Co',
+      }),
+      error: null,
+    })
+
+    const res = await request(app).delete('/api/bookings/booking-1').set(authHeader)
+    expect(res.status).toBe(204)
+
+    // First update: booking → cancelled. Second update: cases.shipping_partner_id → null.
+    const fromCalls = supabase.from.mock.calls.map(c => c[0])
+    expect(fromCalls).toContain('cases')
+
+    const inbox = createInboxItem.mock.calls[0][0]
+    expect(inbox.subject).toMatch(/cancelled/i)
+    expect(inbox.body).toMatch(/Ship Co/)
   })
 })

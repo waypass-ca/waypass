@@ -127,6 +127,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
         setActiveTab={setActiveTab}
         onShowNote={() => setShowNoteModal(true)}
         onSchedule={onSchedule}
+        shippingPartnerName={caseBookings.find(b => b.status !== 'cancelled' && b.shippingPartnerName)?.shippingPartnerName ?? null}
       />
 
       <div className="flex-1 flex flex-col min-w-0 bg-surface/90 overflow-hidden">
