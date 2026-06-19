@@ -66,11 +66,19 @@ function SlotPicker({ bookingId, onConfirmed }) {
   if (booking?.status !== 'responded') return null
 
   const proposedKeys = new Set((booking.proposedSlots ?? []).map(s => `${s.date}T${s.start}`))
-  const slots = (booking.crematoriumSlots ?? []).filter(s => proposedKeys.has(`${s.date}T${s.start}`))
+  const shippingKeys = booking.shippingPartnerId
+    ? new Set((booking.shippingSlots ?? []).map(s => `${s.date}T${s.start}`))
+    : null
+  const slots = (booking.crematoriumSlots ?? []).filter(s => {
+    const k = `${s.date}T${s.start}`
+    if (!proposedKeys.has(k)) return false
+    if (shippingKeys && !shippingKeys.has(k)) return false
+    return true
+  })
 
   if (slots.length === 0) return (
     <div className="px-5 py-4 border-t border-line">
-      <p className="font-sans text-[12px] text-muted">No overlapping slots available.</p>
+      <p className="font-sans text-[12px] text-muted">No times work for all parties — cancel and rebook with new times.</p>
     </div>
   )
 

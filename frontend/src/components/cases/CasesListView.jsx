@@ -75,6 +75,11 @@ export function CasesListView({ rows, selected, toggleSelect, selectAll, activeI
                     <span className="font-sans text-[12px] text-secondary truncate block max-w-[200px]">
                       {c.crematorium || <span className="italic text-muted">— Unassigned</span>}
                     </span>
+                    {c.shippingPartnerName && (
+                      <span className="font-sans text-[10.5px] text-muted truncate block max-w-[200px]">
+                        via {c.shippingPartnerName}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2.5 align-middle"><StatusBadge status={c.status} /></td>
                   <td className="px-3 py-2.5 align-middle">

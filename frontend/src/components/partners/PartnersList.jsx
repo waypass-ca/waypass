@@ -22,7 +22,8 @@ function PartnerRow({ crm, onClick }) {
   )
 }
 
-export function PartnersList({ crematoriums, search, onSelect }) {
+export function PartnersList({ crematoriums, search, onSelect, kind = 'crematorium' }) {
+  const partnerNoun = kind === 'shipping' ? 'shipping partners' : 'crematoriums'
   const filtered = crematoriums.filter(c =>
     !search || c.name.toLowerCase().includes(search.toLowerCase()) || (c.location ?? '').toLowerCase().includes(search.toLowerCase())
   )
@@ -36,7 +37,7 @@ export function PartnersList({ crematoriums, search, onSelect }) {
           </svg>
         </div>
         <p className="font-sans text-sm font-medium text-ink">No partners yet</p>
-        <p className="font-sans text-xs text-muted mt-1">Use Find a Partner to discover and add crematoriums.</p>
+        <p className="font-sans text-xs text-muted mt-1">Use Find a Partner to discover and add {partnerNoun}.</p>
       </div>
     )
   }

@@ -3,6 +3,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { fetchBookings, confirmBooking, cancelBooking } from '../lib/api.js'
 import { objToKey, slotToLabel, slotKey, getSundayOf, formatWeekRange } from '../lib/slotUtils.js'
 import { WeekGrid } from '../components/booking/WeekGrid.jsx'
+import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
+import { ConfirmModal } from '../components/ui/ConfirmModal.jsx'
 
 const STATUS_STYLES = {
   pending:   { chip: 'bg-amber-100 text-amber-800', dot: 'bg-amber-400' },
@@ -42,11 +44,17 @@ function BookingChip({ booking, onClick }) {
   )
 }
 
-function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onClose }) {
+function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onReschedule, onClose }) {
   const styles = STATUS_STYLES[booking.status] ?? STATUS_STYLES.cancelled
-  const overlap = (booking.proposedSlots ?? []).filter(s =>
-    (booking.crematoriumSlots ?? []).some(c => `${c.date}T${c.start}` === `${s.date}T${s.start}`)
-  )
+  const hasShipping = Boolean(booking.shippingPartnerId)
+  const cremKeys = new Set((booking.crematoriumSlots ?? []).map(c => `${c.date}T${c.start}`))
+  const shipKeys = hasShipping ? new Set((booking.shippingSlots ?? []).map(c => `${c.date}T${c.start}`)) : null
+  const overlap = (booking.proposedSlots ?? []).filter(s => {
+    const k = `${s.date}T${s.start}`
+    if (!cremKeys.has(k)) return false
+    if (shipKeys && !shipKeys.has(k)) return false
+    return true
+  })
 
   return (
     <div className="fixed inset-y-0 right-0 w-80 bg-surface border-l border-line shadow-lg z-50 flex flex-col">
@@ -71,6 +79,16 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onClose }) {
             <p className="font-sans text-[13px] text-ink font-medium">{booking.crematoriumName}</p>
             <p className="font-sans text-[11px] text-muted">{booking.crematoriumEmail}</p>
           </div>
+
+          {hasShipping && (
+            <div>
+              <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-0.5">Shipping Partner</p>
+              <p className="font-sans text-[13px] text-ink font-medium">{booking.shippingPartnerName}</p>
+              {booking.shippingPartnerEmail && (
+                <p className="font-sans text-[11px] text-muted">{booking.shippingPartnerEmail}</p>
+              )}
+            </div>
+          )}
 
           {booking.confirmedSlot && (
             <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
@@ -111,6 +129,12 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onClose }) {
             <p className="font-sans text-[11px] text-muted">Waiting for crematorium to respond…</p>
           )}
 
+          {booking.status === 'awaiting_shipping' && (
+            <p className="font-sans text-[11px] text-muted">
+              Crematorium responded — waiting on {booking.shippingPartnerName ?? 'shipping partner'}…
+            </p>
+          )}
+
           <div>
             <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-2">Proposed ({booking.proposedSlots?.length ?? 0})</p>
             <div className="flex flex-col gap-1">
@@ -122,16 +146,21 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onClose }) {
         </div>
       </div>
 
-      {booking.status !== 'confirmed' && booking.status !== 'cancelled' && (
-        <div className="p-4 border-t border-line">
-          <button
-            onClick={() => onCancel(booking.id)}
-            className="w-full text-center font-sans text-[12px] text-danger hover:text-danger/80 transition-colors py-1"
-          >
-            Cancel Booking
-          </button>
-        </div>
-      )}
+      <div className="p-4 border-t border-line flex items-center gap-2">
+        <button
+          onClick={() => onReschedule(booking)}
+          className="flex-[2] inline-flex items-center justify-center px-3 py-2 rounded-lg bg-ink text-surface font-sans text-[12px] font-medium hover:opacity-90 transition-opacity"
+        >
+          Change Booking
+        </button>
+        <button
+          onClick={() => onCancel(booking.id)}
+          disabled={booking.status === 'cancelled'}
+          className="flex-1 inline-flex items-center justify-center px-3 py-2 rounded-lg border border-danger/30 bg-surface text-danger font-sans text-[12px] font-medium hover:bg-danger/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-surface"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   )
 }
@@ -141,10 +170,12 @@ export function CalendarPage({ cases = [] }) {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
-  const [viewMode, setViewMode] = useState('month') // 'month' | 'week'
+  const [viewMode, setViewMode] = useState('week') // 'month' | 'week'
   const [weekStart, setWeekStart] = useState(() => getSundayOf(today))
   const [bookings, setBookings] = useState([])
   const [selectedBooking, setSelectedBooking] = useState(null)
+  const [rescheduleTarget, setRescheduleTarget] = useState(null)
+  const [cancelTarget, setCancelTarget] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -199,16 +230,16 @@ export function CalendarPage({ cases = [] }) {
           </div>
           <div className="flex items-center gap-1 p-0.5 rounded-lg border border-line bg-canvas">
             <button
-              onClick={() => setViewMode('month')}
-              className={`flex items-center justify-center px-3 h-7 rounded-md transition-colors text-[13px] font-medium ${viewMode === 'month' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
-            >
-              Month
-            </button>
-            <button
               onClick={() => setViewMode('week')}
               className={`flex items-center justify-center px-3 h-7 rounded-md transition-colors text-[13px] font-medium ${viewMode === 'week' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
             >
               Week
+            </button>
+            <button
+              onClick={() => setViewMode('month')}
+              className={`flex items-center justify-center px-3 h-7 rounded-md transition-colors text-[13px] font-medium ${viewMode === 'month' ? 'bg-ink text-surface' : 'text-muted hover:text-ink'}`}
+            >
+              Month
             </button>
           </div>
         </div>
@@ -340,10 +371,37 @@ export function CalendarPage({ cases = [] }) {
             booking={selectedBooking}
             deceasedName={cases.find(c => c.id === selectedBooking.caseId)?.deceased ?? null}
             onConfirm={handleConfirm}
-            onCancel={handleCancel}
+            onCancel={() => setCancelTarget(selectedBooking)}
+            onReschedule={b => { setSelectedBooking(null); setRescheduleTarget(b) }}
             onClose={() => setSelectedBooking(null)}
           />
         </>
+      )}
+
+      {rescheduleTarget && (
+        <RescheduleBookingModal
+          booking={rescheduleTarget}
+          existingBookings={bookings}
+          onClose={() => setRescheduleTarget(null)}
+          onRescheduled={updated => {
+            setBookings(prev => prev.map(b => b.id === updated.id ? updated : b))
+          }}
+        />
+      )}
+
+      {cancelTarget && (
+        <ConfirmModal
+          title="Cancel booking?"
+          message={`This will cancel the pickup request${cancelTarget.crematoriumName ? ` with ${cancelTarget.crematoriumName}` : ''}. You can reopen it later from the case page.`}
+          confirmLabel="Cancel booking"
+          cancelLabel="Keep booking"
+          destructive
+          onCancel={() => setCancelTarget(null)}
+          onConfirm={async () => {
+            await handleCancel(cancelTarget.id)
+            setCancelTarget(null)
+          }}
+        />
       )}
     </div>
   )

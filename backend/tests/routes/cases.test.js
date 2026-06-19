@@ -64,6 +64,8 @@ const shapedCase = {
   date: 'March 15, 2024',
   amount: 2550,
   crematorium: null,
+  crematoriumId: null,
+  shippingPartnerId: null,
   removalStaff: null,
   removalTime: null,
   folderId: null,

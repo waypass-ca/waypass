@@ -3,7 +3,7 @@ import { StatusPill } from '../ui/StatusPill'
 import { InfoField } from '../ui/InfoField'
 import { InfoSection } from '../ui/InfoSection'
 
-export function CaseInfoPanel({ caseData, onBack, status, setActiveTab, onShowNote, onSchedule }) {
+export function CaseInfoPanel({ caseData, onBack, status, setActiveTab, onShowNote, onSchedule, shippingPartnerName }) {
   return (
     <div className="w-[320px] flex-shrink-0 bg-white border-r border-line flex flex-col overflow-hidden">
 
@@ -63,6 +63,7 @@ export function CaseInfoPanel({ caseData, onBack, status, setActiveTab, onShowNo
           <InfoField label="Package" value={caseData.package} />
           <InfoField label="Add-ons" value={caseData.addons?.join(', ') || 'None'} />
           <InfoField label="Crematorium" value={caseData.crematorium} />
+          <InfoField label="Shipping Partner" value={shippingPartnerName ?? '—'} />
           <div className="flex items-baseline justify-between py-3 mt-1">
             <span className="font-sans text-[10px] text-muted uppercase tracking-wide">Total</span>
             <span className="font-display text-xl text-ink">${caseData.amount?.toLocaleString()}</span>

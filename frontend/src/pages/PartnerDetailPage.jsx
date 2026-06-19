@@ -1,11 +1,18 @@
 import { useState } from 'react'
-import { updateCrematorium } from '../lib/api.js'
+import { updateCrematorium, updateShippingPartner } from '../lib/api.js'
+import { useAuth } from '../context/AuthContext.jsx'
+import { getDefaultShippingPartnerId, setDefaultShippingPartnerId } from '../lib/preferences.js'
 import { Badge } from '../components/ui/Badge'
 import { InfoField } from '../components/ui/InfoField'
 import { InfoSection } from '../components/ui/InfoSection'
-import { ChevronLeft, Pencil, TriangleAlert } from 'lucide-react'
+import { ChevronLeft, Pencil, TriangleAlert, Star } from 'lucide-react'
 
-export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCase, onSave }) {
+export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCase, onSave, kind = 'crematorium' }) {
+  const updateFn = kind === 'shipping' ? updateShippingPartner : updateCrematorium
+  const { user } = useAuth()
+  const [isDefault, setIsDefault] = useState(
+    kind === 'shipping' && getDefaultShippingPartnerId(user?.id) === crm.id
+  )
   const [isEditing, setIsEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -25,7 +32,7 @@ export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCas
   async function handleSave() {
     setSaving(true); setError(null)
     try {
-      const updated = await updateCrematorium(crm.id, {
+      const updated = await updateFn(crm.id, {
         name: form.name,
         location: form.location || null,
         contactName: form.contactName || null,
@@ -64,7 +71,7 @@ export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCas
   const mapQuery = encodeURIComponent(address ? `${crm.name} ${address}` : crm.name)
 
   const recentCases = cases
-    .filter(c => c.crematorium === crm.name)
+    .filter(c => kind === 'shipping' ? c.shippingPartnerId === crm.id : c.crematorium === crm.name)
     .slice(0, 5)
 
   return (
@@ -207,7 +214,32 @@ export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCas
           </div>
 
           {!isEditing && (
-            <div className="flex-shrink-0 px-5 py-4">
+            <div className="flex-shrink-0 px-5 py-4 space-y-2.5">
+              {kind === 'shipping' && (
+                <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-line bg-canvas/60">
+                  <Star size={14} className={`flex-shrink-0 ${isDefault ? 'text-amber-500 fill-amber-500' : 'text-muted'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-sans text-[12.5px] font-medium text-ink">
+                      {isDefault ? 'Default shipping partner' : 'Set as default shipping partner'}
+                    </p>
+                    <p className="font-sans text-[11px] text-muted mt-0.5">
+                      {isDefault
+                        ? 'Pre-selected on new cremation bookings.'
+                        : 'Pre-select this partner on new cremation bookings.'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const next = !isDefault
+                      setDefaultShippingPartnerId(user?.id, next ? crm.id : null)
+                      setIsDefault(next)
+                    }}
+                    className="flex-shrink-0 px-3 py-1.5 rounded-lg border border-line bg-white font-sans text-xs font-medium text-ink hover:bg-canvas transition-colors cursor-pointer"
+                  >
+                    {isDefault ? 'Unset' : 'Set default'}
+                  </button>
+                </div>
+              )}
               <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-danger/30 bg-danger-tint/40">
                 <TriangleAlert size={14} className="text-danger flex-shrink-0" />
                 <div className="flex-1 min-w-0">
