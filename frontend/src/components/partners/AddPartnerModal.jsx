@@ -21,7 +21,8 @@ export function InputField({ label, placeholder, type = 'text', prefix, value, o
   )
 }
 
-export function AddPartnerModal({ crm, onConfirm, onClose }) {
+export function AddPartnerModal({ crm, onConfirm, onClose, kind = 'crematorium' }) {
+  const namePlaceholder = kind === 'shipping' ? 'Shipping partner name' : 'Crematorium name'
   const address = [crm.streetAddress, crm.city, crm.state, crm.zip].filter(Boolean).join(', ') || crm.location || ''
   const [form, setForm] = useState({
     name: crm.name ?? '',
@@ -72,7 +73,7 @@ export function AddPartnerModal({ crm, onConfirm, onClose }) {
         </div>
         <div className="px-6 py-5 space-y-4 max-h-[65vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2"><InputField label="Name" placeholder="Crematorium name" value={form.name} onChange={set('name')} /></div>
+            <div className="col-span-2"><InputField label="Name" placeholder={namePlaceholder} value={form.name} onChange={set('name')} /></div>
             <div className="col-span-2"><InputField label="Location" placeholder="City, Province" value={form.location} onChange={set('location')} /></div>
             <InputField label="Contact Name" placeholder="e.g. John Smith" value={form.contactName} onChange={set('contactName')} />
             <InputField label="Contact Email" type="email" placeholder="email@example.com" value={form.contactEmail} onChange={set('contactEmail')} />

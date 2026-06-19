@@ -1,30 +1,60 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Search, X, CheckCircle2, Send, ChevronLeft, ChevronRight, Info, CalendarCheck } from 'lucide-react'
-import { fetchCrematoriums, fetchBookings, createBooking, confirmBooking, cancelBooking } from '../lib/api.js'
+import { fetchCrematoriums, fetchShippingPartners, fetchBookings, createBooking, confirmBooking, cancelBooking } from '../lib/api.js'
+import { useAuth } from '../context/AuthContext.jsx'
+import { getDefaultShippingPartnerId } from '../lib/preferences.js'
 import { getSundayOf, slotToObj, objToKey, slotKey, slotToLabel, formatWeekRange } from '../lib/slotUtils.js'
 import { Button } from '../components/ui/Button.jsx'
 import { WeekGrid } from '../components/booking/WeekGrid.jsx'
+import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
+import { ConfirmModal } from '../components/ui/ConfirmModal.jsx'
 
-const STATUS_DOT   = { pending: 'bg-amber-400', responded: 'bg-blue-400', confirmed: 'bg-emerald-500', cancelled: 'bg-line' }
-const STATUS_LABEL = { pending: 'text-amber-600', responded: 'text-blue-600', confirmed: 'text-emerald-600', cancelled: 'text-muted' }
+const STATUS_DOT = {
+  pending: 'bg-amber-400',
+  awaiting_shipping: 'bg-amber-400',
+  responded: 'bg-blue-400',
+  confirmed: 'bg-emerald-500',
+  cancelled: 'bg-line',
+}
+const STATUS_LABEL = {
+  pending: 'text-amber-600',
+  awaiting_shipping: 'text-amber-600',
+  responded: 'text-blue-600',
+  confirmed: 'text-emerald-600',
+  cancelled: 'text-muted',
+}
+const STATUS_DISPLAY = {
+  pending: 'pending',
+  awaiting_shipping: 'awaiting shipping',
+  responded: 'responded',
+  confirmed: 'confirmed',
+  cancelled: 'cancelled',
+}
 
 function StatusBadge({ status }) {
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-      status === 'pending'   ? 'bg-amber-50 text-amber-700 border-amber-200'   :
+      status === 'pending' || status === 'awaiting_shipping' ? 'bg-amber-50 text-amber-700 border-amber-200'   :
       status === 'responded' ? 'bg-blue-50 text-blue-700 border-blue-200'      :
       status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                                'bg-line text-muted border-line'
     }`}>
-      {status.charAt(0).toUpperCase() + status.slice(1)}
+      {(STATUS_DISPLAY[status] ?? status).replace(/^./, c => c.toUpperCase())}
     </span>
   )
 }
 
-function BookingPanelRow({ booking, onConfirm, onCancel }) {
-  const overlap = (booking.proposedSlots ?? []).filter(s =>
-    (booking.crematoriumSlots ?? []).some(c => `${c.date}T${c.start}` === `${s.date}T${s.start}`)
-  )
+function BookingPanelRow({ booking, onConfirm, onCancel, onReschedule }) {
+  const cremKeys = new Set((booking.crematoriumSlots ?? []).map(c => `${c.date}T${c.start}`))
+  const shipKeys = booking.shippingPartnerId
+    ? new Set((booking.shippingSlots ?? []).map(c => `${c.date}T${c.start}`))
+    : null
+  const overlap = (booking.proposedSlots ?? []).filter(s => {
+    const k = `${s.date}T${s.start}`
+    if (!cremKeys.has(k)) return false
+    if (shipKeys && !shipKeys.has(k)) return false
+    return true
+  })
   const [expanded, setExpanded] = useState(booking.status === 'responded')
 
   return (
@@ -45,7 +75,7 @@ function BookingPanelRow({ booking, onConfirm, onCancel }) {
             )}
           </div>
           <span className={`font-sans text-[10px] font-semibold uppercase tracking-wide flex-shrink-0 mt-0.5 ${STATUS_LABEL[booking.status] ?? STATUS_LABEL.cancelled}`}>
-            {booking.status}
+            {STATUS_DISPLAY[booking.status] ?? booking.status}
           </span>
         </div>
       </button>
@@ -86,12 +116,22 @@ function BookingPanelRow({ booking, onConfirm, onCancel }) {
           {booking.status === 'pending' && (
             <p className="font-sans text-[11px] text-muted italic">Waiting for crematorium to respond…</p>
           )}
-          {booking.status !== 'confirmed' && booking.status !== 'cancelled' && (
+          {booking.status === 'awaiting_shipping' && (
+            <p className="font-sans text-[11px] text-muted italic">
+              Crematorium responded — waiting on {booking.shippingPartnerName ?? 'shipping partner'}…
+            </p>
+          )}
+          <div className="mt-3 flex items-center gap-4">
+            <button onClick={() => onReschedule(booking)}
+              className="font-sans text-[11px] text-ink hover:text-ink/70 transition-colors">
+              Change booking
+            </button>
             <button onClick={() => onCancel(booking.id)}
-              className="mt-3 font-sans text-[11px] text-danger hover:text-danger/70 transition-colors">
+              disabled={booking.status === 'cancelled'}
+              className="font-sans text-[11px] text-danger hover:text-danger/70 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
               Cancel booking
             </button>
-          )}
+          </div>
         </div>
       )}
     </div>
@@ -99,13 +139,16 @@ function BookingPanelRow({ booking, onConfirm, onCancel }) {
 }
 
 export function BookCremationPage({ cases, preselectedCase }) {
+  const { user } = useAuth()
   const [crematoriums, setCrematoriums] = useState([])
+  const [shippingPartners, setShippingPartners] = useState([])
   const [existingBookings, setExistingBookings] = useState([])
 
   const [query, setQuery] = useState(preselectedCase?.deceased ?? preselectedCase?.id ?? '')
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedCase, setSelectedCase] = useState(preselectedCase ?? null)
   const [matchedCrem, setMatchedCrem] = useState(null)
+  const [selectedShipping, setSelectedShipping] = useState(null)
   const searchRef = useRef(null)
 
   const [weekStart, setWeekStart] = useState(() => getSundayOf(new Date()))
@@ -115,6 +158,8 @@ export function BookCremationPage({ cases, preselectedCase }) {
   const [sent, setSent] = useState(null)
   const [error, setError] = useState(null)
   const [showSidebar, setShowSidebar] = useState(true)
+  const [rescheduleTarget, setRescheduleTarget] = useState(null)
+  const [cancelTarget, setCancelTarget] = useState(null)
 
   const dragging = useRef(false)
   const dragMode = useRef(null)
@@ -125,6 +170,14 @@ export function BookCremationPage({ cases, preselectedCase }) {
       setCrematoriums(list)
       if (preselectedCase?.crematoriumId) {
         setMatchedCrem(list.find(cr => cr.id === preselectedCase.crematoriumId) ?? null)
+      }
+    }).catch(() => {})
+    fetchShippingPartners().then(list => {
+      setShippingPartners(list)
+      const defaultId = getDefaultShippingPartnerId(user?.id)
+      if (defaultId) {
+        const defaultPartner = list.find(p => p.id === defaultId)
+        if (defaultPartner) setSelectedShipping(defaultPartner)
       }
     }).catch(() => {})
     fetchBookings().then(setExistingBookings).catch(() => {})
@@ -181,6 +234,8 @@ export function BookCremationPage({ cases, preselectedCase }) {
   function clearCase() {
     setSelectedCase(null)
     setMatchedCrem(null)
+    const defaultId = getDefaultShippingPartnerId(user?.id)
+    setSelectedShipping(defaultId ? (shippingPartners.find(p => p.id === defaultId) ?? null) : null)
     setQuery('')
     setSelectedSlots(new Set())
     setError(null)
@@ -198,6 +253,9 @@ export function BookCremationPage({ cases, preselectedCase }) {
         crematoriumId: matchedCrem.id,
         crematoriumEmail: matchedCrem.contactEmail,
         crematoriumName: matchedCrem.name,
+        shippingPartnerId: selectedShipping?.id ?? null,
+        shippingPartnerEmail: selectedShipping?.contactEmail ?? null,
+        shippingPartnerName: selectedShipping?.name ?? null,
         proposedSlots,
         deceasedName: selectedCase.deceased,
       })
@@ -257,9 +315,12 @@ export function BookCremationPage({ cases, preselectedCase }) {
     const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(getSundayOf(d))
   }
 
-  const canSend = selectedCase && matchedCrem && selectedSlots.size > 0
-  const disabled = !selectedCase || !matchedCrem
   const activeBookings = existingBookings.filter(b => b.status !== 'cancelled')
+  const caseHasActiveBooking = selectedCase
+    ? activeBookings.find(b => b.caseId === selectedCase.id) ?? null
+    : null
+  const canSend = selectedCase && matchedCrem && selectedSlots.size > 0 && !caseHasActiveBooking
+  const disabled = !selectedCase || !matchedCrem || !!caseHasActiveBooking
 
   return (
     <div className="flex-1 flex overflow-hidden bg-surface">
@@ -377,6 +438,19 @@ export function BookCremationPage({ cases, preselectedCase }) {
             </button>
           </div>
         )}
+        {caseHasActiveBooking && (
+          <div className="flex-shrink-0 flex items-start gap-3 px-6 py-3 bg-amber-50 border-b border-amber-200">
+            <Info size={15} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <p className="font-sans text-[13px] text-amber-800 flex-1">
+              This case already has an active booking with <strong>{caseHasActiveBooking.crematoriumName}</strong>.
+              Change or cancel it from the sidebar before booking a new one.
+            </p>
+            <button onClick={() => setRescheduleTarget(caseHasActiveBooking)}
+              className="font-sans text-[12px] font-medium text-amber-800 hover:text-amber-900 underline underline-offset-2">
+              Change booking
+            </button>
+          </div>
+        )}
 
         {/* Full-height week calendar */}
         <WeekGrid
@@ -424,9 +498,32 @@ export function BookCremationPage({ cases, preselectedCase }) {
               <p className="font-sans text-[10px] text-muted uppercase tracking-wide">Crematorium</p>
               <p className="font-sans text-[13px] font-medium text-ink">{matchedCrem?.name ?? '—'}</p>
             </div>
+            <div className="text-right min-w-[160px]">
+              <p className="font-sans text-[10px] text-muted uppercase tracking-wide">Shipping partner</p>
+              <select
+                value={selectedShipping?.id ?? ''}
+                onChange={e => {
+                  const next = shippingPartners.find(p => p.id === e.target.value) ?? null
+                  setSelectedShipping(next)
+                }}
+                disabled={!selectedCase}
+                className="font-sans text-[13px] text-ink bg-transparent border-0 outline-none w-full text-right cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">— Skip —</option>
+                {shippingPartners.length === 0 && (
+                  <option disabled>No shipping partners connected</option>
+                )}
+                {shippingPartners.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
             <div className="text-right">
               <p className="font-sans text-[10px] text-muted uppercase tracking-wide">Sending to</p>
               <p className="font-sans text-[13px] text-ink">{matchedCrem?.contactEmail ?? '—'}</p>
+              {selectedShipping && (
+                <p className="font-sans text-[11px] text-muted">+ {selectedShipping.contactEmail ?? 'no email'}</p>
+              )}
             </div>
             <Button onClick={handleSend} disabled={!canSend || sending} className="flex items-center gap-2">
               <Send size={13} strokeWidth={2} />
@@ -455,12 +552,38 @@ export function BookCremationPage({ cases, preselectedCase }) {
               <p className="font-sans text-[12px] text-muted px-5 py-6">No active bookings.</p>
             ) : (
               activeBookings.map(b => (
-                <BookingPanelRow key={b.id} booking={b} onConfirm={handleConfirm} onCancel={handleCancel} />
+                <BookingPanelRow key={b.id} booking={b} onConfirm={handleConfirm} onCancel={() => setCancelTarget(b)} onReschedule={setRescheduleTarget} />
               ))
             )}
           </div>
         </div>
       </div>
+
+      {rescheduleTarget && (
+        <RescheduleBookingModal
+          booking={rescheduleTarget}
+          existingBookings={existingBookings}
+          onClose={() => setRescheduleTarget(null)}
+          onRescheduled={updated => {
+            setExistingBookings(prev => prev.map(b => b.id === updated.id ? updated : b))
+          }}
+        />
+      )}
+
+      {cancelTarget && (
+        <ConfirmModal
+          title="Cancel booking?"
+          message={`This will cancel the pickup request${cancelTarget.crematoriumName ? ` with ${cancelTarget.crematoriumName}` : ''}. You can reopen it later from the case page.`}
+          confirmLabel="Cancel booking"
+          cancelLabel="Keep booking"
+          destructive
+          onCancel={() => setCancelTarget(null)}
+          onConfirm={async () => {
+            await handleCancel(cancelTarget.id)
+            setCancelTarget(null)
+          }}
+        />
+      )}
 
     </div>
   )

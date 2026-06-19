@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { disconnectCrematorium } from '../../lib/api.js'
+import { disconnectCrematorium, disconnectShippingPartner } from '../../lib/api.js'
 import { Button } from '../ui/Button'
 
-export function DisconnectModal({ crm, onConfirm, onClose }) {
+export function DisconnectModal({ crm, onConfirm, onClose, kind = 'crematorium' }) {
   const [removing, setRemoving] = useState(false)
   const [error, setError] = useState(null)
+  const disconnectFn = kind === 'shipping' ? disconnectShippingPartner : disconnectCrematorium
 
   async function handleRemove() {
     setRemoving(true); setError(null)
-    try { await disconnectCrematorium(crm.id); onConfirm(crm.id) }
+    try { await disconnectFn(crm.id); onConfirm(crm.id) }
     catch (err) { setError(err.message); setRemoving(false) }
   }
 

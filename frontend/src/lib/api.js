@@ -97,6 +97,28 @@ export async function fetchNearbyCrematoriums(lat, lng) {
   return (rows ?? []).map(normalizeDbRecord)
 }
 
+// ── Shipping Partners ─────────────────────────────────
+export const fetchShippingPartners = () => mutate('/api/shipping-partners')
+export const createShippingPartner = (payload) =>
+  mutate('/api/shipping-partners', { method: 'POST', body: JSON.stringify(payload) })
+export const updateShippingPartner = (id, payload) =>
+  mutate(`/api/shipping-partners/${id}`, { method: 'PATCH', body: JSON.stringify(payload) })
+export const deleteShippingPartner = (id) =>
+  mutate(`/api/shipping-partners/${id}`, { method: 'DELETE' })
+export const connectShippingPartner = (id) =>
+  mutate(`/api/shipping-partners/${id}/connect`, { method: 'POST' })
+export const disconnectShippingPartner = (id) =>
+  mutate(`/api/shipping-partners/${id}/connect`, { method: 'DELETE' })
+
+export async function fetchNearbyShippingPartners(lat, lng) {
+  if (!FEATURES.googleMaps) return []
+  const hasCoords = lat !== 0 || lng !== 0
+  const rows = hasCoords
+    ? await request(`/api/shipping-partners/nearby-db?lat=${lat}&lng=${lng}&radius_miles=100`)
+    : await request('/api/shipping-partners/db')
+  return (rows ?? []).map(normalizeDbRecord)
+}
+
 // ── Bookings ──────────────────────────────────────────
 export const fetchBookings = () => mutate('/api/bookings')
 export const fetchBooking = (id) => mutate(`/api/bookings/${id}`)
@@ -106,11 +128,21 @@ export const confirmBooking = (id, slot) =>
   mutate(`/api/bookings/${id}/confirm`, { method: 'POST', body: JSON.stringify({ slot }) })
 export const cancelBooking = (id) =>
   mutate(`/api/bookings/${id}`, { method: 'DELETE' })
+export const rescheduleBooking = (id, proposedSlots) =>
+  mutate(`/api/bookings/${id}/reschedule`, { method: 'POST', body: JSON.stringify({ proposedSlots }) })
 // Public — no auth header
 export const fetchBookingByToken = (token) =>
   request(`/api/bookings/respond/${token}`)
 export const respondToBooking = (token, slots) =>
   request(`/api/bookings/respond/${token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ slots }),
+  })
+export const fetchShippingBookingByToken = (token) =>
+  request(`/api/bookings/respond-shipping/${token}`)
+export const respondToShippingBooking = (token, slots) =>
+  request(`/api/bookings/respond-shipping/${token}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ slots }),

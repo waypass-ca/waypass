@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { fetchFolders, createFolder, deleteFolder } from '../lib/api.js'
+import { fetchFolders, createFolder, deleteFolder, fetchShippingPartners } from '../lib/api.js'
 import { FolderDeleteModal } from '../components/ui/FolderDeleteModal.jsx'
 import { CasesTopBar } from '../components/cases/CasesTopBar'
 import { CasesListView } from '../components/cases/CasesListView'
@@ -22,6 +22,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, on
   const [pageSize, setPageSize] = useState(20)
   const [page, setPage] = useState(1)
   const [userFolders, setUserFolders] = useState([])
+  const [shippingPartners, setShippingPartners] = useState([])
   const [dragOverFolderId, setDragOverFolderId] = useState(null)
   const [gridFolderView, setGridFolderView] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
@@ -29,7 +30,16 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, on
 
   useEffect(() => {
     fetchFolders('cases').then(setUserFolders).catch(() => {})
+    fetchShippingPartners().then(setShippingPartners).catch(() => {})
   }, [])
+
+  const enrichedCases = useMemo(() => {
+    if (shippingPartners.length === 0) return cases
+    const byId = new Map(shippingPartners.map(p => [p.id, p.name]))
+    return cases.map(c => c.shippingPartnerId
+      ? { ...c, shippingPartnerName: byId.get(c.shippingPartnerId) ?? null }
+      : c)
+  }, [cases, shippingPartners])
 
   useEffect(() => {
     try { localStorage.setItem('cases-view-mode', viewMode) } catch { }
@@ -99,7 +109,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, on
   const isUserFolder = (id) => !SMART_FOLDER_IDS.has(id) && userFolders.some(f => f.id === id)
 
   const filtered = useMemo(() => {
-    let rows = cases.filter(c => !localDeletedCaseIds.has(c.id))
+    let rows = enrichedCases.filter(c => !localDeletedCaseIds.has(c.id))
 
     if (viewMode === 'columns') {
       if (isUserFolder(folder)) rows = rows.filter(c => c.folderId === folder)
@@ -156,7 +166,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, on
     })
 
     return rows
-  }, [cases, folder, viewMode, search, filters, sortBy, starredIds, userFolders, localDeletedCaseIds])
+  }, [enrichedCases, folder, viewMode, search, filters, sortBy, starredIds, userFolders, localDeletedCaseIds])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const currentPage = Math.min(page, totalPages)
