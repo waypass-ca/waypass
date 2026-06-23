@@ -12,7 +12,7 @@ import { RevenuePage } from './RevenuePage'
 import { InboxPage } from './InboxPage'
 import { DocumentsPage } from './DocumentsPage'
 import { SettingsPage } from './SettingsPage'
-import { FamilyPageEditorPage } from '../components/dashboard/FamilyPageEditorPage'
+import { EmailEditorPage } from '../components/dashboard/EmailEditorPage'
 import { BookCremationPage } from './BookCremationPage'
 import { CalendarPage } from './CalendarPage'
 import { Button } from '../components/ui/Button'
@@ -173,6 +173,8 @@ export function FuneralDashboardPage() {
         />
       ) : view === 'crematoriums' ? (
         <CrematoriumsPage onAddPartner={() => setView('new-crematorium')} cases={cases} onViewCase={viewCase} />
+      ) : view === 'family-portal' ? (
+        <EmailEditorPage cases={cases} />
       ) : (
       <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
 
@@ -208,9 +210,6 @@ export function FuneralDashboardPage() {
         {/* ── Revenue ── */}
         {view === 'revenue' && <RevenuePage />}
 
-
-{/* ── Family portal editor ── */}
-        {view === 'family-portal' && <FamilyPageEditorPage />}
 
         {/* ── Settings ── */}
         {view === 'settings' && <SettingsPage />}

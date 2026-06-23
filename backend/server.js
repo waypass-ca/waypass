@@ -16,6 +16,7 @@ import notificationsRouter from './routes/notifications.js'
 import foldersRouter from './routes/folders.js'
 import bookingsRouter from './routes/bookings.js'
 import inboxRouter from './routes/inbox.js'
+import emailTemplateRouter from './routes/email.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -38,6 +39,7 @@ app.use('/api/notifications', notificationsRouter)
 app.use('/api/folders', foldersRouter)
 app.use('/api/bookings', bookingsRouter)
 app.use('/api/inbox', inboxRouter)
+app.use('/api/email-template', emailTemplateRouter)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
