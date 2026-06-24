@@ -110,7 +110,7 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
         {!collapsed.patients && (
           <>
             <NavItem id="cases"         label="Cases"         icon={Archive}  isActive={activeItem === 'cases'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="family-editor" label="Family Editor" icon={UserPen}  isActive={activeItem === 'family-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="family-editor" label="Email Editor" icon={UserPen}  isActive={activeItem === 'family-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
           </>
         )}
 

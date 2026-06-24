@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
-import { fetchPackages, fetchCrematoriums, createCase } from '../lib/api.js'
+import { fetchPackages, fetchCrematoriums, createCase, fetchEmailTemplate, fetchPortalSettings, saveEmailOverride } from '../lib/api.js'
 import { supabase } from '../lib/supabase.js'
 import { PackageCard } from '../components/widget/PackageCard'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { TEMPLATES, EmailPreview as EmailPreviewComponent, PreviewModal, TemplateEditor, EditableEmailPreview, DEFAULT_SECTIONS, DEFAULT_PROGRESS_LABELS, SAMPLE } from '../components/dashboard/EmailEditorPage'
+import { Star, Check, Eye, X, Pencil } from 'lucide-react'
 
-const STEPS = ['First Call', 'Removal Log', 'Documents', 'Package', 'Crematorium', 'Confirm']
+const STEPS = ['First Call', 'Removal Log', 'Documents', 'Package', 'Email Template', 'Crematorium', 'Confirm']
 
 const STAFF_MEMBERS = [
   'James Whitfield',
@@ -203,9 +205,25 @@ export function NewCasePage({ onBack, onComplete }) {
   })
   const [documents, setDocuments] = useState({ ...INITIAL_DOCS })
   const [selectedPackage, setSelectedPackage] = useState(null)
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null)
+  const [globalTemplateId, setGlobalTemplateId] = useState('classic')
+  const [favouriteTemplateIds, setFavouriteTemplateIds] = useState([])
+  const [logoUrl, setLogoUrl] = useState('')
   const [selectedCrematorium, setSelectedCrematorium] = useState(null)
+  const [caseCustomizations, setCaseCustomizations] = useState({})
+  const [previewTemplate, setPreviewTemplate] = useState(null)
+  const [editingTemplateId, setEditingTemplateId] = useState(null)
   const [isComplete, setIsComplete] = useState(false)
   const [submitError, setSubmitError] = useState(null)
+  const [showEmailConfirm, setShowEmailConfirm] = useState(false)
+
+  useEffect(() => {
+    fetchEmailTemplate().then(d => {
+      if (d?.activeTemplateId) setGlobalTemplateId(d.activeTemplateId)
+      if (d?.favouriteIds) setFavouriteTemplateIds(d.favouriteIds)
+    }).catch(() => {})
+    fetchPortalSettings().then(d => { if (d?.logoUrl) setLogoUrl(d.logoUrl) }).catch(() => {})
+  }, [])
 
   function setFC(key, val) { setFirstCall(p => ({ ...p, [key]: val })) }
   function setRL(key, val) { setRemovalLog(p => ({ ...p, [key]: val })) }
@@ -223,6 +241,9 @@ export function NewCasePage({ onBack, onComplete }) {
     }
     setDocuments(p => ({ ...p, [type]: { status: 'done', path, name: file.name } }))
   }
+
+  const chosenTemplateId = selectedTemplateId || globalTemplateId
+  const chosenTemplate = TEMPLATES.find(t => t.id === chosenTemplateId) || TEMPLATES[0]
 
   async function handleConfirm() {
     setSubmitError(null)
@@ -255,11 +276,40 @@ export function NewCasePage({ onBack, onComplete }) {
     }
     try {
       const newCase = await createCase(payload)
+      if (selectedTemplateId || Object.keys(caseCustomizations).length > 0) {
+        saveEmailOverride(newCase.id, { activeTemplateId: selectedTemplateId || globalTemplateId, customizations: caseCustomizations }).catch(() => {})
+      }
       setIsComplete(true)
       onComplete?.(newCase)
     } catch (err) {
       setSubmitError(err.message)
     }
+  }
+
+  const newCaseData = {
+    deceased: `${firstCall.firstName} ${firstCall.lastName}`.trim() || undefined,
+    family: firstCall.nokName ? `The ${firstCall.nokName.split(' ').slice(-1)[0]} Family` : undefined,
+    status: 'pending',
+    package: selectedPackage?.name ? `${selectedPackage.name} Package` : undefined,
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    documents: Object.entries(documents).filter(([, v]) => v.status === 'done').map(([, v]) => v.name || 'Document'),
+  }
+
+  if (step === 4 && editingTemplateId) {
+    const template = TEMPLATES.find(t => t.id === editingTemplateId)
+    return (
+      <TemplateEditor
+        template={template}
+        customization={caseCustomizations[editingTemplateId]}
+        onSave={data => {
+          setCaseCustomizations(prev => ({ ...prev, [editingTemplateId]: data }))
+          setSelectedTemplateId(editingTemplateId)
+        }}
+        onBack={() => setEditingTemplateId(null)}
+        logoUrl={logoUrl}
+        caseData={newCaseData}
+      />
+    )
   }
 
   if (isComplete) {
@@ -284,6 +334,23 @@ export function NewCasePage({ onBack, onComplete }) {
 
   return (
     <div>
+      {/* Template preview modal — top level so it always reads fresh caseCustomizations */}
+      {previewTemplate && step === 4 && (
+        <PreviewModal
+          t={previewTemplate}
+          isActive={false}
+          isFavourite={favouriteTemplateIds.includes(previewTemplate.id)}
+          onSetActive={id => { setSelectedTemplateId(id); setPreviewTemplate(null) }}
+          onToggleFavourite={() => {}}
+          onClose={() => setPreviewTemplate(null)}
+          onEdit={t => { setPreviewTemplate(null); setEditingTemplateId(t.id) }}
+          logoUrl={logoUrl}
+          caseMode={true}
+          customization={caseCustomizations[previewTemplate.id] || null}
+          caseData={newCaseData}
+        />
+      )}
+
       <div className="mb-6">
         <button
           onClick={onBack}
@@ -441,7 +508,120 @@ export function NewCasePage({ onBack, onComplete }) {
         </div>
       )}
 
-      {step === 4 && (
+      {/* ── Step 4: Email Template ── */}
+      {step === 4 && !editingTemplateId && (() => {
+        const favourites = TEMPLATES.filter(t => favouriteTemplateIds.includes(t.id))
+        const renderCard = (t) => {
+          const isSelected = selectedTemplateId ? t.id === selectedTemplateId : t.id === globalTemplateId
+          return (
+            <div
+              key={t.id}
+              onClick={() => setSelectedTemplateId(t.id)}
+              className={`group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 ${
+                isSelected
+                  ? 'ring-2 ring-offset-2 ring-primary shadow-lg shadow-primary/10'
+                  : 'border border-line hover:shadow-md hover:-translate-y-0.5'
+              }`}
+            >
+              {isSelected && (
+                <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-white font-sans text-[10px] font-semibold shadow-sm">
+                  <Check size={9} strokeWidth={3} /> Selected
+                </div>
+              )}
+              {/* Hover overlay */}
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 backdrop-blur-[1px]">
+                <button
+                  onClick={e => { e.stopPropagation(); setPreviewTemplate(t) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-ink font-sans text-xs font-medium shadow-md cursor-pointer border-0 outline-none hover:bg-white/90 transition-colors"
+                >
+                  <Eye size={12} /> Preview
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); setEditingTemplateId(t.id) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-ink font-sans text-xs font-medium shadow-md cursor-pointer border-0 outline-none hover:bg-white/90 transition-colors"
+                >
+                  <Pencil size={12} /> Edit
+                </button>
+                {!isSelected && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setSelectedTemplateId(t.id) }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white font-sans text-xs font-medium shadow-md cursor-pointer border-0 outline-none hover:bg-primary/90 transition-colors"
+                  >
+                    <Check size={12} /> Select
+                  </button>
+                )}
+              </div>
+              <div className="p-3">
+                <div className="rounded-lg overflow-hidden w-full" style={{ backgroundColor: t.bg }}>
+                  <div style={{ backgroundColor: t.headerBg, padding: '6px 10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                      <div style={{ height: 1.5, width: '40%', backgroundColor: (t.headerText || '#fff') + 'AA', borderRadius: 99 }} />
+                    </div>
+                  </div>
+                  <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <div style={{ height: 2, width: '55%', backgroundColor: t.text + '40', borderRadius: 99 }} />
+                    <div style={{ height: 1.5, width: '40%', backgroundColor: (t.muted || '#888') + '50', borderRadius: 99 }} />
+                    <div style={{ backgroundColor: t.cardBg || '#fff', borderRadius: 3, padding: '3px 5px' }}>
+                      <div style={{ height: 1, backgroundColor: t.text + '20', borderRadius: 99, marginBottom: 1.5 }} />
+                      <div style={{ height: 1, width: '75%', backgroundColor: t.text + '15', borderRadius: 99 }} />
+                    </div>
+                  </div>
+                  <div style={{ backgroundColor: t.footerBg, padding: '4px 8px', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ height: 1, width: '35%', backgroundColor: (t.footerText || '#888') + '50', borderRadius: 99 }} />
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-line/50 bg-white px-3 pb-3 pt-2">
+                <div className="font-sans font-semibold text-[13px] text-ink">{t.name}</div>
+                <div className="font-sans text-[11px] text-muted">{t.tagline}</div>
+              </div>
+            </div>
+          )
+        }
+
+        return (
+          <div className="flex flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+            <p className="font-sans text-sm text-muted mb-4 max-w-4xl shrink-0">
+              Choose the email template the family will receive for this case. Default is <span className="text-ink font-medium">{TEMPLATES.find(t => t.id === globalTemplateId)?.name || 'Classic'}</span>.
+            </p>
+
+            <div className="flex-1 overflow-auto min-h-0 max-w-4xl pb-4 px-1 -mx-1">
+              {/* Favourites */}
+              {favourites.length > 0 && (
+                <div className="mb-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Star size={12} className="text-amber-500 flex-shrink-0" style={{ fill: 'currentColor' }} />
+                    <p className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted">Favourites</p>
+                  </div>
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+                    {favourites.map(renderCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* All Templates */}
+              <div>
+                <p className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-3">All Templates</p>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+                  {TEMPLATES.map(renderCard)}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between max-w-4xl pt-4 shrink-0 border-t border-line mt-2">
+              <Button variant="secondary" onClick={() => setStep(3)}>← Back</Button>
+              <Button variant="primary" onClick={() => setStep(5)}>
+                Continue with {chosenTemplate.name} →
+              </Button>
+            </div>
+          </div>
+        )
+      })()}
+
+
+      {/* ── Step 5: Crematorium ── */}
+      {step === 5 && (
         <div>
           <div className="grid grid-cols-3 gap-4 max-w-3xl mb-6">
             {crematoriums.map(crm => (
@@ -454,15 +634,16 @@ export function NewCasePage({ onBack, onComplete }) {
             ))}
           </div>
           <div className="flex justify-between max-w-3xl">
-            <Button variant="secondary" onClick={() => setStep(3)}>← Back</Button>
-            <Button variant="primary" onClick={() => setStep(5)} disabled={!selectedCrematorium}>
+            <Button variant="secondary" onClick={() => setStep(4)}>← Back</Button>
+            <Button variant="primary" onClick={() => setStep(6)} disabled={!selectedCrematorium}>
               {selectedCrematorium ? `Assign ${selectedCrematorium.name.split(' ')[0]} →` : 'Select a crematorium'}
             </Button>
           </div>
         </div>
       )}
 
-      {step === 5 && (
+      {/* ── Step 6: Confirm ── */}
+      {step === 6 && (
         <div className="max-w-2xl">
           <div className="bg-ink rounded-xl p-6 text-surface mb-4">
             <h3 className="font-display text-xl mb-5">Case Summary</h3>
@@ -496,6 +677,10 @@ export function NewCasePage({ onBack, onComplete }) {
                 <span className="font-sans text-sm font-medium">{selectedPackage?.name}</span>
               </div>
               <div className="flex justify-between py-3 border-b border-white/10">
+                <span className="font-sans text-sm text-white/60">Email Template</span>
+                <span className="font-sans text-sm font-medium">{chosenTemplate.name}</span>
+              </div>
+              <div className="flex justify-between py-3 border-b border-white/10">
                 <span className="font-sans text-sm text-white/60">Crematorium</span>
                 <span className="font-sans text-sm font-medium">{selectedCrematorium?.name}</span>
               </div>
@@ -510,8 +695,72 @@ export function NewCasePage({ onBack, onComplete }) {
             <p className="font-sans text-xs text-danger mb-3">{submitError}</p>
           )}
           <div className="flex justify-between">
-            <Button variant="secondary" onClick={() => setStep(4)}>← Back</Button>
-            <Button variant="primary" onClick={handleConfirm}>Create Case →</Button>
+            <Button variant="secondary" onClick={() => setStep(5)}>← Back</Button>
+            <Button variant="primary" onClick={() => setShowEmailConfirm(true)}>Create Case →</Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Email confirmation modal ── */}
+      {showEmailConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowEmailConfirm(false)} />
+          <div className="relative z-10 w-full max-w-2xl mx-4 max-h-[92vh] flex flex-col bg-canvas rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-line flex-shrink-0 bg-surface">
+              <div>
+                <p className="font-sans font-semibold text-[15px] text-ink">Confirm Initial Email</p>
+                <p className="font-sans text-xs text-muted mt-0.5">
+                  This is the email <span className="text-ink font-medium">{firstCall.nokName || 'the family'}</span> will receive using the <span className="text-ink font-medium">{chosenTemplate.name}</span> template
+                </p>
+              </div>
+              <button
+                onClick={() => setShowEmailConfirm(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-ink hover:bg-line/50 transition-colors cursor-pointer border-0 outline-none bg-transparent"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto bg-canvas">
+              <div className="p-6">
+                <div className="rounded-xl overflow-hidden shadow-lg ring-1 ring-black/5">
+                  <EditableEmailPreview
+                    template={chosenTemplate}
+                    sections={caseCustomizations[chosenTemplateId]?.sections || DEFAULT_SECTIONS}
+                    config={{
+                      fontSize: caseCustomizations[chosenTemplateId]?.fontSize || 13,
+                      headingSize: caseCustomizations[chosenTemplateId]?.headingSize || 22,
+                      headingColor: caseCustomizations[chosenTemplateId]?.headingColor || chosenTemplate.text,
+                      message: caseCustomizations[chosenTemplateId]?.message || SAMPLE.message,
+                      greeting: caseCustomizations[chosenTemplateId]?.greeting || '',
+                      progressLabels: caseCustomizations[chosenTemplateId]?.progressLabels || [...DEFAULT_PROGRESS_LABELS],
+                      buttonLabel: caseCustomizations[chosenTemplateId]?.buttonLabel || 'Contact',
+                      buttonRadius: 8,
+                      cardRadius: 10,
+                      footerName: caseCustomizations[chosenTemplateId]?.footerName || SAMPLE.funeralHome,
+                      footerTagline: caseCustomizations[chosenTemplateId]?.footerTagline || SAMPLE.tagline,
+                      footerAddress: caseCustomizations[chosenTemplateId]?.footerAddress || '123 Memorial Lane · San Francisco · (415) 555-0100',
+                      footerCopyright: caseCustomizations[chosenTemplateId]?.footerCopyright || `© 2024 ${SAMPLE.funeralHome} · Unsubscribe`,
+                    }}
+                    logoUrl={logoUrl}
+                    caseData={newCaseData}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between px-6 py-4 border-t border-line bg-surface flex-shrink-0">
+              <button
+                onClick={() => setShowEmailConfirm(false)}
+                className="px-4 py-2 rounded-lg border border-line bg-white font-sans text-[13px] text-secondary hover:text-ink hover:border-ink/30 transition-colors cursor-pointer outline-none"
+              >
+                ← Go Back
+              </button>
+              <button
+                onClick={() => { setShowEmailConfirm(false); handleConfirm() }}
+                className="px-5 py-2 rounded-lg bg-primary text-white font-sans text-[13px] font-medium cursor-pointer border-0 outline-none hover:bg-primary/90 transition-colors"
+              >
+                Confirm & Create Case
+              </button>
+            </div>
           </div>
         </div>
       )}
