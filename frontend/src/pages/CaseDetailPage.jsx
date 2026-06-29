@@ -1,5 +1,12 @@
-import { useState, useMemo, useEffect } from 'react'
-import { addCaseNote, addCaseDocument, fetchCustody, updateCustodyStage, fetchBookings, cancelBooking } from '../lib/api.js'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import {
+  addCaseNote, fetchCustody, updateCustodyStage, fetchBookings, cancelBooking,
+  fetchCaseDocuments, createCaseDocument, deleteCaseDocument, updateCaseDocument,
+  fetchCaseActivity, fetchCase,
+  updateCase, updateCaseDeceased, updateCaseFinancials,
+  fetchCaseContacts, updateCaseContact, addCaseAddon, removeCaseAddon,
+} from '../lib/api.js'
+import { toastError, toastSuccess } from '../lib/toast.js'
 import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
 import { ConfirmModal } from '../components/ui/ConfirmModal.jsx'
 import { slotToLabel, objToKey } from '../lib/slotUtils.js'
@@ -12,14 +19,15 @@ import { CaseDocumentsTab } from '../components/cases/CaseDocumentsTab'
 import { NoteModal } from '../components/cases/modals/NoteModal'
 import { LogCustodyModal } from '../components/cases/modals/LogCustodyModal'
 import { AuthorizationModal } from '../components/cases/modals/AuthorizationModal'
-import { TriangleAlert } from 'lucide-react'
+import { TriangleAlert, Plus } from 'lucide-react'
+import { ActivityDetailDrawer } from '../components/cases/ActivityDetailDrawer'
+import { EditCaseModal } from '../components/cases/modals/EditCaseModal'
 
 export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule }) {
-  const [notes, setNotes] = useState(caseData.notes ?? [])
+  const [caseRow, setCaseRow] = useState(caseData)
   const [status, setStatus] = useState(caseData.status)
-  const [documents, setDocuments] = useState(caseData.documents ?? [])
+  const [documents, setDocuments] = useState([])
   const [uploading, setUploading] = useState(false)
-  const [authorizationComplete, setAuthorizationComplete] = useState(false)
   const [custody, setCustody] = useState(EMPTY_CUSTODY)
   const [authPending, setAuthPending] = useState(false)
   const [activeTab, setActiveTab] = useState('activity')
@@ -29,9 +37,63 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
   const [showNoteModal, setShowNoteModal] = useState(false)
   const [showLogModal, setShowLogModal] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const [authFormUploaded, setAuthFormUploaded] = useState(false)
-  const [permitUploaded, setPermitUploaded] = useState(false)
   const [previewDoc, setPreviewDoc] = useState(null)
+
+  // Derive auth doc presence from the persisted document_type column so the
+  // state survives a refresh — previously these were local booleans that
+  // reset on reload, leaving the "Authorization" warning stuck on screen.
+  const authFormUploaded = useMemo(
+    () => documents.some(d => d.documentType === 'authorization'),
+    [documents]
+  )
+  const permitUploaded = useMemo(
+    () => documents.some(d => d.documentType === 'permit'),
+    [documents]
+  )
+  const authorizationComplete = authFormUploaded && permitUploaded
+  const [activity, setActivity] = useState([])
+  const [selectedActivity, setSelectedActivity] = useState(null)
+  const [contacts, setContacts] = useState([])
+  const [showEditModal, setShowEditModal] = useState(false)
+  const activityScrollRef = useRef(null)
+  const uploadInputRef = useRef(null)
+
+  const refetchCase = useCallback(async () => {
+    try {
+      const fresh = await fetchCase(caseData.id)
+      setCaseRow(fresh)
+      setStatus(fresh.status)
+    } catch (err) {
+      toastError(`Failed to reload case: ${err.message}`)
+    }
+  }, [caseData.id])
+
+  const refetchContacts = useCallback(async () => {
+    try {
+      const list = await fetchCaseContacts(caseData.id)
+      setContacts(list)
+    } catch (err) {
+      console.error('Failed to load contacts:', err.message)
+    }
+  }, [caseData.id])
+
+  const refetchDocuments = useCallback(async () => {
+    try {
+      const docs = await fetchCaseDocuments(caseData.id)
+      setDocuments(docs)
+    } catch (err) {
+      toastError(`Failed to load documents: ${err.message}`)
+    }
+  }, [caseData.id])
+
+  const refetchActivity = useCallback(async () => {
+    try {
+      const events = await fetchCaseActivity(caseData.id)
+      setActivity(events)
+    } catch (err) {
+      console.error('Failed to load activity:', err.message)
+    }
+  }, [caseData.id])
 
   useEffect(() => {
     fetchCustody(caseData.id)
@@ -40,7 +102,10 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
     fetchBookings()
       .then(all => setCaseBookings(all.filter(b => b.caseId === caseData.id)))
       .catch(() => {})
-  }, [caseData.id])
+    refetchDocuments()
+    refetchActivity()
+    refetchContacts()
+  }, [caseData.id, refetchDocuments, refetchActivity, refetchContacts])
 
   const lastCompletedIdx = custody.reduce((acc, e, i) => e.completed ? i : acc, -1)
   const nextCustodyIdx = lastCompletedIdx + 1
@@ -55,65 +120,123 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
       setStatus(nextStatus)
       onStatusChange?.(caseData.id, nextStatus)
     }
-    setModalIdx(null)
+    setShowLogModal(false)
+    refetchActivity()
   }
 
-  async function handleUpload(file) {
+  async function handleUpload(file, documentType = 'other') {
     setUploading(true)
-    const _ts = Date.now()
-    const uploadedAt = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-    const ext = file.name.split('.').pop()
-    const path = `cases/${caseData.id}/${_ts}.${ext}`
-    const { error: storageError } = await supabase.storage.from('case-documents').upload(path, file, { upsert: true })
-    if (storageError) { setUploading(false); return }
+    const rawExt = file.name.includes('.') ? file.name.split('.').pop() : ''
+    const ext = rawExt ? `.${rawExt}` : ''
+    const path = `cases/${caseData.id}/${crypto.randomUUID()}${ext}`
+
+    const { error: storageError } = await supabase.storage
+      .from('case-documents')
+      .upload(path, file, { upsert: false })
+    if (storageError) {
+      setUploading(false)
+      toastError(`Upload failed: ${storageError.message}`)
+      return
+    }
+
+    const { data: pub } = supabase.storage.from('case-documents').getPublicUrl(path)
     try {
-      const saved = await addCaseDocument(caseData.id, { path, name: file.name })
-      setDocuments(prev => [...prev, { ...saved, _ts, uploadedAt }])
-    } catch {
-      setDocuments(prev => [...prev, { path, name: file.name, _ts, uploadedAt }])
+      await createCaseDocument(caseData.id, {
+        storagePath: path,
+        fileUrl: pub?.publicUrl ?? '',
+        fileName: file.name,
+        documentType,
+        visibleToFamily: false,
+      })
+      await refetchDocuments()
+      await refetchActivity()
+    } catch (err) {
+      // Backend already attempts to remove the storage object on DB failure;
+      // best-effort client-side remove guards against missing/old backend.
+      await supabase.storage.from('case-documents').remove([path]).catch(() => {})
+      toastError(`Could not save document: ${err.message}`)
     } finally {
       setUploading(false)
     }
   }
 
-  async function addNote(text) {
-    const _ts = Date.now()
-    const time = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-    setNotes(prev => [...prev, { author: 'You', text, time, _ts }])
+  async function handleRenameDoc(docId, fileName) {
     try {
-      const saved = await addCaseNote(caseData.id, { author: 'You', text, time })
-      setNotes(prev => [...prev.slice(0, -1), { ...saved, _ts }])
+      await updateCaseDocument(caseData.id, docId, { fileName })
+      await refetchDocuments()
     } catch (err) {
-      console.error('Failed to save note:', err.message)
+      toastError(`Rename failed: ${err.message}`)
     }
+  }
+
+  async function handleDeleteDoc(docId) {
+    try {
+      await deleteCaseDocument(caseData.id, docId)
+      await refetchDocuments()
+      await refetchActivity()
+    } catch (err) {
+      toastError(`Delete failed: ${err.message}`)
+    }
+  }
+
+  async function handleUpdateDocMeta(docId, patch) {
+    try {
+      await updateCaseDocument(caseData.id, docId, patch)
+      await refetchDocuments()
+    } catch (err) {
+      toastError(`Update failed: ${err.message}`)
+    }
+  }
+
+  async function addNote(text) {
+    try {
+      await addCaseNote(caseData.id, { author: 'You', text })
+      await refetchActivity()
+    } catch (err) {
+      toastError(`Failed to save note: ${err.message}`)
+    }
+  }
+
+  // Bulk-save handler from EditCaseModal. Throws on failure so the modal can
+  // surface the error; on success refreshes the case + contacts to reflect any
+  // server-side normalization.
+  async function handleSubmitEdit({ deceasedPatch, contactPatch, contactId, casePatch, financialsPatch, addonsToAdd, addonsToRemove }) {
+    if (Object.keys(deceasedPatch).length) {
+      await updateCaseDeceased(caseData.id, deceasedPatch)
+    }
+    if (contactId && Object.keys(contactPatch).length) {
+      await updateCaseContact(caseData.id, contactId, contactPatch)
+    }
+    if (Object.keys(casePatch).length) {
+      await updateCase(caseData.id, casePatch)
+    }
+    if (Object.keys(financialsPatch).length) {
+      await updateCaseFinancials(caseData.id, financialsPatch)
+    }
+    for (const id of addonsToRemove) {
+      await removeCaseAddon(caseData.id, id)
+    }
+    for (const id of addonsToAdd) {
+      await addCaseAddon(caseData.id, id)
+    }
+    await refetchCase()
+    await refetchContacts()
+    toastSuccess('Case updated')
   }
 
   async function handlePreview(doc) {
-    const path = typeof doc === 'string' ? null : doc.path
-    if (!path) return
-    const { data, error } = await supabase.storage.from('case-documents').createSignedUrl(path, 3600)
-    if (!error && data?.signedUrl) {
-      const name = typeof doc === 'string' ? doc : doc.name
-      setPreviewDoc({ fullName: name, url: data.signedUrl })
+    const path = doc.storagePath ?? doc.path
+    if (!path) {
+      toastError('This document has no storage path.')
+      return
     }
+    const { data, error } = await supabase.storage.from('case-documents').createSignedUrl(path, 3600)
+    if (error || !data?.signedUrl) {
+      toastError(`Preview failed: ${error?.message ?? 'no signed URL'}`)
+      return
+    }
+    setPreviewDoc({ fullName: doc.fileName ?? doc.name, url: data.signedUrl })
   }
-
-  const activityFeed = useMemo(() => {
-    const events = []
-    custody.forEach((entry, i) => {
-      if (entry.completed) {
-        const parsed = new Date(entry.timestamp)
-        const _ts = isNaN(parsed.getTime()) ? i * 10000 : parsed.getTime()
-        events.push({ type: 'custody', label: CUSTODY_STAGES[i], staff: entry.staff, time: entry.timestamp, _ts })
-      }
-    })
-    notes.forEach(n => events.push({ type: 'note', ...n, _ts: n._ts ?? 0 }))
-    documents.forEach(d => {
-      const name = typeof d === 'string' ? d : d.name
-      events.push({ type: 'document', name, uploadedAt: d.uploadedAt, _ts: d._ts ?? 0 })
-    })
-    return events.sort((a, b) => a._ts - b._ts)
-  }, [custody, notes, documents])
 
   const docsActionNeeded = authPending && !authorizationComplete
   const authBlocksTransport = nextCustodyIdx === 2 && authPending && !authorizationComplete
@@ -121,17 +244,18 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
   return (
     <div className="flex-1 flex overflow-hidden">
       <CaseInfoPanel
-        caseData={caseData}
+        caseData={caseRow}
         onBack={onBack}
         status={status}
         setActiveTab={setActiveTab}
         onShowNote={() => setShowNoteModal(true)}
         onSchedule={onSchedule}
         shippingPartnerName={caseBookings.find(b => b.status !== 'cancelled' && b.shippingPartnerName)?.shippingPartnerName ?? null}
+        onEdit={() => setShowEditModal(true)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 bg-surface/90 overflow-hidden">
-        <div className="bg-surface/90 backdrop-blur border-b border-line shrink-0 px-8">
+      <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
+        <div className="bg-surface/90 backdrop-blur border-b border-line shrink-0 px-8 flex items-center justify-between">
           <div className="flex gap-0">
             {[
               { id: 'activity', label: 'Activity' },
@@ -140,7 +264,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-5 py-3.5 font-sans text-sm font-medium border-0 bg-transparent outline-none cursor-pointer transition-colors ${
+                className={`flex items-center gap-2 px-5 py-4 font-sans text-sm font-medium border-0 bg-transparent outline-none cursor-pointer transition-colors ${
                   activeTab === tab.id ? 'text-ink border-b-2 border-ink -mb-px' : 'text-muted hover:text-ink'
                 }`}
               >
@@ -151,31 +275,66 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
               </button>
             ))}
           </div>
+          {activeTab === 'activity' && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowNoteModal(true)}
+                className="h-7 px-3 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12px] font-medium flex items-center gap-1.5 cursor-pointer outline-none border-0"
+              >
+                <Plus size={11} strokeWidth={2} />
+                Note
+              </button>
+              <button
+                onClick={() => setShowLogModal(true)}
+                className="h-7 px-3 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12px] font-medium flex items-center gap-1.5 cursor-pointer outline-none border-0"
+              >
+                <Plus size={11} strokeWidth={2} />
+                Log custody
+              </button>
+            </div>
+          )}
+          {activeTab === 'documents' && (
+            <div className="flex gap-2">
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={e => { if (e.target.files[0]) handleUpload(e.target.files[0]); e.target.value = '' }}
+              />
+              {docsActionNeeded && (
+                <button
+                  onClick={() => setShowAuthModal(true)}
+                  className="h-7 px-3 rounded-lg bg-warning-light border border-warning/40 text-warning font-sans text-[12px] font-medium flex items-center gap-1.5 cursor-pointer outline-none hover:bg-warning/20 transition-colors"
+                >
+                  <TriangleAlert size={11} strokeWidth={2} />
+                  Authorization
+                </button>
+              )}
+              <button
+                onClick={() => uploadInputRef.current?.click()}
+                disabled={uploading}
+                className="h-7 px-3 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12px] font-medium flex items-center gap-1.5 cursor-pointer outline-none border-0 disabled:opacity-50"
+              >
+                {uploading
+                  ? <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                  : <Plus size={11} strokeWidth={2} />}
+                {uploading ? 'Uploading…' : 'Upload'}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 flex flex-col min-h-0">
           {activeTab === 'activity' && (
-            <>
-              <div className="flex-1 overflow-y-auto">
-                <CaseActivityTab
-                  activityFeed={activityFeed}
-                  onShowNote={() => setShowNoteModal(true)}
-                  onShowLog={() => setShowLogModal(true)}
-                />
-              </div>
-              {caseBookings.length > 0 && (
-                <div className="shrink-0 border-t border-line bg-white px-8 py-4 flex flex-col gap-2">
-                  {caseBookings.map(b => (
-                    <BookingCard
-                      key={b.id}
-                      booking={b}
-                      onReschedule={setRescheduleTarget}
-                      onCancel={setCancelTarget}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
+            <div ref={activityScrollRef} className="flex-1 overflow-y-auto">
+              <CaseActivityTab
+                activityFeed={activity}
+                onSelectEvent={setSelectedActivity}
+                onShowNote={() => setShowNoteModal(true)}
+                onShowLog={() => setShowLogModal(true)}
+              />
+            </div>
           )}
           {activeTab === 'documents' && (
             <div className="flex-1 overflow-y-auto">
@@ -187,7 +346,22 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
                 onShowAuth={() => setShowAuthModal(true)}
                 onUpload={handleUpload}
                 onPreview={handlePreview}
+                onRenameDoc={handleRenameDoc}
+                onDeleteDoc={handleDeleteDoc}
+                onUpdateDocMeta={handleUpdateDocMeta}
               />
+            </div>
+          )}
+          {caseBookings.length > 0 && (
+            <div className="shrink-0 border-t border-line bg-white px-8 py-4 flex flex-col gap-2">
+              {caseBookings.map(b => (
+                <BookingCard
+                  key={b.id}
+                  booking={b}
+                  onReschedule={setRescheduleTarget}
+                  onCancel={setCancelTarget}
+                />
+              ))}
             </div>
           )}
         </div>
@@ -209,11 +383,8 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
           dop={caseData.dop}
           onUpload={handleUpload}
           authComplete={authorizationComplete}
-          onAuthComplete={() => setAuthorizationComplete(true)}
           authFormUploaded={authFormUploaded}
-          onAuthFormUpload={() => setAuthFormUploaded(true)}
           permitUploaded={permitUploaded}
-          onPermitUpload={() => setPermitUploaded(true)}
           onClose={() => setShowAuthModal(false)}
         />
       )}
@@ -240,7 +411,22 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
             await cancelBooking(cancelTarget.id)
             setCaseBookings(prev => prev.map(b => b.id === cancelTarget.id ? { ...b, status: 'cancelled' } : b))
             setCancelTarget(null)
+            refetchActivity()
           }}
+        />
+      )}
+      <ActivityDetailDrawer
+        event={selectedActivity}
+        caseId={caseData.id}
+        onClose={() => setSelectedActivity(null)}
+        onChanged={() => { refetchActivity(); refetchDocuments() }}
+      />
+      {showEditModal && (
+        <EditCaseModal
+          caseData={caseRow}
+          primaryContact={contacts.find(c => c.isPrimary) ?? contacts[0] ?? null}
+          onSubmit={handleSubmitEdit}
+          onClose={() => setShowEditModal(false)}
         />
       )}
     </div>

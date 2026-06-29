@@ -3,7 +3,11 @@ import { Lock, CheckCircle2 } from 'lucide-react'
 import { AuthRow } from '../AuthRow'
 import { Button } from '../../ui/Button'
 
-export function AuthorizationModal({ dop, onUpload, authComplete, onAuthComplete, authFormUploaded, onAuthFormUpload, permitUploaded, onPermitUpload, onClose }) {
+// Auth state is now derived from the case_documents table — once a document
+// with documentType=authorization or =permit exists, the matching row shows
+// as uploaded on refresh. Uploads here tag the document with the right type
+// so the derivation works.
+export function AuthorizationModal({ dop, onUpload, authComplete, authFormUploaded, permitUploaded, onClose }) {
   const [meSignOff, setMeSignOff] = useState(false)
 
   const earliestCremation = (() => {
@@ -13,8 +17,8 @@ export function AuthorizationModal({ dop, onUpload, authComplete, onAuthComplete
     return dt.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
   })()
 
-  async function handleAuthFormUpload(file) { await onUpload(file); onAuthFormUpload() }
-  async function handlePermitUpload(file) { await onUpload(file); onPermitUpload() }
+  const handleAuthFormUpload = (file) => onUpload(file, 'authorization')
+  const handlePermitUpload = (file) => onUpload(file, 'permit')
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40" onClick={onClose}>
@@ -59,15 +63,7 @@ export function AuthorizationModal({ dop, onUpload, authComplete, onAuthComplete
             </div>
 
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={onClose} className="flex-1">Close</Button>
-              <Button
-                variant="primary"
-                onClick={() => { onAuthComplete(); onClose() }}
-                disabled={!(authFormUploaded && permitUploaded)}
-                className="flex-1"
-              >
-                Mark complete
-              </Button>
+              <Button variant="secondary" onClick={onClose} className="w-full justify-center">Close</Button>
             </div>
           </>
         )}
