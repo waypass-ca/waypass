@@ -1,13 +1,43 @@
-import { ArrowLeft, CalendarPlus, StickyNote, Mail, Phone, Printer } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowLeft, CalendarPlus, StickyNote, Mail, Phone, Printer, Pencil } from 'lucide-react'
 import { StatusPill } from '../ui/StatusPill'
-import { InfoField } from '../ui/InfoField'
 import { InfoSection } from '../ui/InfoSection'
+import { fetchAddons } from '../../lib/api.js'
 
-export function CaseInfoPanel({ caseData, onBack, status, setActiveTab, onShowNote, onSchedule, shippingPartnerName }) {
+function Row({ label, children }) {
   return (
-    <div className="w-[320px] flex-shrink-0 bg-white border-r border-line flex flex-col overflow-hidden">
+    <div className="py-1.5 border-b border-line last:border-0">
+      <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-0.5">{label}</p>
+      {children}
+    </div>
+  )
+}
 
-      <div className="px-5 pt-5 pb-5 border-b border-line flex-shrink-0">
+function ReadValue({ value, empty = '—' }) {
+  const isEmpty = value === '' || value == null
+  return (
+    <span className={`font-sans text-[13px] ${isEmpty ? 'text-muted' : 'text-ink'}`}>
+      {isEmpty ? empty : value}
+    </span>
+  )
+}
+
+export function CaseInfoPanel({
+  caseData, onBack, status, setActiveTab, onShowNote, onSchedule, shippingPartnerName, onEdit,
+}) {
+  const [allAddons, setAllAddons] = useState([])
+
+  useEffect(() => {
+    fetchAddons().then(setAllAddons).catch(() => {})
+  }, [])
+
+  const addonLabels = (caseData.addons ?? [])
+    .map(id => allAddons.find(a => a.id === id)?.name ?? id)
+
+  return (
+    <div className="w-[500px] flex-shrink-0 bg-white border-r border-line flex flex-col overflow-hidden">
+
+      <div className="px-5 pt-5 pb-5 border-b border-line flex-shrink-0 relative">
         <button
           onClick={onBack}
           className="flex items-center gap-1.5 text-xs font-sans text-muted hover:text-ink transition-colors cursor-pointer border-0 bg-transparent outline-none mb-5"
@@ -15,6 +45,15 @@ export function CaseInfoPanel({ caseData, onBack, status, setActiveTab, onShowNo
           <ArrowLeft size={12} />
           Cases
         </button>
+        {onEdit && (
+          <button
+            onClick={onEdit}
+            className="absolute top-5 right-5 inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-line bg-white text-secondary hover:bg-canvas hover:text-ink text-[11.5px] font-medium font-sans transition-colors cursor-pointer outline-none"
+          >
+            <Pencil size={12} />
+            Edit
+          </button>
+        )}
         <div className="flex flex-col items-center">
           <h2 className="font-display text-[32px] text-ink leading-snug mb-1 flex items-center">{caseData.deceased}</h2>
           <div className="flex items-center gap-2 mb-1">
@@ -47,23 +86,24 @@ export function CaseInfoPanel({ caseData, onBack, status, setActiveTab, onShowNo
 
       <div className="flex-1 overflow-y-auto scrollbar-hidden">
         <InfoSection title="Deceased Details">
-          <InfoField label="Date of Birth" value={caseData.dob} />
-          <InfoField label="Date of Passing" value={caseData.dop} />
-          <InfoField label="Location" value={caseData.location} />
+          <Row label="Date of Birth"><ReadValue value={caseData.dob} /></Row>
+          <Row label="Date of Passing"><ReadValue value={caseData.dop} /></Row>
+          <Row label="Location"><ReadValue value={caseData.location} /></Row>
         </InfoSection>
 
         <InfoSection title="Family Contact">
-          <InfoField label="Name" value={caseData.contactName} />
-          <InfoField label="Relationship" value={caseData.relationship} />
-          <InfoField label="Phone" value={caseData.contactPhone} />
-          <InfoField label="Email" value={caseData.contactEmail} />
+          <Row label="Name"><ReadValue value={caseData.contactName} /></Row>
+          <Row label="Relationship"><ReadValue value={caseData.relationship} /></Row>
+          <Row label="Phone"><ReadValue value={caseData.contactPhone} /></Row>
+          <Row label="Email"><ReadValue value={caseData.contactEmail} /></Row>
         </InfoSection>
 
         <InfoSection title="Arrangements">
-          <InfoField label="Package" value={caseData.package} />
-          <InfoField label="Add-ons" value={caseData.addons?.join(', ') || 'None'} />
-          <InfoField label="Crematorium" value={caseData.crematorium} />
-          <InfoField label="Shipping Partner" value={shippingPartnerName ?? '—'} />
+          <Row label="Package"><ReadValue value={caseData.package} /></Row>
+          <Row label="Add-ons"><ReadValue value={addonLabels.join(', ')} empty="None" /></Row>
+          <Row label="Crematorium"><ReadValue value={caseData.crematorium} /></Row>
+          <Row label="Shipping Partner"><ReadValue value={shippingPartnerName} /></Row>
+          <Row label="Folder"><ReadValue value={caseData.folderName} /></Row>
           <div className="flex items-baseline justify-between py-3 mt-1">
             <span className="font-sans text-[10px] text-muted uppercase tracking-wide">Total</span>
             <span className="font-display text-xl text-ink">${caseData.amount?.toLocaleString()}</span>

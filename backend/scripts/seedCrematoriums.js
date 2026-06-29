@@ -27,6 +27,7 @@ const TILE_DEG = 2
 // Configure which provinces to seed.
 // Set SEED_PROVINCES=ALL to seed all of Canada, or a comma-separated list e.g. ON,BC,QC
 // Defaults to ON.
+//TODO: make there be less squares to limit cost
 const SEED_PROVINCES_ENV = process.env.SEED_PROVINCES ?? 'ON'
 
 const PROVINCE_BOUNDS = {

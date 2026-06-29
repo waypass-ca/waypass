@@ -50,6 +50,39 @@ export const updateCustodyStage = (id, stage, payload) =>
 export const addCaseDocument = (id, doc) =>
   mutate(`/api/cases/${id}/documents`, { method: 'POST', body: JSON.stringify(doc) })
 
+// Structured documents (case_documents table) — used by the documents tab.
+export const fetchCaseDocuments = (id) => mutate(`/api/cases/${id}/documents/structured`)
+export const createCaseDocument = (id, doc) =>
+  mutate(`/api/cases/${id}/documents/structured`, { method: 'POST', body: JSON.stringify(doc) })
+export const updateCaseDocument = (caseId, docId, patch) =>
+  mutate(`/api/cases/${caseId}/documents/structured/${docId}`, { method: 'PATCH', body: JSON.stringify(patch) })
+export const deleteCaseDocument = (caseId, docId) =>
+  mutate(`/api/cases/${caseId}/documents/structured/${docId}`, { method: 'DELETE' })
+
+// Case edit endpoints.
+export const updateCase = (id, patch) =>
+  mutate(`/api/cases/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
+export const updateCaseDeceased = (id, patch) =>
+  mutate(`/api/cases/${id}/deceased`, { method: 'PATCH', body: JSON.stringify(patch) })
+export const updateCaseFinancials = (id, patch) =>
+  mutate(`/api/cases/${id}/financials`, { method: 'PATCH', body: JSON.stringify(patch) })
+export const addCaseAddon = (id, addonId) =>
+  mutate(`/api/cases/${id}/addons`, { method: 'POST', body: JSON.stringify({ addonId }) })
+export const removeCaseAddon = (id, addonId) =>
+  mutate(`/api/cases/${id}/addons/${addonId}`, { method: 'DELETE' })
+
+// Case contacts (already had CRUD on backend).
+export const fetchCaseContacts = (id) => mutate(`/api/cases/${id}/contacts`)
+export const createCaseContact = (id, contact) =>
+  mutate(`/api/cases/${id}/contacts`, { method: 'POST', body: JSON.stringify(contact) })
+export const updateCaseContact = (caseId, contactId, patch) =>
+  mutate(`/api/cases/${caseId}/contacts/${contactId}`, { method: 'PATCH', body: JSON.stringify(patch) })
+export const deleteCaseContact = (caseId, contactId) =>
+  mutate(`/api/cases/${caseId}/contacts/${contactId}`, { method: 'DELETE' })
+
+// Unified activity feed.
+export const fetchCaseActivity = (id) => request(`/api/cases/${id}/activity`)
+
 // ── Crematoriums ──────────────────────────────────────
 export const fetchCrematoriums = () => mutate('/api/crematoriums')
 export const createCrematorium = (payload) =>

@@ -16,6 +16,7 @@ export async function createInboxItem({
   body,
   caseId = null,
   bookingId = null,
+  bookingEventId = null, // FK to booking_events when inbox row derives from a lifecycle event
   severity = null, // 'danger' | 'warning' | 'info' | null
   scheduledFor = null, // timestamptz string or null
 }) {
@@ -31,6 +32,7 @@ export async function createInboxItem({
     body,
     case_id: caseId,
     booking_id: bookingId,
+    booking_event_id: bookingEventId,
     severity,
     scheduled_for: scheduledFor,
     read: false,

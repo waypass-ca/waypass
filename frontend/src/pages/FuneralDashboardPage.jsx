@@ -18,6 +18,7 @@ import { BookCremationPage } from './BookCremationPage'
 import { CalendarPage } from './CalendarPage'
 import { Button } from '../components/ui/Button'
 import { NotificationToast } from '../components/notifications/NotificationToast'
+import { AppToastContainer } from '../components/ui/AppToastContainer'
 
 // Map sidebar ids to internal views
 const SIDEBAR_TO_VIEW = {
@@ -149,6 +150,7 @@ export function FuneralDashboardPage() {
   return (
     <div className="flex h-screen overflow-hidden">
       <NotificationToast onViewInbox={(itemId) => { setInitialInboxId(itemId); setView('inbox') }} />
+      <AppToastContainer />
       <Sidebar
         activeItem={activeSidebarItem(view)}
         onItemChange={id => {

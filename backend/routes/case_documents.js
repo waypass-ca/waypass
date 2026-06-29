@@ -1,6 +1,13 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { createInboxItem } from '../lib/notifications.js'
+
+const lastName = (name) => {
+  if (!name) return null
+  const parts = name.trim().split(/\s+/)
+  return parts[parts.length - 1]
+}
 
 const router = Router({ mergeParams: true })
 
@@ -40,6 +47,10 @@ router.get('/structured', requireAuth, async (req, res, next) => {
 })
 
 // POST /api/cases/:caseId/documents/structured
+// Client uploads to Supabase Storage bucket `case-documents` first, then POSTs
+// the metadata. If the DB insert fails, we delete the storage object so we
+// never leak orphaned files. Without that rollback, transient DB errors leave
+// dangling blobs and the UI silently shows nothing.
 router.post('/structured', requireAuth, async (req, res, next) => {
   try {
     const body = req.body
@@ -62,7 +73,36 @@ router.post('/structured', requireAuth, async (req, res, next) => {
       })
       .select(DOC_SELECT)
       .single()
-    if (error) throw error
+    if (error) {
+      if (body.storagePath) {
+        const { error: rmErr } = await supabase
+          .storage.from('case-documents').remove([body.storagePath])
+        if (rmErr) console.error('Failed to roll back storage object after DB error:', rmErr.message)
+      }
+      throw error
+    }
+
+    // Surface uploads in the inbox so they appear in /inbox and trigger the
+    // realtime toast subscription. Failure to notify shouldn't fail the upload.
+    try {
+      const { data: caseRow } = await supabase
+        .from('cases').select('deceased').eq('id', req.params.caseId).maybeSingle()
+      const deceasedName = caseRow?.deceased ?? req.params.caseId
+      const ln = lastName(deceasedName) ?? req.params.caseId
+      await createInboxItem({
+        userId: req.user.id,
+        type: 'message',
+        sender: 'Documents',
+        subject: `${ln} · Document uploaded`,
+        preview: `${data.file_name} added to ${deceasedName}.`,
+        body: `${data.file_name} was uploaded to case ${req.params.caseId} (${deceasedName}).`,
+        caseId: req.params.caseId,
+        severity: 'info',
+      })
+    } catch (notifyErr) {
+      console.error('Failed to create document upload inbox item:', notifyErr.message)
+    }
+
     res.status(201).json(shapeRow(data))
   } catch (err) {
     next(err)
@@ -73,13 +113,22 @@ router.post('/structured', requireAuth, async (req, res, next) => {
 router.patch('/structured/:id', requireAuth, async (req, res, next) => {
   try {
     const body = req.body
+    const patch = {}
+    if ('documentType' in body) patch.document_type = body.documentType
+    if ('status' in body) patch.status = body.status
+    if ('visibleToFamily' in body) patch.visible_to_family = body.visibleToFamily
+    if ('fileName' in body) {
+      const trimmed = String(body.fileName ?? '').trim()
+      if (!trimmed) return res.status(400).json({ error: 'fileName cannot be empty' })
+      patch.file_name = trimmed
+    }
+    if (Object.keys(patch).length === 0) {
+      return res.status(400).json({ error: 'No editable fields supplied' })
+    }
+
     const { data, error } = await supabase
       .from('case_documents')
-      .update({
-        document_type: body.documentType,
-        status: body.status,
-        visible_to_family: body.visibleToFamily,
-      })
+      .update(patch)
       .eq('id', req.params.id)
       .eq('case_id', req.params.caseId)
       .select(DOC_SELECT)
