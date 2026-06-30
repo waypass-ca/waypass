@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../../ui/Button'
-import { fetchAddons, fetchPackages, fetchFolders } from '../../../lib/api.js'
+import { fetchAddons, fetchPackages, fetchFolders, fetchCrematoriums } from '../../../lib/api.js'
 
 function Field({ label, children }) {
   return (
@@ -17,6 +17,7 @@ export function EditCaseModal({ caseData, primaryContact, onSubmit, onClose }) {
   const [packages, setPackages] = useState([])
   const [allAddons, setAllAddons] = useState([])
   const [folders, setFolders] = useState([])
+  const [crematoriums, setCrematoriums] = useState([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -36,6 +37,7 @@ export function EditCaseModal({ caseData, primaryContact, onSubmit, onClose }) {
   const [caseFields, setCaseFields] = useState({
     package_name: caseData.package ?? '',
     folder_id: caseData.folderId ?? '',
+    crematorium_id: caseData.crematoriumId ?? '',
   })
   const [financials, setFinancials] = useState({
     amount_billed: caseData.amount ?? 0,
@@ -46,6 +48,7 @@ export function EditCaseModal({ caseData, primaryContact, onSubmit, onClose }) {
     fetchPackages().then(setPackages).catch(() => {})
     fetchAddons().then(setAllAddons).catch(() => {})
     fetchFolders('case').then(setFolders).catch(() => {})
+    fetchCrematoriums().then(setCrematoriums).catch(() => {})
   }, [])
 
   function toggleAddon(id) {
@@ -78,6 +81,11 @@ export function EditCaseModal({ caseData, primaryContact, onSubmit, onClose }) {
     }
     if ((caseFields.folder_id || null) !== (caseData.folderId ?? null)) {
       casePatch.folder_id = caseFields.folder_id || null
+    }
+    const selectedCrem = crematoriums.find(c => c.id === caseFields.crematorium_id)
+    if ((caseFields.crematorium_id || null) !== (caseData.crematoriumId ?? null)) {
+      casePatch.crematorium_id = caseFields.crematorium_id || null
+      casePatch.crematorium_name = selectedCrem?.name ?? null
     }
 
     const financialsPatch = {}
@@ -196,6 +204,14 @@ export function EditCaseModal({ caseData, primaryContact, onSubmit, onClose }) {
                 </select>
               </Field>
             </div>
+            <Field label="Crematorium">
+              <select className={INPUT_CLS}
+                value={caseFields.crematorium_id ?? ''}
+                onChange={e => setCaseFields(s => ({ ...s, crematorium_id: e.target.value }))}>
+                <option value="">— None —</option>
+                {crematoriums.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
+              </select>
+            </Field>
             <Field label="Add-ons">
               <div className="flex flex-wrap gap-2 pt-1">
                 {allAddons.length === 0 && (
