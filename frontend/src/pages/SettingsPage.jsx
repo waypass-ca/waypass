@@ -6,14 +6,15 @@ import { NotificationsSection } from '../components/settings/NotificationsSectio
 import { BrandingSection } from '../components/settings/BrandingSection'
 import { BillingSection } from '../components/settings/BillingSection'
 import { StaffSection } from '../components/settings/StaffSection'
+import { useUser } from '../context/UserContext.jsx'
 
-const NAV_ITEMS = [
-  { id: 'general',       label: 'General' },
-  { id: 'account',       label: 'Account' },
-  { id: 'staff',         label: 'Team' },
-  { id: 'notifications', label: 'Notifications' },
-  { id: 'branding',      label: 'Branding' },
-  { id: 'billing',       label: 'Billing' },
+const ALL_NAV_ITEMS = [
+  { id: 'general',       label: 'General',       adminOnly: false },
+  { id: 'account',       label: 'Account',       adminOnly: false },
+  { id: 'staff',         label: 'Team',          adminOnly: false },
+  { id: 'notifications', label: 'Notifications', adminOnly: false },
+  { id: 'branding',      label: 'Branding',      adminOnly: false },
+  { id: 'billing',       label: 'Billing',       adminOnly: true  },
 ]
 
 const SECTIONS = {
@@ -26,20 +27,24 @@ const SECTIONS = {
 }
 
 export function SettingsPage() {
+  const { isAdmin } = useUser()
   const [activeId, setActiveId] = useState('general')
-  const Content = SECTIONS[activeId]
+
+  const navItems = ALL_NAV_ITEMS.filter(item => !item.adminOnly || isAdmin)
+  const visibleId = navItems.find(n => n.id === activeId) ? activeId : 'general'
+  const Content = SECTIONS[visibleId]
 
   return (
     <div className="flex gap-12 min-h-0">
       <aside className="w-44 flex-shrink-0">
         <PageTitle className="mb-6">Settings</PageTitle>
         <nav className="space-y-0.5">
-          {NAV_ITEMS.map(({ id, label }) => (
+          {navItems.map(({ id, label }) => (
             <button
               key={id}
               onClick={() => setActiveId(id)}
               className={`w-full text-left px-3 py-2 rounded-lg text-sm font-sans transition-colors cursor-pointer border-0 outline-none
-                ${activeId === id
+                ${visibleId === id
                   ? 'bg-line/60 text-ink font-medium'
                   : 'text-secondary hover:text-ink hover:bg-canvas'
                 }`}

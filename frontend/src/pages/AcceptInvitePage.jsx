@@ -40,8 +40,8 @@ export function AcceptInvitePage() {
     try {
       await acceptInvite({ token, password, firstName, lastName })
       setDone(true)
-      // Sign in automatically
       await supabase.auth.signInWithPassword({ email: info.email, password })
+      window.location.replace('/')
     } catch (err) {
       setError(err.message)
     } finally {

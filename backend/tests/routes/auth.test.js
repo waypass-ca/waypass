@@ -155,22 +155,33 @@ describe('GET /api/auth/invite-info/:token', () => {
 
 describe('POST /api/auth/accept-invite', () => {
   function setupAcceptMocks() {
-    // invite lookup
-    chain.maybeSingle.mockResolvedValue({ data: dbInvite, error: null })
-
     supabase.auth.admin.createUser.mockResolvedValue({
       data: { user: { id: 'new-staff-uuid' } },
       error: null,
     })
 
-    // users insert
     const usersChain = makeChain()
     usersChain.insert.mockResolvedValue({ error: null })
-    supabase.from
-      .mockImplementationOnce(() => chain) // invite lookup
-      .mockImplementationOnce(() => usersChain) // users insert
 
-    // invite update (mark accepted)
+    let callCount = 0
+    supabase.from.mockImplementation(table => {
+      if (table === 'funeral_home_invites') return chain
+      if (table === 'users') {
+        callCount++
+        if (callCount === 1) {
+          // existing profile check → none
+          const c = makeChain()
+          c.maybeSingle.mockResolvedValue({ data: null, error: null })
+          return c
+        }
+        return usersChain // users insert
+      }
+      return chain
+    })
+
+    // invite lookup maybySingle → valid invite; invite update chain
+    chain.maybySingle = vi.fn()
+    chain.maybeSingle = vi.fn().mockResolvedValue({ data: dbInvite, error: null })
     chain.update = vi.fn().mockReturnThis()
     chain.eq = vi.fn().mockReturnThis()
   }
@@ -185,13 +196,15 @@ describe('POST /api/auth/accept-invite', () => {
   })
 
   it('returns 404 for invalid token', async () => {
-    chain.maybeSingle.mockResolvedValue({ data: null, error: null })
+    chain.maybySingle = vi.fn()
+    chain.maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null })
     const res = await request(app).post('/api/auth/accept-invite').send({ token: 'bad-token', password: 'pass123' })
     expect(res.status).toBe(404)
   })
 
   it('returns 409 for already accepted invite', async () => {
-    chain.maybeSingle.mockResolvedValue({
+    chain.maybySingle = vi.fn()
+    chain.maybeSingle = vi.fn().mockResolvedValue({
       data: { ...dbInvite, accepted_at: '2024-01-01T00:00:00Z' },
       error: null,
     })
@@ -200,7 +213,8 @@ describe('POST /api/auth/accept-invite', () => {
   })
 
   it('returns 410 for expired invite', async () => {
-    chain.maybeSingle.mockResolvedValue({
+    chain.maybySingle = vi.fn()
+    chain.maybeSingle = vi.fn().mockResolvedValue({
       data: { ...dbInvite, expires_at: new Date(Date.now() - 1000).toISOString() },
       error: null,
     })
@@ -208,7 +222,7 @@ describe('POST /api/auth/accept-invite', () => {
     expect(res.status).toBe(410)
   })
 
-  it('returns 201 and creates user on valid invite', async () => {
+  it('returns 200 and creates user on valid invite', async () => {
     setupAcceptMocks()
     const res = await request(app).post('/api/auth/accept-invite').send({
       token: 'valid-token',
@@ -219,5 +233,46 @@ describe('POST /api/auth/accept-invite', () => {
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
     expect(res.body.email).toBe('staff@acme.com')
+  })
+
+  it('recovers when auth user exists but users row is missing (orphaned user)', async () => {
+    supabase.auth.admin.createUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'User already registered', code: 'email_exists' },
+    })
+    supabase.auth.admin.listUsers = vi.fn().mockResolvedValue({
+      data: { users: [{ id: 'orphan-uuid', email: 'staff@acme.com' }] },
+      error: null,
+    })
+
+    const usersChain = makeChain()
+    usersChain.insert.mockResolvedValue({ error: null })
+
+    let callCount = 0
+    supabase.from.mockImplementation(table => {
+      if (table === 'funeral_home_invites') return chain
+      if (table === 'users') {
+        callCount++
+        if (callCount === 1) {
+          const c = makeChain()
+          c.maybeSingle.mockResolvedValue({ data: null, error: null }) // no existing profile
+          return c
+        }
+        return usersChain
+      }
+      return chain
+    })
+
+    chain.maybySingle = vi.fn()
+    chain.maybeSingle = vi.fn().mockResolvedValue({ data: dbInvite, error: null })
+    chain.update = vi.fn().mockReturnThis()
+    chain.eq = vi.fn().mockReturnThis()
+
+    const res = await request(app).post('/api/auth/accept-invite').send({
+      token: 'valid-token',
+      password: 'password123',
+    })
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
   })
 })

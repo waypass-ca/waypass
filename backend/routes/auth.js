@@ -20,7 +20,7 @@ async function sendInviteEmail({ to, funeralHomeName, inviteUrl, role }) {
   await resend.emails.send({
     from: process.env.RESEND_FROM ?? 'noreply@passagefunerals.com',
     to,
-    subject: `You've been invited to join ${funeralHomeName} on Passage`,
+    subject: `You've been invited to join ${funeralHomeName} on Waypass`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a">
         <p style="font-size:14px;color:#666">Passage Funeral Management</p>
@@ -69,7 +69,7 @@ router.post('/signup', async (req, res, next) => {
     // Create funeral home
     const { data: home, error: homeErr } = await supabase
       .from('funeral_homes')
-      .insert({ name: funeralHomeName })
+      .insert({ name: funeralHomeName, email })
       .select()
       .single()
     if (homeErr) {
@@ -147,19 +147,44 @@ router.post('/accept-invite', async (req, res, next) => {
       return res.status(410).json({ error: 'Invite expired' })
     }
 
+    // Check if a users row already exists (handles re-attempts after partial failures)
+    const { data: existingProfile } = await supabase
+      .from('users')
+      .select('id, funeral_home_id')
+      .eq('email', invite.email)
+      .is('deleted_at', null)
+      .maybeSingle()
+
+    if (existingProfile) {
+      if (existingProfile.funeral_home_id === invite.funeral_home_id) {
+        // Profile already exists for this funeral home — idempotent success
+        await supabase.from('funeral_home_invites').update({ accepted_at: new Date().toISOString() }).eq('id', invite.id)
+        return res.json({ success: true, email: invite.email })
+      }
+      return res.status(409).json({ error: 'An account with this email already exists' })
+    }
+
+    // Create auth user
+    let userId
     const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
       email: invite.email,
       password,
       email_confirm: true,
     })
-    if (authErr) {
-      if (authErr.message?.includes('already registered') || authErr.code === 'email_exists') {
-        return res.status(409).json({ error: 'An account with this email already exists' })
-      }
-      throw authErr
-    }
 
-    const userId = authData.user.id
+    if (authErr) {
+      // Auth user exists but no users row — orphaned from a previous failed attempt.
+      // Recover by finding the auth user and completing the profile creation.
+      const isAlreadyRegistered = authErr.message?.includes('already registered') || authErr.code === 'email_exists'
+      if (!isAlreadyRegistered) throw authErr
+
+      const { data: listData } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
+      const orphan = listData?.users?.find(u => u.email === invite.email)
+      if (!orphan) return res.status(409).json({ error: 'An account with this email already exists' })
+      userId = orphan.id
+    } else {
+      userId = authData.user.id
+    }
 
     const { error: userErr } = await supabase
       .from('users')
@@ -173,7 +198,7 @@ router.post('/accept-invite', async (req, res, next) => {
         status: 'active',
       })
     if (userErr) {
-      await supabase.auth.admin.deleteUser(userId).catch(() => {})
+      if (!authErr) await supabase.auth.admin.deleteUser(userId).catch(() => {})
       throw userErr
     }
 

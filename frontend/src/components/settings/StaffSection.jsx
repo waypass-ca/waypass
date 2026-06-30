@@ -77,9 +77,9 @@ export function StaffSection() {
       />
 
       {/* Active users */}
-      <div className="space-y-2">
+      <div className="divide-y divide-line">
         {users.map(u => (
-          <div key={u.id} className="flex items-center justify-between py-3 border-b border-line">
+          <div key={u.id} className="flex items-center justify-between py-3">
             <div>
               <p className="font-sans text-sm text-ink">
                 {u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email}
@@ -123,9 +123,9 @@ export function StaffSection() {
         <>
           <Divider />
           <SectionTitle title="Pending Invites" />
-          <div className="space-y-2">
+          <div className="divide-y divide-line">
             {invites.map(inv => (
-              <div key={inv.id} className="flex items-center justify-between py-2.5 border-b border-line">
+              <div key={inv.id} className="flex items-center justify-between py-2.5">
                 <div>
                   <p className="font-sans text-sm text-ink">{inv.email}</p>
                   <p className="font-sans text-xs text-muted">Expires {new Date(inv.expires_at).toLocaleDateString()}</p>
