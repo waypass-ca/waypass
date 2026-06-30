@@ -21,7 +21,7 @@ export function GeneralSection() {
 
       <Divider />
 
-      <SectionTitle title="Appearance" description="Choose how Passage looks on this device. System follows your OS setting." />
+      <SectionTitle title="Appearance" description="Choose how Waypass looks on this device. System follows your OS setting." />
       <AppearancePicker />
     </div>
   )

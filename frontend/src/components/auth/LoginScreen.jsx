@@ -66,7 +66,7 @@ export function LoginScreen() {
             {mode === 'signin' ? 'Sign In' : 'Create Account'}
           </h1>
           <p className="font-sans text-sm text-muted mt-2">
-            {mode === 'signin' ? 'Access your Passage account' : 'Get started with Passage'}
+            {mode === 'signin' ? 'Access your Waypass account' : 'Get started with Waypass'}
           </p>
         </div>
 

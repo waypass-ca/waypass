@@ -20,7 +20,7 @@ export function BrandingSection() {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Display Name in Widget" value="Evergreen Memorial" hint='Shown as "Powered by Passage" header' />
+        <Field label="Display Name in Widget" value="Evergreen Memorial" hint='Shown as "Powered by Waypass" header' />
         <div>
           <label className="block text-xs font-sans text-muted mb-1.5">Accent Color</label>
           <div className="flex items-center gap-3">
@@ -38,7 +38,7 @@ export function BrandingSection() {
 
       <SectionTitle title="Widget Preview" description="A live preview of how families will see your booking widget." />
       <div className="bg-canvas rounded-xl p-8 text-center border border-line">
-        <p className="font-sans text-xs text-muted mb-1">Evergreen Memorial · Powered by Passage</p>
+        <p className="font-sans text-xs text-muted mb-1">Evergreen Memorial · Powered by Waypass</p>
         <p className="font-display text-3xl font-light text-ink">Cremation Services</p>
         <p className="font-sans text-xs text-secondary mt-2 max-w-xs mx-auto">
           Transparent pricing, compassionate care. We guide your family through every step.

@@ -312,7 +312,7 @@ export function FamilyWidgetPage() {
       <div className="text-center mb-3">
         <span className="font-sans text-xs text-muted">
           Evergreen Memorial · Powered by{' '}
-          <span className="font-medium text-ink">Passage</span>
+          <span className="font-medium text-ink">Waypass</span>
         </span>
       </div>
 

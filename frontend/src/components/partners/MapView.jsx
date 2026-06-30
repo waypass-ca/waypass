@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { PASSAGE_MAP_STYLE } from '../../lib/mapStyles.js'
+import { WAYPASS_MAP_STYLE } from '../../lib/mapStyles.js'
 
-function makeMarkerIcon(onPassage, active = false) {
+function makeMarkerIcon(onWaypass, active = false) {
   const fill = active
-    ? (onPassage ? '#2e4a35' : '#1e3a6e')
-    : (onPassage ? '#5a7060' : '#4A72B8')
+    ? (onWaypass ? '#2e4a35' : '#1e3a6e')
+    : (onWaypass ? '#5a7060' : '#4A72B8')
   const ring = 'white'
 
   const w  = active ? 34 : 28
@@ -47,7 +47,7 @@ export function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerC
       mapRef.current = new window.google.maps.Map(containerRef.current, {
         center: userLocation ?? { lat: 43.65, lng: -79.38 },
         zoom: 11,
-        styles: PASSAGE_MAP_STYLE,
+        styles: WAYPASS_MAP_STYLE,
         disableDefaultUI: true,
         zoomControl: true,
         zoomControlOptions: { position: window.google.maps.ControlPosition.RIGHT_BOTTOM },
@@ -55,7 +55,7 @@ export function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerC
       })
       mapRef.current.addListener('click', () => onMapClick?.())
       iconsRef.current = {
-        passage: { normal: makeMarkerIcon(true, false), active: makeMarkerIcon(true, true) },
+        waypass: { normal: makeMarkerIcon(true, false), active: makeMarkerIcon(true, true) },
         plain:   { normal: makeMarkerIcon(false, false), active: makeMarkerIcon(false, true) },
       }
       setMapReady(true)
@@ -85,7 +85,7 @@ export function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerC
       bounds.extend(pos)
       hasPoints = true
 
-      const icons = iconsRef.current?.[crm.onPassage ? 'passage' : 'plain']
+      const icons = iconsRef.current?.[crm.onWaypass ? 'waypass' : 'plain']
       const marker = new window.google.maps.Marker({
         position: pos,
         map: mapRef.current,
@@ -107,7 +107,7 @@ export function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerC
         <p style="font-weight:600;font-size:13px;margin:0 0 2px;color:#2c2522;line-height:1.3">${crm.name}</p>
         <p style="font-size:11px;color:#9e8e82;margin:0;line-height:1.4">${crm.location}</p>
         ${ratingHtml}
-        ${crm.onPassage ? '<span style="display:inline-flex;align-items:center;margin-top:6px;font-size:10px;font-weight:700;color:#5a7060;background:#edf2ee;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:0.06em">On Passage</span>' : ''}
+        ${crm.onWaypass ? '<span style="display:inline-flex;align-items:center;margin-top:6px;font-size:10px;font-weight:700;color:#5a7060;background:#edf2ee;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:0.06em">On Waypass</span>' : ''}
       </div>`
 
       function openIW() {
@@ -126,7 +126,7 @@ export function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerC
         onMarkerClick?.(crm.id)
       })
 
-      markerMapRef.current[crm.id] = { marker, openIW, onPassage: crm.onPassage }
+      markerMapRef.current[crm.id] = { marker, openIW, onWaypass: crm.onWaypass }
     })
 
     if (hasPoints) {
@@ -141,9 +141,9 @@ export function MapView({ nearby, userLocation, hoveredId, selectedId, onMarkerC
 
   useEffect(() => {
     if (!mapReady) return
-    Object.entries(markerMapRef.current).forEach(([id, { marker, onPassage }]) => {
+    Object.entries(markerMapRef.current).forEach(([id, { marker, onWaypass }]) => {
       const highlighted = id === hoveredId || id === selectedId
-      const icons = iconsRef.current?.[onPassage ? 'passage' : 'plain']
+      const icons = iconsRef.current?.[onWaypass ? 'waypass' : 'plain']
       marker.setIcon(highlighted ? icons?.active : icons?.normal)
       marker.setZIndex(highlighted ? 999 : 1)
     })

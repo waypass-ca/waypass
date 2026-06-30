@@ -106,9 +106,9 @@ export function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationE
                         </span>
                       )}
                       {crm.distance && <span className="font-sans text-[10px] text-muted">{crm.distance} away</span>}
-                      {crm.onPassage && (
+                      {crm.onWaypass && (
                         <span className="inline-flex items-center px-1 py-0.5 rounded bg-sage-light font-sans text-[9px] font-bold text-sage uppercase tracking-wider">
-                          On Passage
+                          On Waypass
                         </span>
                       )}
                     </div>
@@ -122,7 +122,7 @@ export function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationE
             <div className="flex-shrink-0 px-4 py-2 border-t border-line bg-canvas flex items-center justify-between">
               <p className="font-sans text-[11px] text-muted">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</p>
               <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1 font-sans text-[10px] text-muted"><span className="w-1.5 h-1.5 rounded-full bg-sage inline-block" />Passage Network</span>
+                <span className="flex items-center gap-1 font-sans text-[10px] text-muted"><span className="w-1.5 h-1.5 rounded-full bg-sage inline-block" />Waypass Network</span>
                 <span className="flex items-center gap-1 font-sans text-[10px] text-muted"><span className="w-1.5 h-1.5 rounded-full bg-ink/30 inline-block" />Directory</span>
               </div>
             </div>

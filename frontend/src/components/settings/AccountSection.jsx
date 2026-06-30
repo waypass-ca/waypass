@@ -29,7 +29,7 @@ export function AccountSection() {
       <Divider />
 
       <div className="flex items-center justify-between mb-6">
-        <SectionTitle title="Team Members" description="People with access to your Passage account." />
+        <SectionTitle title="Team Members" description="People with access to your Waypass account." />
         <button
           onClick={() => setShowInvite(v => !v)}
           className="flex items-center gap-1.5 text-xs font-sans font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer border-0 bg-transparent outline-none flex-shrink-0 -mt-6"
