@@ -25,11 +25,14 @@ function AppInner() {
     return <AcceptInvitePage />
   }
 
-  // Auth state still loading, or we have a session but profile is still fetching
-  if (session === undefined || profileLoading || (session && !profile && !profileError)) return null
+  // Auth state still unknown
+  if (session === undefined) return null
 
-  // No session → login screen
+  // No session → login immediately, no need to wait for profile
   if (!session) return <LoginScreen />
+
+  // Have a session but profile is still loading
+  if (profileLoading || (!profile && !profileError)) return null
 
   // Signed in but profile fetch failed (e.g. account not fully set up)
   if (!profile) {
