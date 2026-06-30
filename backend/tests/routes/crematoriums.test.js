@@ -27,7 +27,7 @@ const dbRow = {
   avg_turnaround: '2.1 days',
   avg_fee: '$520',
   base_fee: 520,
-  passage_revenue_share: 0.08,
+  waypass_revenue_share: 0.08,
   status: 'active',
   network_status: 'passage_network',
   contact_name: 'Marie Tremblay',
@@ -56,7 +56,7 @@ const shaped = {
   avgTurnaround: '2.1 days',
   avgFee: '$520',
   baseFee: 520,
-  passageRevenueShare: 0.08,
+  waypassRevenueShare: 0.08,
   status: 'active',
   networkStatus: 'passage_network',
   contactName: 'Marie Tremblay',
@@ -90,8 +90,8 @@ const dbRecord = {
     periods: [{ open: { day: 1, time: '0900' }, close: { day: 1, time: '1700' } }],
     weekday_text: ['Monday: 9:00 AM – 5:00 PM'],
   },
-  is_passage_network: false,
-  passage_tier: null,
+  is_waypass_network: false,
+  waypass_tier: null,
   needs_review: false,
   last_verified_at: '2026-01-01T00:00:00Z',
   created_at: '2026-01-01T00:00:00Z',
@@ -156,7 +156,7 @@ describe('GET /api/crematoriums/nearby', () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     const res = await request(app).get('/api/crematoriums/nearby').set(authHeader)
     expect(res.status).toBe(200)
-    expect(res.body[0]).toHaveProperty('onPassage', true)
+    expect(res.body[0]).toHaveProperty('onWaypass', true)
   })
 
   it('filters out user-connected crematoriums via not()', async () => {
@@ -389,19 +389,19 @@ describe('GET /api/crematoriums/db', () => {
     expect(chain.ilike).toHaveBeenCalledWith('city', '%Oakland%')
   })
 
-  it('applies is_passage_network=true filter', async () => {
-    await request(app).get('/api/crematoriums/db?is_passage_network=true')
-    expect(chain.eq).toHaveBeenCalledWith('is_passage_network', true)
+  it('applies is_waypass_network=true filter', async () => {
+    await request(app).get('/api/crematoriums/db?is_waypass_network=true')
+    expect(chain.eq).toHaveBeenCalledWith('is_waypass_network', true)
   })
 
-  it('applies is_passage_network=false filter', async () => {
-    await request(app).get('/api/crematoriums/db?is_passage_network=false')
-    expect(chain.eq).toHaveBeenCalledWith('is_passage_network', false)
+  it('applies is_waypass_network=false filter', async () => {
+    await request(app).get('/api/crematoriums/db?is_waypass_network=false')
+    expect(chain.eq).toHaveBeenCalledWith('is_waypass_network', false)
   })
 
   it('applies tier filter', async () => {
     await request(app).get('/api/crematoriums/db?tier=preferred')
-    expect(chain.eq).toHaveBeenCalledWith('passage_tier', 'preferred')
+    expect(chain.eq).toHaveBeenCalledWith('waypass_tier', 'preferred')
   })
 
   it('returns rating and user_ratings_total in response', async () => {
@@ -519,7 +519,7 @@ describe('GET /api/crematoriums/db/:id', () => {
 // ── PATCH /api/crematoriums/db/:id/network ───────────────────────────────────
 
 describe('PATCH /api/crematoriums/db/:id/network', () => {
-  const payload = { is_passage_network: true, passage_tier: 'preferred' }
+  const payload = { is_waypass_network: true, waypass_tier: 'preferred' }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -544,13 +544,13 @@ describe('PATCH /api/crematoriums/db/:id/network', () => {
   })
 
   it('returns 200 and updates network fields with valid admin key', async () => {
-    chain.single.mockResolvedValue({ data: { ...dbRecord, is_passage_network: true, passage_tier: 'preferred' }, error: null })
+    chain.single.mockResolvedValue({ data: { ...dbRecord, is_waypass_network: true, waypass_tier: 'preferred' }, error: null })
     const res = await request(app)
       .patch('/api/crematoriums/db/uuid-001/network')
       .set(adminKeyHeader)
       .send(payload)
     expect(res.status).toBe(200)
-    expect(chain.update).toHaveBeenCalledWith({ is_passage_network: true, passage_tier: 'preferred' })
+    expect(chain.update).toHaveBeenCalledWith({ is_waypass_network: true, waypass_tier: 'preferred' })
   })
 
   it('returns 500 on DB error', async () => {
