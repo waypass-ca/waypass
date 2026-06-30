@@ -81,7 +81,7 @@ describe('GET /api/shipping-partners/nearby', () => {
 
     const res = await request(app).get('/api/shipping-partners/nearby?query=ship').set(authHeader)
     expect(res.status).toBe(200)
-    expect(res.body[0].onPassage).toBe(true)
+    expect(res.body[0].onWaypass).toBe(true)
     expect(chain.not).toHaveBeenCalledWith('connected_funeral_home_ids', 'cs', `{${USER_ID}}`)
   })
 })
@@ -237,16 +237,16 @@ describe('PATCH /api/shipping-partners/db/:id/network — admin key', () => {
   it('returns 401 when the admin key is wrong', async () => {
     const res = await request(app).patch('/api/shipping-partners/db/db-1/network')
       .set('x-admin-key', 'nope')
-      .send({ is_passage_network: true, passage_tier: 'gold' })
+      .send({ is_waypass_network: true, waypass_tier: 'gold' })
     expect(res.status).toBe(401)
   })
 
   it('updates when the admin key matches', async () => {
-    chain.single.mockResolvedValue({ data: { id: 'db-1', is_passage_network: true }, error: null })
+    chain.single.mockResolvedValue({ data: { id: 'db-1', is_waypass_network: true }, error: null })
 
     const res = await request(app).patch('/api/shipping-partners/db/db-1/network')
       .set('x-admin-key', 'test-admin-key')
-      .send({ is_passage_network: true, passage_tier: 'gold' })
+      .send({ is_waypass_network: true, waypass_tier: 'gold' })
     expect(res.status).toBe(200)
   })
 })
