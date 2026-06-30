@@ -99,7 +99,7 @@ async function sendBookingInvite(booking, deceasedName) {
     : ''
 
   await resend.emails.send({
-    from: process.env.RESEND_FROM ?? 'bookings@passagefunerals.com',
+    from: process.env.RESEND_FROM ?? 'theoleone@waypass.ca',
     to: booking.crematoriumEmail,
     subject: `${subjectPrefix}Pickup Request — ${deceasedName} (Case ${booking.caseId})`,
     html: `
@@ -151,7 +151,7 @@ async function sendShippingInvite(booking, deceasedName) {
     : ''
 
   await resend.emails.send({
-    from: process.env.RESEND_FROM ?? 'bookings@passagefunerals.com',
+    from: process.env.RESEND_FROM ?? 'theoleone@waypass.ca',
     to: booking.shippingPartnerEmail,
     subject: `${subjectPrefix}Transport Request — ${deceasedName} (Case ${booking.caseId})`,
     html: `
@@ -193,7 +193,7 @@ async function sendShippingCancellation(booking, deceasedName) {
   const resend = new Resend(apiKey)
 
   await resend.emails.send({
-    from: process.env.RESEND_FROM ?? 'bookings@passagefunerals.com',
+    from: process.env.RESEND_FROM ?? 'theoleone@waypass.ca',
     to: booking.shippingPartnerEmail,
     subject: `Transport Request Cancelled — ${deceasedName} (Case ${booking.caseId})`,
     html: `
@@ -235,7 +235,7 @@ async function sendBookingConfirmation({ to, recipientLabel, deceasedName, booki
   const whenLabel = `${dayLabel} · ${fmt(startH)} – ${fmt(endH)}`
 
   await resend.emails.send({
-    from: process.env.RESEND_FROM ?? 'bookings@passagefunerals.com',
+    from: process.env.RESEND_FROM ?? 'theoleone@waypass.ca',
     to,
     subject: `Pickup Confirmed — ${deceasedName} (Case ${booking.caseId})`,
     html: `
