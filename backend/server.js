@@ -52,7 +52,7 @@ app.use((err, _req, res, _next) => {
 })
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => console.log(`Passage API running on http://localhost:${PORT}`))
+  app.listen(PORT, () => console.log(`Waypass API running on http://localhost:${PORT}`))
 }
 
 export default app

@@ -19,7 +19,7 @@ function shapeRow(row) {
     avgTurnaround: row.avg_turnaround,
     avgFee: row.avg_fee,
     baseFee: row.base_fee,
-    passageRevenueShare: row.passage_revenue_share,
+    waypassRevenueShare: row.waypass_revenue_share,
     status: row.status,
     networkStatus: row.network_status ?? 'private',
     contactName: row.contact_name ?? row.contact,
@@ -52,12 +52,12 @@ router.get('/', requireAuth, async (req, res, next) => {
   }
 })
 
-// GET /nearby — discovery: Passage DB (unconnected) + Google Places
+// GET /nearby — discovery: Waypass DB (unconnected) + Google Places
 router.get('/nearby', requireAuth, async (req, res, next) => {
   try {
     const { lat = 0, lng = 0, radius = 50, query = '' } = req.query
 
-    // Passage DB: non-deleted crematoriums the user is NOT already connected to
+    // Waypass DB: non-deleted crematoriums the user is NOT already connected to
     // When a query is present, filter by name or location
     let dbQuery = supabase
       .from('crematoriums')
@@ -72,13 +72,13 @@ router.get('/nearby', requireAuth, async (req, res, next) => {
     const { data: dbRows, error: dbError } = await dbQuery.order('name')
     if (dbError) throw dbError
 
-    const passageResults = dbRows.map(row => ({
+    const waypassResults = dbRows.map(row => ({
       ...shapeRow(row),
-      onPassage: true,
+      onWaypass: true,
     }))
 
     // Google Places is called client-side (browser key with referrer restrictions)
-    res.json(passageResults)
+    res.json(waypassResults)
   } catch (err) {
     next(err)
   }
@@ -112,7 +112,7 @@ router.post('/', requireAuth, async (req, res, next) => {
         avg_turnaround: body.avgTurnaround ?? null,
         avg_fee: body.avgFee ?? null,
         base_fee: body.baseFee ?? null,
-        passage_revenue_share: body.passageRevenueShare ?? null,
+        waypass_revenue_share: body.waypassRevenueShare ?? null,
         network_status: body.networkStatus ?? 'private',
         status: 'active',
         active_orders: 0,
@@ -214,7 +214,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
         avg_turnaround: body.avgTurnaround,
         avg_fee: body.avgFee,
         base_fee: body.baseFee,
-        passage_revenue_share: body.passageRevenueShare,
+        waypass_revenue_share: body.waypassRevenueShare,
         network_status: body.networkStatus,
         status: body.status,
         license_number: body.licenseNumber,
@@ -250,12 +250,12 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
 // GET /api/crematoriums/db — query the crematoriums_db table (separate from legacy table)
 router.get('/db', async (req, res, next) => {
   try {
-    const { state, city, is_passage_network, tier } = req.query
+    const { state, city, is_waypass_network, tier } = req.query
     let q = supabase.from('crematoriums_db').select('*').eq('needs_review', false)
     if (state) q = q.eq('state', state)
     if (city) q = q.ilike('city', `%${city}%`)
-    if (is_passage_network !== undefined) q = q.eq('is_passage_network', is_passage_network === 'true')
-    if (tier) q = q.eq('passage_tier', tier)
+    if (is_waypass_network !== undefined) q = q.eq('is_waypass_network', is_waypass_network === 'true')
+    if (tier) q = q.eq('waypass_tier', tier)
     const { data, error } = await q.order('name')
     if (error) throw error
     res.json(data)
@@ -294,10 +294,10 @@ router.patch('/db/:id/network', async (req, res, next) => {
     if (req.headers['x-admin-key'] !== process.env.ADMIN_API_KEY) {
       return res.status(401).json({ error: 'Unauthorized' })
     }
-    const { is_passage_network, passage_tier } = req.body
+    const { is_waypass_network, waypass_tier } = req.body
     const { data, error } = await supabase
       .from('crematoriums_db')
-      .update({ is_passage_network, passage_tier })
+      .update({ is_waypass_network, waypass_tier })
       .eq('id', req.params.id)
       .select()
       .single()

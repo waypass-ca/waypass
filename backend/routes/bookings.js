@@ -104,7 +104,7 @@ async function sendBookingInvite(booking, deceasedName) {
     subject: `${subjectPrefix}Pickup Request — ${deceasedName} (Case ${booking.caseId})`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-        <p style="font-size:14px;color:#666">Passage Funeral Management</p>
+        <p style="font-size:14px;color:#666">Waypass</p>
         <h2 style="margin:0 0 8px">Pickup Request: ${esc(deceasedName)}</h2>
         <p style="font-size:14px;color:#444">Case ID: ${esc(booking.caseId)}</p>
         ${rescheduleNote}
@@ -156,7 +156,7 @@ async function sendShippingInvite(booking, deceasedName) {
     subject: `${subjectPrefix}Transport Request — ${deceasedName} (Case ${booking.caseId})`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-        <p style="font-size:14px;color:#666">Passage Funeral Management</p>
+        <p style="font-size:14px;color:#666">Waypass</p>
         <h2 style="margin:0 0 8px">Transport Request: ${esc(deceasedName)}</h2>
         <p style="font-size:14px;color:#444">Case ID: ${esc(booking.caseId)}</p>
         ${rescheduleNote}
@@ -198,7 +198,7 @@ async function sendShippingCancellation(booking, deceasedName) {
     subject: `Transport Request Cancelled — ${deceasedName} (Case ${booking.caseId})`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-        <p style="font-size:14px;color:#666">Passage Funeral Management</p>
+        <p style="font-size:14px;color:#666">Waypass</p>
         <h2 style="margin:0 0 8px">Transport Request Cancelled: ${esc(deceasedName)}</h2>
         <p style="font-size:14px;color:#444">Case ID: ${esc(booking.caseId)}</p>
         <p style="font-size:14px;color:#444;margin:20px 0 8px">The funeral home has cancelled this booking. No transport is required.</p>
@@ -240,7 +240,7 @@ async function sendBookingConfirmation({ to, recipientLabel, deceasedName, booki
     subject: `Pickup Confirmed — ${deceasedName} (Case ${booking.caseId})`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-        <p style="font-size:14px;color:#666">Passage Funeral Management</p>
+        <p style="font-size:14px;color:#666">Waypass</p>
         <h2 style="margin:0 0 8px">Pickup Confirmed: ${esc(deceasedName)}</h2>
         <p style="font-size:14px;color:#444">Case ID: ${esc(booking.caseId)}</p>
         <p style="font-size:14px;margin:20px 0 8px"><strong>Confirmed time:</strong></p>
@@ -390,7 +390,7 @@ router.post('/respond/:token', async (req, res, next) => {
           `Available slots:`,
           ...crematoriumSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
           ``,
-          `Review and confirm a slot in Passage.`,
+          `Review and confirm a slot in Waypass.`,
         ].join('\n'),
         caseId: shaped.caseId,
         bookingId: shaped.id,
@@ -501,7 +501,7 @@ router.post('/respond-shipping/:token', async (req, res, next) => {
         `Available slots:`,
         ...shippingSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
         ``,
-        `Review and confirm a slot in Passage.`,
+        `Review and confirm a slot in Waypass.`,
       ].join('\n'),
       caseId: shaped.caseId,
       bookingId: shaped.id,

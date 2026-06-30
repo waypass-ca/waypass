@@ -1,7 +1,7 @@
 // Per-user local preferences (no backend round-trip needed).
 // Scoped by user id so multiple accounts on the same browser stay separate.
 
-const KEY = userId => `passage:prefs:${userId}`
+const KEY = userId => `waypass:prefs:${userId}`
 
 function read(userId) {
   if (!userId) return {}
