@@ -22,6 +22,7 @@ router.get('/', requireAuth, async (req, res, next) => {
     let query = supabase
       .from('folders')
       .select('*')
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .is('deleted_at', null)
 
     if (req.query.type) query = query.eq('type', req.query.type)
@@ -46,7 +47,7 @@ router.post('/', requireAuth, async (req, res, next) => {
     const { data, error } = await supabase
       .from('folders')
       .insert({
-        funeral_home_id: body.funeralHomeId ?? null,
+        funeral_home_id: req.user.funeralHomeId,
         name: body.name.trim(),
         type: body.type,
         color: body.color ?? null,
@@ -74,6 +75,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
         modified_at: new Date().toISOString(),
       })
       .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .select()
       .single()
     if (error) throw error
@@ -115,6 +117,7 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
       .from('folders')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
     if (error) throw error
     res.status(204).send()
   } catch (err) {

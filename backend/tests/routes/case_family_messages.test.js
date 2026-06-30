@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
-import { makeSupabaseMock, authedUser, badToken, authHeader } from '../setup.js'
+import { makeSupabaseMock, authedUser, badToken, authHeader , resetDispatch } from '../setup.js'
 
-const { supabase, chain } = makeSupabaseMock()
+const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
 const { default: app } = await import('../../server.js')
@@ -36,6 +36,7 @@ const shapedMessage = {
 describe('GET /api/cases/:caseId/messages', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
@@ -64,6 +65,7 @@ describe('GET /api/cases/:caseId/messages', () => {
 describe('POST /api/cases/:caseId/messages', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.insert.mockReturnThis()
     chain.select.mockReturnThis()
     chain.single.mockResolvedValue({ data: dbMessage, error: null })
@@ -110,6 +112,7 @@ describe('POST /api/cases/:caseId/messages', () => {
 describe('PATCH /api/cases/:caseId/messages/:id/read', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.select.mockReturnThis()

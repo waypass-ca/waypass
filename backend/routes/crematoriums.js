@@ -43,7 +43,7 @@ router.get('/', requireAuth, async (req, res, next) => {
       .from('crematoriums')
       .select('*')
       .is('deleted_at', null)
-      .contains('connected_funeral_home_ids', [req.user.id])
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
       .order('name')
     if (error) throw error
     res.json(data.map(shapeRow))
@@ -63,7 +63,7 @@ router.get('/nearby', requireAuth, async (req, res, next) => {
       .from('crematoriums')
       .select('*')
       .is('deleted_at', null)
-      .not('connected_funeral_home_ids', 'cs', `{${req.user.id}}`)
+      .not('connected_funeral_home_ids', 'cs', `{${req.user.funeralHomeId}}`)
 
     if (query) {
       dbQuery = dbQuery.or(`name.ilike.%${query}%,location.ilike.%${query}%,city.ilike.%${query}%`)
@@ -122,7 +122,7 @@ router.post('/', requireAuth, async (req, res, next) => {
         since: partnerSince,
         license_number: body.licenseNumber ?? null,
         vetting_notes: body.vettingNotes ?? null,
-        connected_funeral_home_ids: [req.user.id],
+        connected_funeral_home_ids: [req.user.funeralHomeId],
       })
       .select()
       .single()
@@ -146,8 +146,8 @@ router.post('/:id/connect', requireAuth, async (req, res, next) => {
     if (!current) return res.status(404).json({ error: 'Crematorium not found' })
 
     const ids = current.connected_funeral_home_ids ?? []
-    if (!ids.includes(req.user.id)) {
-      ids.push(req.user.id)
+    if (!ids.includes(req.user.funeralHomeId)) {
+      ids.push(req.user.funeralHomeId)
     }
 
     const { data, error } = await supabase
@@ -175,7 +175,7 @@ router.delete('/:id/connect', requireAuth, async (req, res, next) => {
     if (fetchErr) throw fetchErr
     if (!current) return res.status(404).json({ error: 'Crematorium not found' })
 
-    const ids = (current.connected_funeral_home_ids ?? []).filter(id => id !== req.user.id)
+    const ids = (current.connected_funeral_home_ids ?? []).filter(id => id !== req.user.funeralHomeId)
 
     const { data, error } = await supabase
       .from('crematoriums')

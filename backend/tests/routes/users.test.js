@@ -1,33 +1,34 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
-import { makeSupabaseMock, authedUser, badToken, authHeader } from '../setup.js'
+import { makeChain, makeSupabaseMock, authedUser, badToken, authHeader, dbProfile, resetDispatch } from '../setup.js'
 
-const { supabase, chain } = makeSupabaseMock()
+const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
 const { default: app } = await import('../../server.js')
 
 const dbUser = {
-  id: 'user-uuid-1',
+  id: 'test-user-id',
   funeral_home_id: 'fh-uuid-1',
-  email: 'staff@example.com',
+  email: 'admin@acme.com',
   first_name: 'Alice',
   last_name: 'Smith',
   phone: '(415) 555-0100',
-  role: 'staff',
+  role: 'admin',
   status: 'active',
   avatar_url: null,
   created_at: '2024-01-01T00:00:00Z',
+  deleted_at: null,
 }
 
 const shapedUser = {
-  id: 'user-uuid-1',
+  id: 'test-user-id',
   funeralHomeId: 'fh-uuid-1',
-  email: 'staff@example.com',
+  email: 'admin@acme.com',
   firstName: 'Alice',
   lastName: 'Smith',
   phone: '(415) 555-0100',
-  role: 'staff',
+  role: 'admin',
   status: 'active',
   avatarUrl: null,
   createdAt: '2024-01-01T00:00:00Z',
@@ -36,10 +37,9 @@ const shapedUser = {
 describe('GET /api/users', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
-    chain.select.mockReturnThis()
-    chain.is.mockReturnThis()
-    chain.order.mockResolvedValue({ data: [dbUser], error: null })
+    usersChain.order.mockResolvedValue({ data: [dbUser], error: null })
   })
 
   it('returns 401 without auth', async () => {
@@ -48,107 +48,155 @@ describe('GET /api/users', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns 200 with shaped users', async () => {
+  it('returns 200 with users scoped to funeral home', async () => {
     const res = await request(app).get('/api/users').set(authHeader)
     expect(res.status).toBe(200)
     expect(res.body).toEqual([shapedUser])
   })
 
   it('returns 500 on DB error', async () => {
-    chain.order.mockResolvedValue({ data: null, error: new Error('DB error') })
+    usersChain.order.mockResolvedValue({ data: null, error: new Error('DB error') })
     const res = await request(app).get('/api/users').set(authHeader)
     expect(res.status).toBe(500)
   })
 })
 
-describe('GET /api/users/:id', () => {
+describe('GET /api/users/me', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
-    chain.select.mockReturnThis()
-    chain.eq.mockReturnThis()
-    chain.single.mockResolvedValue({ data: dbUser, error: null })
+    usersChain.single.mockResolvedValue({ data: dbUser, error: null })
   })
 
   it('returns 401 without auth', async () => {
     supabase.auth.getUser.mockResolvedValue(badToken)
-    const res = await request(app).get('/api/users/user-uuid-1')
+    const res = await request(app).get('/api/users/me')
     expect(res.status).toBe(401)
   })
 
-  it('returns 200 with shaped user', async () => {
-    const res = await request(app).get('/api/users/user-uuid-1').set(authHeader)
+  it('returns 200 with current user profile', async () => {
+    const res = await request(app).get('/api/users/me').set(authHeader)
     expect(res.status).toBe(200)
     expect(res.body).toEqual(shapedUser)
   })
-
-  it('returns 404 when user not found', async () => {
-    chain.single.mockResolvedValue({ data: null, error: null })
-    const res = await request(app).get('/api/users/nope').set(authHeader)
-    expect(res.status).toBe(404)
-    expect(res.body.error).toBe('User not found')
-  })
 })
 
-describe('POST /api/users', () => {
-  const payload = {
-    id: 'user-uuid-2',
-    email: 'new@example.com',
-    firstName: 'Bob',
-    lastName: 'Jones',
-    role: 'admin',
-  }
-
+describe('POST /api/users/invite', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    chain.insert.mockReturnThis()
-    chain.select.mockReturnThis()
-    chain.single.mockResolvedValue({ data: dbUser, error: null })
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
   })
 
   it('returns 401 without auth', async () => {
     supabase.auth.getUser.mockResolvedValue(badToken)
-    const res = await request(app).post('/api/users').send(payload)
+    const res = await request(app).post('/api/users/invite').send({ email: 'staff@acme.com', role: 'staff' })
     expect(res.status).toBe(401)
   })
 
-  it('returns 201 with shaped user', async () => {
-    supabase.auth.getUser.mockResolvedValue(authedUser)
-    const res = await request(app).post('/api/users').set(authHeader).send(payload)
+  it('returns 403 for non-admin user', async () => {
+    usersChain.maybeSingle.mockResolvedValue({ data: { ...dbProfile, role: 'staff' }, error: null })
+    const res = await request(app).post('/api/users/invite').set(authHeader).send({ email: 'staff@acme.com', role: 'staff' })
+    expect(res.status).toBe(403)
+  })
+
+  it('returns 400 when email is missing', async () => {
+    const res = await request(app).post('/api/users/invite').set(authHeader).send({ role: 'staff' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('email is required')
+  })
+
+  it('creates invite and returns 201', async () => {
+    // Use table-aware dispatch with specific per-table mocks
+    const inviteChain = makeChain()
+    inviteChain.insert.mockReturnThis()
+    inviteChain.select.mockReturnThis()
+    inviteChain.single.mockResolvedValue({ data: { id: 'invite-uuid', email: 'staff@acme.com', role: 'staff' }, error: null })
+
+    const fhChain = makeChain()
+    fhChain.single.mockResolvedValue({ data: { name: 'Acme Funeral Home' }, error: null })
+
+    let nonUsersCalls = 0
+    supabase.from.mockImplementation(table => {
+      if (table === 'users') return usersChain
+      if (table === 'funeral_home_invites') return inviteChain
+      if (table === 'funeral_homes') return fhChain
+      return chain
+    })
+
+    // Profile query → admin; member check → no existing member
+    usersChain.maybySingle = vi.fn()
+      .mockResolvedValueOnce({ data: dbProfile, error: null })
+      .mockResolvedValueOnce({ data: null, error: null })
+    usersChain.maybeSingle = usersChain.maybySingle
+
+    const res = await request(app).post('/api/users/invite').set(authHeader).send({ email: 'staff@acme.com', role: 'staff' })
     expect(res.status).toBe(201)
-    expect(res.body).toEqual(shapedUser)
+    expect(res.body.email).toBe('staff@acme.com')
+    expect(res.body.role).toBe('staff')
   })
 })
 
-describe('PATCH /api/users/:id', () => {
-  const payload = { firstName: 'Alice', lastName: 'Updated', role: 'admin' }
-
+describe('PATCH /api/users/:id/role', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    chain.update.mockReturnThis()
-    chain.eq.mockReturnThis()
-    chain.select.mockReturnThis()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    usersChain.single.mockResolvedValue({ data: { ...dbUser, role: 'staff' }, error: null })
   })
 
   it('returns 401 without auth', async () => {
     supabase.auth.getUser.mockResolvedValue(badToken)
-    const res = await request(app).patch('/api/users/user-uuid-1').send(payload)
+    const res = await request(app).patch('/api/users/other-user-id/role').send({ role: 'staff' })
     expect(res.status).toBe(401)
   })
 
-  it('returns 200 with updated user', async () => {
-    supabase.auth.getUser.mockResolvedValue(authedUser)
-    chain.single.mockResolvedValue({ data: dbUser, error: null })
-    const res = await request(app).patch('/api/users/user-uuid-1').set(authHeader).send(payload)
-    expect(res.status).toBe(200)
-    expect(res.body).toEqual(shapedUser)
+  it('returns 403 for non-admin', async () => {
+    usersChain.maybySingle = vi.fn().mockResolvedValue({ data: { ...dbProfile, role: 'staff' }, error: null })
+    usersChain.maybeSingle = usersChain.maybySingle
+    const res = await request(app).patch('/api/users/other-user-id/role').set(authHeader).send({ role: 'read_only' })
+    expect(res.status).toBe(403)
   })
 
-  it('returns 404 when user not found', async () => {
+  it('returns 400 for invalid role', async () => {
+    usersChain.maybySingle = vi.fn().mockResolvedValue({ data: dbProfile, error: null })
+    usersChain.maybeSingle = usersChain.maybySingle
+    const res = await request(app).patch('/api/users/other-user-id/role').set(authHeader).send({ role: 'superadmin' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/role must be one of/)
+  })
+
+  it('returns 400 when trying to change own role', async () => {
+    const res = await request(app).patch('/api/users/test-user-id/role').set(authHeader).send({ role: 'staff' })
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('Cannot change your own role')
+  })
+
+  it('returns 200 on successful role change', async () => {
+    const res = await request(app).patch('/api/users/other-user-id/role').set(authHeader).send({ role: 'staff' })
+    expect(res.status).toBe(200)
+  })
+})
+
+describe('DELETE /api/users/:id', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
-    chain.single.mockResolvedValue({ data: null, error: null })
-    const res = await request(app).patch('/api/users/nope').set(authHeader).send(payload)
-    expect(res.status).toBe(404)
-    expect(res.body.error).toBe('User not found')
+    usersChain.update = vi.fn().mockReturnThis()
+    usersChain.eq = vi.fn().mockReturnThis()
+  })
+
+  it('returns 401 without auth', async () => {
+    supabase.auth.getUser.mockResolvedValue(badToken)
+    const res = await request(app).delete('/api/users/other-user-id')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 when trying to remove self', async () => {
+    const res = await request(app).delete('/api/users/test-user-id').set(authHeader)
+    expect(res.status).toBe(400)
+    expect(res.body.error).toBe('Cannot remove yourself')
   })
 })

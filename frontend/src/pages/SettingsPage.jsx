@@ -5,10 +5,12 @@ import { AccountSection } from '../components/settings/AccountSection'
 import { NotificationsSection } from '../components/settings/NotificationsSection'
 import { BrandingSection } from '../components/settings/BrandingSection'
 import { BillingSection } from '../components/settings/BillingSection'
+import { StaffSection } from '../components/settings/StaffSection'
 
 const NAV_ITEMS = [
   { id: 'general',       label: 'General' },
   { id: 'account',       label: 'Account' },
+  { id: 'staff',         label: 'Team' },
   { id: 'notifications', label: 'Notifications' },
   { id: 'branding',      label: 'Branding' },
   { id: 'billing',       label: 'Billing' },
@@ -17,6 +19,7 @@ const NAV_ITEMS = [
 const SECTIONS = {
   general:       GeneralSection,
   account:       AccountSection,
+  staff:         StaffSection,
   notifications: NotificationsSection,
   branding:      BrandingSection,
   billing:       BillingSection,

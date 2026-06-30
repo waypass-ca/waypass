@@ -29,21 +29,21 @@ async function mutate(path, options = {}) {
 }
 
 // ── Packages ──────────────────────────────────────────
-export const fetchPackages = () => request('/api/packages')
+export const fetchPackages = () => mutate('/api/packages')
 
 // ── Addons ────────────────────────────────────────────
-export const fetchAddons = () => request('/api/addons')
+export const fetchAddons = () => mutate('/api/addons')
 
 // ── Cases ─────────────────────────────────────────────
-export const fetchCases = () => request('/api/cases')
-export const fetchCase = (id) => request(`/api/cases/${id}`)
+export const fetchCases = () => mutate('/api/cases')
+export const fetchCase = (id) => mutate(`/api/cases/${id}`)
 export const createCase = (payload) =>
   mutate('/api/cases', { method: 'POST', body: JSON.stringify(payload) })
 export const updateCaseStatus = (id, status) =>
   mutate(`/api/cases/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) })
 export const addCaseNote = (id, note) =>
   mutate(`/api/cases/${id}/notes`, { method: 'POST', body: JSON.stringify(note) })
-export const fetchCustody = (id) => request(`/api/cases/${id}/custody`)
+export const fetchCustody = (id) => mutate(`/api/cases/${id}/custody`)
 export const updateCustodyStage = (id, stage, payload) =>
   mutate(`/api/cases/${id}/custody/${stage}`, { method: 'PUT', body: JSON.stringify(payload) })
 
@@ -81,7 +81,7 @@ export const deleteCaseContact = (caseId, contactId) =>
   mutate(`/api/cases/${caseId}/contacts/${contactId}`, { method: 'DELETE' })
 
 // Unified activity feed.
-export const fetchCaseActivity = (id) => request(`/api/cases/${id}/activity`)
+export const fetchCaseActivity = (id) => mutate(`/api/cases/${id}/activity`)
 
 // ── Crematoriums ──────────────────────────────────────
 export const fetchCrematoriums = () => mutate('/api/crematoriums')
@@ -205,18 +205,46 @@ export const fetchNotificationPrefs = () => mutate('/api/notifications')
 export const saveNotificationPrefs = (prefs) =>
   mutate('/api/notifications', { method: 'PUT', body: JSON.stringify(prefs) })
 
+// ── Auth / account management ─────────────────────────
+export const signupFuneralHome = (payload) =>
+  request('/api/auth/signup', { method: 'POST', body: JSON.stringify(payload) })
+export const getInviteInfo = (token) =>
+  request(`/api/auth/invite-info/${token}`)
+export const acceptInvite = (payload) =>
+  request('/api/auth/accept-invite', { method: 'POST', body: JSON.stringify(payload) })
+
+// ── Users ─────────────────────────────────────────────
+export const fetchCurrentUser = () => mutate('/api/users/me')
+export const fetchUsers = () => mutate('/api/users')
+export const fetchPendingInvites = () => mutate('/api/users/invites')
+export const inviteUser = (email, role) =>
+  mutate('/api/users/invite', { method: 'POST', body: JSON.stringify({ email, role }) })
+export const revokeInvite = (id) => mutate(`/api/users/invites/${id}`, { method: 'DELETE' })
+export const changeUserRole = (id, role) =>
+  mutate(`/api/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) })
+export const removeUser = (id) => mutate(`/api/users/${id}`, { method: 'DELETE' })
+export const updateProfile = (id, patch) =>
+  mutate(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
+
+// ── Funeral Home ──────────────────────────────────────
+export const fetchFuneralHome = () => mutate('/api/funeral-homes/me')
+export const updateFuneralHome = (patch) =>
+  mutate('/api/funeral-homes/me', { method: 'PATCH', body: JSON.stringify(patch) })
+
 // ── Orders ────────────────────────────────────────────
-export const fetchOrders = () => request('/api/orders')
+export const fetchOrders = () => mutate('/api/orders')
 export const advanceOrder = (id) =>
   mutate(`/api/orders/${id}/advance`, { method: 'PATCH' })
 
 // ── Portal settings ───────────────────────────────────
-export const fetchPortalSettings = () => request('/api/portal-settings')
+export const fetchPortalSettings = (funeralHomeId) =>
+  request(`/api/portal-settings${funeralHomeId ? `?funeralHomeId=${funeralHomeId}` : ''}`)
+export const fetchPortalSettingsAuth = () => mutate('/api/portal-settings')
 export const savePortalSettings = (payload) =>
   mutate('/api/portal-settings', { method: 'PUT', body: JSON.stringify(payload) })
 
 // ── Email template ────────────────────────────────────
-export const fetchEmailTemplate = () => request('/api/email-template')
+export const fetchEmailTemplate = () => mutate('/api/email-template')
 export const saveEmailTemplate = (payload) =>
   mutate('/api/email-template', { method: 'PUT', body: JSON.stringify(payload) })
 export const fetchEmailOverride = (caseId) =>

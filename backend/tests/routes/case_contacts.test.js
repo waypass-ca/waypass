@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
-import { makeChain, makeSupabaseMock, authedUser, badToken, authHeader } from '../setup.js'
+import { makeChain, makeSupabaseMock, authedUser, badToken, authHeader , resetDispatch } from '../setup.js'
 
-const { supabase, chain } = makeSupabaseMock()
+const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
 const { default: app } = await import('../../server.js')
@@ -36,6 +36,7 @@ const shapedContact = {
 describe('GET /api/cases/:caseId/contacts', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
@@ -72,6 +73,7 @@ describe('POST /api/cases/:caseId/contacts', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.insert.mockReturnThis()
     chain.select.mockReturnThis()
     chain.single.mockResolvedValue({ data: dbContact, error: null })
@@ -117,7 +119,12 @@ describe('POST /api/cases/:caseId/contacts', () => {
     insertChain.select.mockReturnThis()
     insertChain.single.mockResolvedValue({ data: dbContact, error: null })
 
-    supabase.from.mockReturnValueOnce(updateChain).mockReturnValueOnce(insertChain)
+    let callCount = 0
+    supabase.from.mockImplementation(table => {
+      if (table === 'users') return usersChain
+      callCount++
+      return callCount === 1 ? updateChain : insertChain
+    })
 
     const res = await request(app)
       .post(`/api/cases/${CASE_ID}/contacts`)
@@ -133,6 +140,7 @@ describe('PATCH /api/cases/:caseId/contacts/:id', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.select.mockReturnThis()
@@ -169,6 +177,7 @@ describe('PATCH /api/cases/:caseId/contacts/:id', () => {
 describe('DELETE /api/cases/:caseId/contacts/:id', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
     // Two .eq() calls: first returns this, second resolves
     chain.eq

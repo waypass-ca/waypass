@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
-import { makeChain, makeSupabaseMock, authedUser, badToken, authHeader } from '../setup.js'
+import { makeChain, makeSupabaseMock, authedUser, badToken, authHeader, resetDispatch } from '../setup.js'
 
-const { supabase, chain } = makeSupabaseMock()
+const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
 const { default: app } = await import('../../server.js')
@@ -77,14 +77,22 @@ const shapedCase = {
 describe('GET /api/cases', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
+    chain.eq.mockReturnThis()
     chain.is.mockReturnThis()
     chain.order.mockResolvedValue({ data: [dbCase], error: null })
   })
 
-  it('returns 200 with shaped cases array', async () => {
+  it('returns 401 without auth', async () => {
+    supabase.auth.getUser.mockResolvedValue(badToken)
     const res = await request(app).get('/api/cases')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 200 with shaped cases array', async () => {
+    const res = await request(app).get('/api/cases').set(authHeader)
     expect(res.status).toBe(200)
     expect(res.body).toEqual([shapedCase])
   })
@@ -96,7 +104,7 @@ describe('GET /api/cases', () => {
     }
     chain.order.mockResolvedValue({ data: [normalized], error: null })
 
-    const res = await request(app).get('/api/cases')
+    const res = await request(app).get('/api/cases').set(authHeader)
     expect(res.status).toBe(200)
     expect(res.body[0].deceased).toBe('Jane Doe')
     expect(res.body[0].dob).toBe('1940-01-01')
@@ -110,14 +118,14 @@ describe('GET /api/cases', () => {
     }
     chain.order.mockResolvedValue({ data: [normalized], error: null })
 
-    const res = await request(app).get('/api/cases')
+    const res = await request(app).get('/api/cases').set(authHeader)
     expect(res.body[0].contactName).toBe('Bob Smith')
     expect(res.body[0].family).toBe('Bob Smith')
   })
 
   it('returns 500 on DB error', async () => {
     chain.order.mockResolvedValue({ data: null, error: new Error('DB error') })
-    const res = await request(app).get('/api/cases')
+    const res = await request(app).get('/api/cases').set(authHeader)
     expect(res.status).toBe(500)
   })
 })
@@ -125,27 +133,40 @@ describe('GET /api/cases', () => {
 describe('GET /api/cases/:id', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.single.mockResolvedValue({ data: dbCase, error: null })
   })
 
-  it('returns 200 with shaped case when found', async () => {
+  it('returns 401 without auth', async () => {
+    supabase.auth.getUser.mockResolvedValue(badToken)
     const res = await request(app).get('/api/cases/PSG-2024-0001')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 200 with shaped case when found', async () => {
+    const res = await request(app).get('/api/cases/PSG-2024-0001').set(authHeader)
     expect(res.status).toBe(200)
     expect(res.body).toEqual(shapedCase)
   })
 
   it('returns 404 when case not found', async () => {
     chain.single.mockResolvedValue({ data: null, error: null })
-    const res = await request(app).get('/api/cases/PSG-0000-0000')
+    const res = await request(app).get('/api/cases/PSG-0000-0000').set(authHeader)
     expect(res.status).toBe(404)
     expect(res.body.error).toBe('Case not found')
   })
 })
 
 describe('POST /api/cases', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+  })
+
   const payload = {
     deceased: 'John Doe',
     family: 'The Doe Family',
@@ -183,11 +204,19 @@ describe('POST /api/cases', () => {
     caseFetchChain.eq.mockReturnThis()
     caseFetchChain.single.mockResolvedValue({ data: fullCaseData, error: null })
 
-    supabase.from
-      .mockReturnValueOnce(deceasedChain)
-      .mockReturnValueOnce(caseInsertChain)
-      .mockReturnValueOnce(contactsChain)
-      .mockReturnValueOnce(caseFetchChain)
+    // Use mockReturnValueOnce so requireAuth's users lookup goes to usersChain
+    // then route handler calls get the specific chains
+    // Since our dispatch is table-aware, we don't need mockReturnValueOnce for 'users'
+    // We use mockImplementation to dispatch after the users call
+    let nonUsersCalls = 0
+    supabase.from.mockImplementation(table => {
+      if (table === 'users') return usersChain
+      nonUsersCalls++
+      if (nonUsersCalls === 1) return deceasedChain
+      if (nonUsersCalls === 2) return caseInsertChain
+      if (nonUsersCalls === 3) return contactsChain
+      return caseFetchChain
+    })
   }
 
   it('returns 401 without auth', async () => {
@@ -205,12 +234,15 @@ describe('POST /api/cases', () => {
   })
 
   it('returns 500 when deceased insert fails', async () => {
-    supabase.auth.getUser.mockResolvedValue(authedUser)
     const deceasedChain = makeChain()
     deceasedChain.insert.mockReturnThis()
     deceasedChain.select.mockReturnThis()
     deceasedChain.single.mockResolvedValue({ data: null, error: new Error('DB error') })
-    supabase.from.mockReturnValueOnce(deceasedChain)
+
+    supabase.from.mockImplementation(table => {
+      if (table === 'users') return usersChain
+      return deceasedChain
+    })
 
     const res = await request(app).post('/api/cases').set(authHeader).send(payload)
     expect(res.status).toBe(500)
@@ -220,6 +252,8 @@ describe('POST /api/cases', () => {
 describe('PATCH /api/cases/:id/status', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.select.mockReturnThis()
@@ -267,6 +301,8 @@ describe('PATCH /api/cases/:id/status', () => {
 describe('POST /api/cases/:id/notes', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.insert.mockReturnThis()
     chain.select.mockReturnThis()
     chain.single.mockResolvedValue({
@@ -306,6 +342,8 @@ describe('POST /api/cases/:id/notes', () => {
 describe('GET /api/cases/:id/custody', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.order.mockResolvedValue({
@@ -317,20 +355,26 @@ describe('GET /api/cases/:id/custody', () => {
     })
   })
 
-  it('returns 200 with 9 stages', async () => {
+  it('returns 401 without auth', async () => {
+    supabase.auth.getUser.mockResolvedValue(badToken)
     const res = await request(app).get('/api/cases/PSG-2024-0001/custody')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 200 with 9 stages', async () => {
+    const res = await request(app).get('/api/cases/PSG-2024-0001/custody').set(authHeader)
     expect(res.status).toBe(200)
     expect(res.body).toHaveLength(9)
   })
 
   it('uses staff_label when available', async () => {
-    const res = await request(app).get('/api/cases/PSG-2024-0001/custody')
+    const res = await request(app).get('/api/cases/PSG-2024-0001/custody').set(authHeader)
     expect(res.body[0].completed).toBe(true)
     expect(res.body[0].staff).toBe('Dr. Jones')
   })
 
   it('fills missing stages with completed: false', async () => {
-    const res = await request(app).get('/api/cases/PSG-2024-0001/custody')
+    const res = await request(app).get('/api/cases/PSG-2024-0001/custody').set(authHeader)
     expect(res.body[5].completed).toBe(false)
     expect(res.body[5].staff).toBe(null)
   })
@@ -339,6 +383,8 @@ describe('GET /api/cases/:id/custody', () => {
 describe('PUT /api/cases/:id/custody/:stage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.upsert.mockReturnThis()
     chain.select.mockReturnThis()
     chain.single.mockResolvedValue({

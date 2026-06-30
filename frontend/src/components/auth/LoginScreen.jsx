@@ -7,9 +7,11 @@ export function LoginScreen() {
   const [mode, setMode] = useState('signin') // 'signin' | 'signup'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [funeralHomeName, setFuneralHomeName] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [signedUp, setSignedUp] = useState(false)
 
   function switchMode(next) {
     setMode(next)
@@ -24,38 +26,13 @@ export function LoginScreen() {
       if (mode === 'signin') {
         await signIn(email, password)
       } else {
-        await signUp(email, password)
-        setSignedUp(true)
+        await signUp({ email, password, firstName, lastName, funeralHomeName })
       }
     } catch (err) {
       setError(err.message)
     } finally {
       setLoading(false)
     }
-  }
-
-  if (signedUp) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-54px)] bg-canvas">
-        <div className="w-full max-w-sm text-center">
-          <div className="w-12 h-12 rounded-full bg-primary-light flex items-center justify-center mx-auto mb-5">
-            <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="font-display text-2xl text-ink">Check your email</h2>
-          <p className="font-sans text-sm text-muted mt-2 max-w-xs mx-auto">
-            We sent a confirmation link to <span className="font-medium text-ink">{email}</span>. Click it to activate your account, then sign in.
-          </p>
-          <button
-            onClick={() => { setSignedUp(false); switchMode('signin') }}
-            className="mt-5 font-sans text-sm text-primary hover:text-primary/80 transition-colors cursor-pointer border-0 bg-transparent outline-none"
-          >
-            Back to sign in
-          </button>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -71,6 +48,46 @@ export function LoginScreen() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-surface rounded-xl border border-line p-8 space-y-4">
+          {mode === 'signup' && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-sans text-muted mb-1.5">First Name</label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={e => setFirstName(e.target.value)}
+                    placeholder="Jane"
+                    required
+                    className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-sans text-muted mb-1.5">Last Name</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={e => setLastName(e.target.value)}
+                    placeholder="Smith"
+                    required
+                    className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-sans text-muted mb-1.5">Funeral Home Name</label>
+                <input
+                  type="text"
+                  value={funeralHomeName}
+                  onChange={e => setFuneralHomeName(e.target.value)}
+                  placeholder="Evergreen Memorial"
+                  required
+                  className="w-full border border-line rounded-lg px-4 py-2.5 text-sm font-sans text-ink outline-none focus:border-ink transition-colors bg-white"
+                />
+              </div>
+            </>
+          )}
+
           <div>
             <label className="block text-xs font-sans text-muted mb-1.5">Email Address</label>
             <input

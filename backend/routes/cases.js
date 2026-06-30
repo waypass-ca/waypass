@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { requireWrite } from '../middleware/requireRole.js'
 import { createInboxItem } from '../lib/notifications.js'
 
 const lastName = (name) => {
@@ -68,11 +69,12 @@ function shapeRow(row) {
 }
 
 // ── GET /api/cases ──────────────────────────────
-router.get('/', async (_req, res, next) => {
+router.get('/', requireAuth, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('cases')
       .select(CASE_SELECT)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .is('deleted_at', null)
       .order('id', { ascending: false })
     if (error) throw error
@@ -83,12 +85,13 @@ router.get('/', async (_req, res, next) => {
 })
 
 // ── GET /api/cases/:id ──────────────────────────
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', requireAuth, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('cases')
       .select(CASE_SELECT)
       .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .single()
     if (error) throw error
     if (!data) return res.status(404).json({ error: 'Case not found' })
@@ -99,7 +102,7 @@ router.get('/:id', async (req, res, next) => {
 })
 
 // ── POST /api/cases ─────────────────────────────
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const body = req.body
     const id = `PSG-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`
@@ -134,6 +137,7 @@ router.post('/', requireAuth, async (req, res, next) => {
       .from('cases')
       .insert({
         id,
+        funeral_home_id: req.user.funeralHomeId,
         deceased_id: deceasedId,
         amount_billed: body.amount ?? body.amount_billed ?? 0,
         case_date: body.date ?? body.case_date ?? null,
@@ -191,7 +195,7 @@ router.post('/', requireAuth, async (req, res, next) => {
 
 // ── PATCH /api/cases/:id ────────────────────────
 // Top-level case fields. Whitelisted; unknown columns rejected.
-router.patch('/:id', requireAuth, async (req, res, next) => {
+router.patch('/:id', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const ALLOWED = new Set([
       'status', 'folder_id', 'case_type',
@@ -218,6 +222,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       .from('cases')
       .update(patch)
       .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .select(CASE_SELECT)
       .single()
     if (error) throw error
@@ -229,7 +234,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
 })
 
 // ── PATCH /api/cases/:id/deceased ───────────────
-router.patch('/:id/deceased', requireAuth, async (req, res, next) => {
+router.patch('/:id/deceased', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const ALLOWED = new Set([
       'first_name', 'last_name',
@@ -246,7 +251,7 @@ router.patch('/:id/deceased', requireAuth, async (req, res, next) => {
     }
 
     const { data: caseRow, error: caseErr } = await supabase
-      .from('cases').select('deceased_id').eq('id', req.params.id).single()
+      .from('cases').select('deceased_id').eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
     if (caseErr) throw caseErr
     if (!caseRow) return res.status(404).json({ error: 'Case not found' })
 
@@ -280,7 +285,7 @@ router.patch('/:id/deceased', requireAuth, async (req, res, next) => {
 })
 
 // ── POST /api/cases/:id/addons ──────────────────
-router.post('/:id/addons', requireAuth, async (req, res, next) => {
+router.post('/:id/addons', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const { addonId } = req.body
     if (!addonId) return res.status(400).json({ error: 'addonId is required' })
@@ -300,7 +305,7 @@ router.post('/:id/addons', requireAuth, async (req, res, next) => {
 })
 
 // ── DELETE /api/cases/:id/addons/:addonId ───────
-router.delete('/:id/addons/:addonId', requireAuth, async (req, res, next) => {
+router.delete('/:id/addons/:addonId', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const { error } = await supabase
       .from('case_addons')
@@ -449,7 +454,7 @@ router.post('/:id/documents', requireAuth, async (req, res, next) => {
 })
 
 // ── GET /api/cases/:id/custody ───────────────────
-router.get('/:id/custody', async (req, res, next) => {
+router.get('/:id/custody', requireAuth, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('case_custody')
@@ -565,7 +570,7 @@ const BOOKING_EVENT_TITLES = {
 // ── GET /api/cases/:id/activity ─────────────────
 // Unified, typed event stream merging notes / documents / custody / booking_events.
 // Sorted newest-first, capped at 200. Drives the activity tab + drawer.
-router.get('/:id/activity', async (req, res, next) => {
+router.get('/:id/activity', requireAuth, async (req, res, next) => {
   try {
     const caseId = req.params.id
     const [
