@@ -9,7 +9,7 @@ import { AcceptInvitePage } from './pages/AcceptInvitePage.jsx'
 
 function AppInner() {
   const { session } = useAuth()
-  const { profile, loading: profileLoading } = useUser()
+  const { profile, loading: profileLoading, profileError } = useUser()
 
   if (window.location.pathname.startsWith('/respond-shipping/')) {
     const token = window.location.pathname.split('/respond-shipping/')[1]
@@ -25,10 +25,13 @@ function AppInner() {
     return <AcceptInvitePage />
   }
 
-  if (session === undefined || (session && profileLoading)) return null
-  if (!profile) return <LoginScreen />
+  // Auth state still loading, or we have a session but profile is still fetching
+  if (session === undefined || profileLoading || (session && !profile && !profileError)) return null
 
-  // Logged in but no profile/funeral home yet (shouldn't normally happen)
+  // No session → login screen
+  if (!session) return <LoginScreen />
+
+  // Signed in but profile fetch failed (e.g. account not fully set up)
   if (!profile) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-canvas">
