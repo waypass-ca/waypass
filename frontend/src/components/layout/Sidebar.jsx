@@ -84,7 +84,8 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
     }
   }, [profile?.funeralHomeId])
 
-  const homeName = funeralHome?.name ?? funeralHome?.displayName ?? '…'
+  const funeralHomeLoading = !funeralHome && !!profile?.funeralHomeId
+  const homeName = funeralHome?.name ?? funeralHome?.displayName ?? ''
   const logoUrl = funeralHome?.logoUrl ?? null
   const initials = homeName
     .split(' ')
@@ -106,20 +107,28 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
       <div className={`py-4 border-b border-line ${sidebarCollapsed ? 'px-2' : 'px-3'}`}>
         {sidebarCollapsed ? (
           <div className="w-7 h-7 rounded overflow-hidden bg-ink flex items-center justify-center mx-auto flex-shrink-0">
-            {logoUrl
-              ? <img src={logoUrl} alt={homeName} className="w-full h-full object-cover" />
-              : <span className="font-sans text-[9px] font-bold text-surface leading-none">{initials}</span>
+            {funeralHomeLoading
+              ? null
+              : logoUrl
+                ? <img src={logoUrl} alt={homeName} className="w-full h-full object-cover" />
+                : <span className="font-sans text-[9px] font-bold text-surface leading-none">{initials}</span>
             }
           </div>
         ) : (
           <div className="flex items-center gap-2.5 px-2 py-1.5">
-            <div className="w-5 h-5 rounded overflow-hidden bg-ink flex items-center justify-center flex-shrink-0">
-              {logoUrl
-                ? <img src={logoUrl} alt={homeName} className="w-full h-full object-cover" />
-                : <span className="font-sans text-[9px] font-bold text-surface leading-none">{initials}</span>
-              }
-            </div>
-            <span className="font-sans text-[13px] font-semibold text-ink flex-1 truncate">{homeName}</span>
+            {funeralHomeLoading ? (
+              <div className="animate-pulse bg-line rounded h-3.5 w-32" />
+            ) : (
+              <>
+                <div className="w-5 h-5 rounded overflow-hidden bg-ink flex items-center justify-center flex-shrink-0">
+                  {logoUrl
+                    ? <img src={logoUrl} alt={homeName} className="w-full h-full object-cover" />
+                    : <span className="font-sans text-[9px] font-bold text-surface leading-none">{initials}</span>
+                  }
+                </div>
+                <span className="font-sans text-[13px] font-semibold text-ink flex-1 truncate">{homeName}</span>
+              </>
+            )}
           </div>
         )}
       </div>

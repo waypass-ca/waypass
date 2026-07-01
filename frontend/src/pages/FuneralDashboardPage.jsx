@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
-import { fetchCases, updateCaseStatus, assignCaseFolder } from '../lib/api.js'
+import {
+  fetchCases, updateCaseStatus, assignCaseFolder,
+  fetchCrematoriums, fetchShippingPartners, fetchBookings,
+  fetchInbox, fetchEmailTemplate, fetchPortalSettings,
+} from '../lib/api.js'
 import { Sidebar } from '../components/layout/Sidebar'
-import { PageHeader } from '../components/layout/PageHeader'
 import { HomeDashboardPage } from './HomeDashboardPage'
 import { CasesPage } from './CasesPage'
 import { CaseDetailPage } from './CaseDetailPage'
@@ -16,25 +19,25 @@ import { SettingsPage } from './SettingsPage'
 import { EmailEditorPage } from '../components/dashboard/EmailEditorPage'
 import { BookCremationPage } from './BookCremationPage'
 import { CalendarPage } from './CalendarPage'
-import { Button } from '../components/ui/Button'
 import { NotificationToast } from '../components/notifications/NotificationToast'
 import { AppToastContainer } from '../components/ui/AppToastContainer'
 import { useUser } from '../context/UserContext.jsx'
+import { DashboardSkeleton } from '../components/skeletons/DashboardSkeleton'
+import { useDelayedLoading } from '../hooks/useDelayedLoading'
 
-// Map sidebar ids to internal views
 const SIDEBAR_TO_VIEW = {
-  home:               'dashboard',
-  search:             'dashboard',
-  inbox:              'inbox',
-  cases:              'cases',
-  'family-editor':    'family-portal',
-  partners:           'crematoriums',
+  home:                'dashboard',
+  search:              'dashboard',
+  inbox:               'inbox',
+  cases:               'cases',
+  'family-editor':     'family-portal',
+  partners:            'crematoriums',
   'shipping-partners': 'shipping-partners',
   'book-cremation':    'book-cremation',
   'pickup-calendar':   'pickup-calendar',
-  documents:          'documents',
-  financials:         'revenue',
-  settings:           'settings',
+  documents:           'documents',
+  financials:          'revenue',
+  settings:            'settings',
 }
 
 function activeSidebarItem(view) {
@@ -61,14 +64,6 @@ function BlankPage({ title, description, icon }) {
   )
 }
 
-function LoadingState() {
-  return (
-    <div className="flex items-center justify-center min-h-[200px]">
-      <p className="font-sans text-sm text-muted">Loading…</p>
-    </div>
-  )
-}
-
 function ErrorState({ message }) {
   return (
     <div className="p-8 text-center">
@@ -83,20 +78,41 @@ export function FuneralDashboardPage() {
   const [selectedCaseId, setSelectedCaseId] = useState(null)
   const [bookingPreselect, setBookingPreselect] = useState(null)
   const [initialInboxId, setInitialInboxId] = useState(null)
+
+  // All data prefetched on startup so every page is instant
   const [cases, setCases] = useState([])
+  const [crematoriums, setCrematoriums] = useState([])
+  const [shippingPartners, setShippingPartners] = useState([])
+  const [bookings, setBookings] = useState([])
+  const [inboxItems, setInboxItems] = useState([])
+  const [emailTemplate, setEmailTemplate] = useState(null)
+  const [portalSettings, setPortalSettings] = useState(null)
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetchCases()
-      .then(setCases)
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
+    Promise.allSettled([
+      fetchCases().then(setCases).catch(err => setError(err.message)),
+      fetchCrematoriums().then(setCrematoriums).catch(() => {}),
+      fetchShippingPartners().then(setShippingPartners).catch(() => {}),
+      fetchBookings().then(setBookings).catch(() => {}),
+      fetchInbox({ limit: 50 }).then(setInboxItems).catch(() => {}),
+      fetchEmailTemplate().then(setEmailTemplate).catch(() => {}),
+      fetchPortalSettings().then(setPortalSettings).catch(() => {}),
+    ]).finally(() => setLoading(false))
   }, [])
 
-  function navigate(v) {
-    setView(v)
+  function navigate(target, inboxId = null) {
+    setView(target)
     setSelectedCaseId(null)
+    setBookingPreselect(null)
+    setInitialInboxId(inboxId)
+  }
+
+  function viewCase(id) {
+    setSelectedCaseId(id)
+    setView('case-detail')
     setBookingPreselect(null)
     setInitialInboxId(null)
   }
@@ -104,11 +120,8 @@ export function FuneralDashboardPage() {
   function scheduleCase(c) {
     setBookingPreselect(c)
     setView('book-cremation')
-  }
-
-  function viewCase(id) {
-    setSelectedCaseId(id)
-    setView('case-detail')
+    setSelectedCaseId(null)
+    setInitialInboxId(null)
   }
 
   async function handleCaseStatusChange(id, newStatus) {
@@ -134,41 +147,40 @@ export function FuneralDashboardPage() {
   }
 
   const selectedCase = cases.find(c => c.id === selectedCaseId)
-
-  if (loading) return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar activeItem="dashboard" onItemChange={() => {}} />
-      <main className="flex-1 px-8 py-7 bg-canvas overflow-auto"><LoadingState /></main>
-    </div>
-  )
-
-  if (error) return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar activeItem="dashboard" onItemChange={() => {}} />
-      <main className="flex-1 px-8 py-7 bg-canvas overflow-auto"><ErrorState message={error} /></main>
-    </div>
-  )
+  const showSkeleton = useDelayedLoading(loading)
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <NotificationToast onViewInbox={(itemId) => { setInitialInboxId(itemId); setView('inbox') }} />
+      <NotificationToast onViewInbox={(itemId) => navigate('inbox', itemId)} />
       <AppToastContainer />
       <Sidebar
-        activeItem={activeSidebarItem(view)}
-        onItemChange={id => {
+        activeItem={loading ? 'home' : activeSidebarItem(view)}
+        onItemChange={loading ? () => {} : id => {
           const target = SIDEBAR_TO_VIEW[id]
           if (target) navigate(target)
         }}
       />
 
-      {view === 'pickup-calendar' ? (
-        <CalendarPage cases={cases} />
+      {loading ? (
+        <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
+          {showSkeleton && <DashboardSkeleton />}
+        </main>
+      ) : error ? (
+        <main className="flex-1 px-8 py-7 bg-canvas overflow-auto"><ErrorState message={error} /></main>
+      ) : view === 'pickup-calendar' ? (
+        <CalendarPage cases={cases} initialBookings={bookings} />
       ) : view === 'book-cremation' && canWrite ? (
-        <BookCremationPage cases={cases} preselectedCase={bookingPreselect} />
+        <BookCremationPage
+          cases={cases}
+          preselectedCase={bookingPreselect}
+          initialCrematoriums={crematoriums}
+          initialShippingPartners={shippingPartners}
+          initialBookings={bookings}
+        />
       ) : view === 'inbox' ? (
-        <InboxPage initialActiveId={initialInboxId} onViewCase={viewCase} />
+        <InboxPage initialActiveId={initialInboxId} onViewCase={viewCase} initialItems={inboxItems} />
       ) : view === 'cases' ? (
-        <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => setView('new-case')} onCaseFolderAssign={handleCaseFolderAssign} onCasesChange={setCases} />
+        <CasesPage cases={cases} onViewCase={viewCase} onNewCase={() => navigate('new-case')} onCaseFolderAssign={handleCaseFolderAssign} onCasesChange={setCases} />
       ) : view === 'documents' ? (
         <DocumentsPage cases={cases} onCasesChange={setCases} />
       ) : view === 'case-detail' && selectedCase ? (
@@ -179,50 +191,37 @@ export function FuneralDashboardPage() {
           onSchedule={() => scheduleCase(selectedCase)}
         />
       ) : view === 'crematoriums' ? (
-        <CrematoriumPartnersPage onAddPartner={() => setView('new-crematorium')} cases={cases} onViewCase={viewCase} />
+        <CrematoriumPartnersPage onAddPartner={() => navigate('new-crematorium')} cases={cases} onViewCase={viewCase} initialCrematoriums={crematoriums} />
       ) : view === 'shipping-partners' ? (
-        <ShippingPartnersPage cases={cases} onViewCase={viewCase} />
+        <ShippingPartnersPage cases={cases} onViewCase={viewCase} initialPartners={shippingPartners} />
       ) : view === 'family-portal' ? (
-        <EmailEditorPage cases={cases} />
+        <EmailEditorPage cases={cases} initialEmailTemplate={emailTemplate} initialPortalSettings={portalSettings} />
       ) : view === 'new-case' ? (
         <div className="flex-1 overflow-auto bg-white px-8 py-7">
           <NewCasePage
             onBack={() => navigate('cases')}
-            onComplete={newCase => {
-              handleNewCase(newCase)
-              navigate('cases')
-            }}
+            onComplete={newCase => { handleNewCase(newCase); navigate('cases') }}
           />
         </div>
       ) : (
-      <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
-
-        {/* ── Dashboard ── */}
-        {view === 'dashboard' && (
-          <HomeDashboardPage
-            cases={cases}
-            onViewCase={viewCase}
-            onNewCase={() => setView('new-case')}
-            onViewInbox={(itemId) => { setInitialInboxId(itemId); setView('inbox') }}
-          />
-        )}
-
-        {/* ── New crematorium ── */}
-        {view === 'new-crematorium' && (
-          <NewCrematoriumPage
-            onBack={() => navigate('crematoriums')}
-            onComplete={() => navigate('crematoriums')}
-          />
-        )}
-
-        {/* ── Revenue ── */}
-        {view === 'revenue' && <RevenuePage />}
-
-
-        {/* ── Settings ── */}
-        {view === 'settings' && <SettingsPage />}
-
-      </main>
+        <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
+          {view === 'dashboard' && (
+            <HomeDashboardPage
+              cases={cases}
+              onViewCase={viewCase}
+              onNewCase={() => navigate('new-case')}
+              onViewInbox={(itemId) => navigate('inbox', itemId)}
+            />
+          )}
+          {view === 'new-crematorium' && (
+            <NewCrematoriumPage
+              onBack={() => navigate('crematoriums')}
+              onComplete={() => navigate('crematoriums')}
+            />
+          )}
+          {view === 'revenue' && <RevenuePage />}
+          {view === 'settings' && <SettingsPage />}
+        </main>
       )}
     </div>
   )

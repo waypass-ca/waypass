@@ -1,12 +1,12 @@
 import { Folder, Check, Eye } from 'lucide-react'
-import { StarFilled, StatusBadge, PackageChip, CaseMenu } from './caseShared'
+import { StarFilled, StatusBadge, PackageChip } from './caseShared'
 
-export function CasesListView({ rows, selected, toggleSelect, selectAll, activeId, setActiveId, isStarred, onViewCase, userFolders, onMoveToFolder, onCreateAndMove }) {
+function Th({ children, className = '' }) {
+  return <th className={`font-sans text-[10.5px] uppercase tracking-[0.08em] text-muted font-medium text-left px-3 py-2.5 ${className}`}>{children}</th>
+}
+
+export function CasesListView({ rows, selected, toggleSelect, selectAll, activeId, setActiveId, isStarred, onViewCase }) {
   const allChecked = rows.length > 0 && rows.every(r => selected.has(r.id))
-
-  const Th = ({ children, className = '' }) => (
-    <th className={`font-sans text-[10.5px] uppercase tracking-[0.08em] text-muted font-medium text-left px-3 py-2.5 ${className}`}>{children}</th>
-  )
 
   return (
     <div>

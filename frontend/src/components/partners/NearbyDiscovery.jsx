@@ -5,7 +5,7 @@ import { DetailModal } from './DetailModal.jsx'
 import { MapView } from './MapView.jsx'
 import { FEATURES } from '../../lib/features.js'
 
-export function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, search, setSearch, onAdd, kind = 'crematorium' }) {
+export function NearbyDiscovery({ nearby, nearbyLoading, userLocation, locationError, search, onAdd, kind = 'crematorium' }) {
   const partnerNoun = kind === 'shipping' ? 'shipping partners' : 'crematoriums'
   const [hoveredId, setHoveredId] = useState(null)
   const [selectedId, setSelectedId] = useState(null)

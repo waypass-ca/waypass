@@ -98,15 +98,17 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
   }, [caseData.id])
 
   useEffect(() => {
-    fetchCustody(caseData.id)
-      .then(data => { setCustody(data); setAuthPending(!data[2]?.completed) })
-      .catch(() => { setAuthPending(true) })
-    fetchBookings()
-      .then(all => setCaseBookings(all.filter(b => b.caseId === caseData.id)))
-      .catch(() => {})
-    refetchDocuments()
-    refetchActivity()
-    refetchContacts()
+    Promise.allSettled([
+      fetchCustody(caseData.id)
+        .then(data => { setCustody(data); setAuthPending(!data[2]?.completed) })
+        .catch(() => { setAuthPending(true) }),
+      fetchBookings()
+        .then(all => setCaseBookings(all.filter(b => b.caseId === caseData.id)))
+        .catch(() => {}),
+      refetchDocuments(),
+      refetchActivity(),
+      refetchContacts(),
+    ])
   }, [caseData.id, refetchDocuments, refetchActivity, refetchContacts])
 
   const lastCompletedIdx = custody.reduce((acc, e, i) => e.completed ? i : acc, -1)

@@ -109,7 +109,7 @@ function SlotPicker({ bookingId, onConfirmed }) {
   )
 }
 
-export function InboxDetailPanel({ item, onClose, onStar, onMarkRead, onMarkUnread, onViewCase, style }) {
+export function InboxDetailPanel({ item, onClose, onStar, onViewCase, style }) {
   useEffect(() => {
     if (!item) return
     const h = e => { if (e.key === 'Escape') onClose?.() }

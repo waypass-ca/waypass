@@ -1,8 +1,7 @@
 import { DocRow } from './DocRow'
 
 export function CaseDocumentsTab({
-  documents, uploading, docsActionNeeded, authorizationComplete,
-  onShowAuth, onUpload, onPreview, onRenameDoc, onDeleteDoc, onUpdateDocMeta,
+  documents, onPreview, onRenameDoc, onDeleteDoc, onUpdateDocMeta,
 }) {
   return (
     <div className="px-6 pt-5 pb-4 bg-white min-h-full">

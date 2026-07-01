@@ -4,7 +4,7 @@ import { PageTitle } from '../layout/PageTitle'
 import { DOC_TYPES, CATEGORY_TABS } from './docsShared'
 
 export function DocsTopBar({ search, setSearch, view, setView, sortBy, setSortBy,
-  count, total, filters, setFilters, filtersActive, category, setCategory }) {
+  count, total, filters, setFilters, filtersActive }) {
   const [filterOpen, setFilterOpen] = useState(false)
   const filterRef = useRef(null)
 

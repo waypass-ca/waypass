@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+import { useState, useEffect, useRef } from 'react'
 import { Folder, FileText, File, Check, X, ChevronRight, Download, MoreHorizontal, Plus } from 'lucide-react'
 import { supabase } from '../../lib/supabase.js'
 import { makeDocDragImage } from '../../lib/dragImage.js'

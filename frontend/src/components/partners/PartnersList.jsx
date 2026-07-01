@@ -1,5 +1,9 @@
 import { Badge } from '../ui/Badge'
 
+function Th({ children }) {
+  return <th className="font-sans text-[10.5px] uppercase tracking-[0.08em] text-muted font-medium text-left px-3 py-2.5">{children}</th>
+}
+
 function PartnerRow({ crm, onClick }) {
   const isActive = crm.status === 'active'
   return (
@@ -56,10 +60,6 @@ export function PartnersList({ crematoriums, search, onSelect, kind = 'crematori
       </div>
     )
   }
-
-  const Th = ({ children }) => (
-    <th className="font-sans text-[10.5px] uppercase tracking-[0.08em] text-muted font-medium text-left px-3 py-2.5">{children}</th>
-  )
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">

@@ -282,6 +282,7 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
       </div>
 
       <div className="flex-1 relative">
+        {/* eslint-disable-next-line react-hooks/refs */}
         {error && !mapInstance.current && (
           <div className="absolute inset-0 flex items-center justify-center bg-surface text-muted font-sans text-sm">{error}</div>
         )}

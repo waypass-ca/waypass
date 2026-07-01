@@ -11,13 +11,12 @@ import { PartnerDetailPage } from './PartnerDetailPage'
 import { PartnersList } from '../components/partners/PartnersList'
 import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
-export function ShippingPartnersPage({ cases = [], onViewCase }) {
+export function ShippingPartnersPage({ cases = [], onViewCase, initialPartners }) {
   const { user } = useAuth()
   const { canWrite } = useUser()
   const [tab, setTab] = useState('partners')
-  const [partners, setPartners] = useState([])
+  const [partners, setPartners] = useState(initialPartners ?? [])
   const [nearby, setNearby] = useState([])
-  const [loading, setLoading] = useState(true)
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [userLocation, setUserLocation] = useState(null)
@@ -27,7 +26,8 @@ export function ShippingPartnersPage({ cases = [], onViewCase }) {
   const [selectedPartner, setSelectedPartner] = useState(null)
 
   useEffect(() => {
-    fetchShippingPartners().then(setPartners).catch(console.error).finally(() => setLoading(false))
+    if (initialPartners) return
+    fetchShippingPartners().then(setPartners).catch(console.error)
   }, [])
 
   useEffect(() => {
@@ -81,11 +81,6 @@ export function ShippingPartnersPage({ cases = [], onViewCase }) {
     setAddingPartner(null)
   }
 
-  if (loading) return (
-    <div className="flex-1 flex items-center justify-center">
-      <p className="font-sans text-sm text-muted">Loading…</p>
-    </div>
-  )
 
   if (selectedPartner) {
     return (

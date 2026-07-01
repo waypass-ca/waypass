@@ -536,12 +536,12 @@ function StatusFooter({ count, selected, pageSize, setPageSize, page, totalPages
 }
 
 // ─── List view ────────────────────────────────────────────────────────────────
+function Th({ children, className = '' }) {
+  return <th className={`font-sans text-[10.5px] uppercase tracking-[0.08em] text-muted font-medium text-left px-3 py-2.5 ${className}`}>{children}</th>
+}
+
 function ListView({ rows, selected, toggleSelect, selectAll, activeId, setActiveId, isStarred, onViewCase }) {
   const allChecked = rows.length > 0 && rows.every(r => selected.has(r.id))
-
-  const Th = ({ children, className = '' }) => (
-    <th className={`font-sans text-[10.5px] uppercase tracking-[0.08em] text-muted font-medium text-left px-3 py-2.5 ${className}`}>{children}</th>
-  )
 
   return (
     <div>
@@ -724,7 +724,6 @@ function GridView({ cases, userFolders, folderCounts, gridFolderView, setGridFol
     ? cases.filter(c => c.folderId === gridFolderView)
     : cases.filter(c => !c.folderId)
 
-  const hasFolders = !gridFolderView && userFolders.length > 0
   const hasUnfiled = !gridFolderView && displayCases.length > 0
 
   return (
@@ -810,6 +809,16 @@ function GridView({ cases, userFolders, folderCounts, gridFolderView, setGridFol
 }
 
 // ─── Columns view (Finder-style 3-pane) ──────────────────────────────────────
+function Handle({ onMouseDown }) {
+  return (
+    <div onMouseDown={onMouseDown}
+      className="group relative w-px bg-line shrink-0 cursor-col-resize hover:bg-ink/30 transition-colors">
+      <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
+      <div className="absolute top-1/2 -translate-y-1/2 -left-[3px] w-[7px] h-10 rounded-full opacity-0 group-hover:opacity-100 bg-ink/20 transition-opacity" />
+    </div>
+  )
+}
+
 function ColumnsView({
   rows, activeId, setActiveId, folder, setFolder, counts, cases, isStarred, onViewCase,
   userFolders, onAddFolder, onDeleteFolder, onFolderDrop, dragOverFolderId, setDragOverFolderId,
@@ -860,14 +869,6 @@ function ColumnsView({
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
   }
-
-  const Handle = ({ onMouseDown }) => (
-    <div onMouseDown={onMouseDown}
-      className="group relative w-px bg-line shrink-0 cursor-col-resize hover:bg-ink/30 transition-colors">
-      <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
-      <div className="absolute top-1/2 -translate-y-1/2 -left-[3px] w-[7px] h-10 rounded-full opacity-0 group-hover:opacity-100 bg-ink/20 transition-opacity" />
-    </div>
-  )
 
   return (
     <div className="h-full">
@@ -1098,7 +1099,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
   const [activeId, setActiveId] = useState(null)
-  const [starredIds, setStarredIds] = useState(new Set())
+  const [starredIds] = useState(new Set())
   const [filters, setFilters] = useState({ packages: new Set(), statuses: new Set(), crematoriums: new Set(), datePreset: '', hasDocs: false, starredOnly: false })
   const [viewMode, setViewMode] = useState(() => {
     try { return localStorage.getItem('cases-view-mode') || 'list' } catch { return 'list' }
@@ -1117,9 +1118,10 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
   }, [])
 
   useEffect(() => {
-    try { localStorage.setItem('cases-view-mode', viewMode) } catch { }
+    try { localStorage.setItem('cases-view-mode', viewMode) } catch { /* storage unavailable */ }
   }, [viewMode])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setPage(1) }, [folder, search, filters, sortBy])
 
   const isStarred = (id) => starredIds.has(id)
@@ -1169,9 +1171,8 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
     }
   }
 
-  const isUserFolder = (id) => !SMART_FOLDER_IDS.has(id) && userFolders.some(f => f.id === id)
-
   const filtered = useMemo(() => {
+    const isUserFolder = (id) => !SMART_FOLDER_IDS.has(id) && userFolders.some(f => f.id === id)
     let rows = cases
 
     if (viewMode === 'columns') {
