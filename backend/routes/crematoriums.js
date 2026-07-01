@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { fetchAndStoreLogo } from '../lib/logoService.js'
 
 const router = Router()
 
@@ -19,7 +20,7 @@ function shapeRow(row) {
     avgTurnaround: row.avg_turnaround,
     avgFee: row.avg_fee,
     baseFee: row.base_fee,
-    passageRevenueShare: row.passage_revenue_share,
+    waypassRevenueShare: row.waypass_revenue_share,
     status: row.status,
     networkStatus: row.network_status ?? 'private',
     contactName: row.contact_name ?? row.contact,
@@ -33,6 +34,7 @@ function shapeRow(row) {
     licenseNumber: row.license_number,
     vettingNotes: row.vetting_notes,
     connectedFuneralHomeIds: row.connected_funeral_home_ids ?? [],
+    logoUrl: row.logo_url ?? null,
   }
 }
 
@@ -43,7 +45,7 @@ router.get('/', requireAuth, async (req, res, next) => {
       .from('crematoriums')
       .select('*')
       .is('deleted_at', null)
-      .contains('connected_funeral_home_ids', [req.user.id])
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
       .order('name')
     if (error) throw error
     res.json(data.map(shapeRow))
@@ -52,18 +54,18 @@ router.get('/', requireAuth, async (req, res, next) => {
   }
 })
 
-// GET /nearby — discovery: Passage DB (unconnected) + Google Places
+// GET /nearby — discovery: Waypass DB (unconnected) + Google Places
 router.get('/nearby', requireAuth, async (req, res, next) => {
   try {
     const { lat = 0, lng = 0, radius = 50, query = '' } = req.query
 
-    // Passage DB: non-deleted crematoriums the user is NOT already connected to
+    // Waypass DB: non-deleted crematoriums the user is NOT already connected to
     // When a query is present, filter by name or location
     let dbQuery = supabase
       .from('crematoriums')
       .select('*')
       .is('deleted_at', null)
-      .not('connected_funeral_home_ids', 'cs', `{${req.user.id}}`)
+      .not('connected_funeral_home_ids', 'cs', `{${req.user.funeralHomeId}}`)
 
     if (query) {
       dbQuery = dbQuery.or(`name.ilike.%${query}%,location.ilike.%${query}%,city.ilike.%${query}%`)
@@ -72,13 +74,13 @@ router.get('/nearby', requireAuth, async (req, res, next) => {
     const { data: dbRows, error: dbError } = await dbQuery.order('name')
     if (dbError) throw dbError
 
-    const passageResults = dbRows.map(row => ({
+    const waypassResults = dbRows.map(row => ({
       ...shapeRow(row),
-      onPassage: true,
+      onWaypass: true,
     }))
 
     // Google Places is called client-side (browser key with referrer restrictions)
-    res.json(passageResults)
+    res.json(waypassResults)
   } catch (err) {
     next(err)
   }
@@ -89,6 +91,8 @@ router.post('/', requireAuth, async (req, res, next) => {
     const body = req.body
     const id = `CRM-${String(Date.now()).slice(-6)}`
     const partnerSince = new Date().getFullYear().toString()
+
+    const logoUrl = body.website ? await fetchAndStoreLogo(body.website) : null
 
     const { data, error } = await supabase
       .from('crematoriums')
@@ -106,13 +110,14 @@ router.post('/', requireAuth, async (req, res, next) => {
         contact_email: body.contactEmail ?? null,
         phone: body.phone ?? null,
         website: body.website ?? null,
+        logo_url: logoUrl,
         rating: body.rating ?? null,
         user_ratings_total: body.userRatingCount ?? null,
         opening_hours: body.weekdayDescriptions ? { weekday_text: body.weekdayDescriptions } : null,
         avg_turnaround: body.avgTurnaround ?? null,
         avg_fee: body.avgFee ?? null,
         base_fee: body.baseFee ?? null,
-        passage_revenue_share: body.passageRevenueShare ?? null,
+        waypass_revenue_share: body.waypassRevenueShare ?? null,
         network_status: body.networkStatus ?? 'private',
         status: 'active',
         active_orders: 0,
@@ -122,7 +127,7 @@ router.post('/', requireAuth, async (req, res, next) => {
         since: partnerSince,
         license_number: body.licenseNumber ?? null,
         vetting_notes: body.vettingNotes ?? null,
-        connected_funeral_home_ids: [req.user.id],
+        connected_funeral_home_ids: [req.user.funeralHomeId],
       })
       .select()
       .single()
@@ -138,7 +143,7 @@ router.post('/:id/connect', requireAuth, async (req, res, next) => {
   try {
     const { data: current, error: fetchErr } = await supabase
       .from('crematoriums')
-      .select('connected_funeral_home_ids')
+      .select('connected_funeral_home_ids, website, logo_url')
       .eq('id', req.params.id)
       .is('deleted_at', null)
       .single()
@@ -146,8 +151,8 @@ router.post('/:id/connect', requireAuth, async (req, res, next) => {
     if (!current) return res.status(404).json({ error: 'Crematorium not found' })
 
     const ids = current.connected_funeral_home_ids ?? []
-    if (!ids.includes(req.user.id)) {
-      ids.push(req.user.id)
+    if (!ids.includes(req.user.funeralHomeId)) {
+      ids.push(req.user.funeralHomeId)
     }
 
     const { data, error } = await supabase
@@ -158,6 +163,15 @@ router.post('/:id/connect', requireAuth, async (req, res, next) => {
       .single()
     if (error) throw error
     res.json(shapeRow(data))
+
+    // Fire-and-forget: fetch logo if missing but website is known
+    if (!current.logo_url && current.website) {
+      fetchAndStoreLogo(current.website).then(async logoUrl => {
+        if (logoUrl) {
+          await supabase.from('crematoriums').update({ logo_url: logoUrl }).eq('id', req.params.id).select('id').single()
+        }
+      }).catch(() => {})
+    }
   } catch (err) {
     next(err)
   }
@@ -175,7 +189,7 @@ router.delete('/:id/connect', requireAuth, async (req, res, next) => {
     if (fetchErr) throw fetchErr
     if (!current) return res.status(404).json({ error: 'Crematorium not found' })
 
-    const ids = (current.connected_funeral_home_ids ?? []).filter(id => id !== req.user.id)
+    const ids = (current.connected_funeral_home_ids ?? []).filter(id => id !== req.user.funeralHomeId)
 
     const { data, error } = await supabase
       .from('crematoriums')
@@ -193,35 +207,54 @@ router.delete('/:id/connect', requireAuth, async (req, res, next) => {
 router.patch('/:id', requireAuth, async (req, res, next) => {
   try {
     const body = req.body
+
+    let logoUrl
+    if (body.logoUrl !== undefined) {
+      logoUrl = body.logoUrl
+    } else if (body.website) {
+      const { data: existing } = await supabase
+        .from('crematoriums')
+        .select('website, logo_url')
+        .eq('id', req.params.id)
+        .single()
+      if (existing && body.website !== existing.website) {
+        logoUrl = await fetchAndStoreLogo(body.website)
+      }
+    }
+
+    const patch = {
+      name: body.name,
+      location: body.location,
+      street_address: body.streetAddress,
+      city: body.city,
+      state: body.state,
+      zip: body.zip,
+      distance: body.distance,
+      contact_name: body.contactName ?? body.contact,
+      contact: body.contactName ?? body.contact,
+      contact_email: body.contactEmail,
+      phone: body.phone,
+      website: body.website,
+      rating: body.rating,
+      user_ratings_total: body.userRatingCount,
+      opening_hours: body.weekdayDescriptions ? { weekday_text: body.weekdayDescriptions } : undefined,
+      avg_turnaround: body.avgTurnaround,
+      avg_fee: body.avgFee,
+      base_fee: body.baseFee,
+      waypass_revenue_share: body.waypassRevenueShare,
+      network_status: body.networkStatus,
+      status: body.status,
+      license_number: body.licenseNumber,
+      vetting_notes: body.vettingNotes,
+      modified_at: new Date().toISOString(),
+    }
+    if (logoUrl !== undefined) patch.logo_url = logoUrl
+
     const { data, error } = await supabase
       .from('crematoriums')
-      .update({
-        name: body.name,
-        location: body.location,
-        street_address: body.streetAddress,
-        city: body.city,
-        state: body.state,
-        zip: body.zip,
-        distance: body.distance,
-        contact_name: body.contactName ?? body.contact,
-        contact: body.contactName ?? body.contact,
-        contact_email: body.contactEmail,
-        phone: body.phone,
-        website: body.website,
-        rating: body.rating,
-        user_ratings_total: body.userRatingCount,
-        opening_hours: body.weekdayDescriptions ? { weekday_text: body.weekdayDescriptions } : undefined,
-        avg_turnaround: body.avgTurnaround,
-        avg_fee: body.avgFee,
-        base_fee: body.baseFee,
-        passage_revenue_share: body.passageRevenueShare,
-        network_status: body.networkStatus,
-        status: body.status,
-        license_number: body.licenseNumber,
-        vetting_notes: body.vettingNotes,
-        modified_at: new Date().toISOString(),
-      })
+      .update(patch)
       .eq('id', req.params.id)
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
       .select()
       .single()
     if (error) throw error
@@ -234,12 +267,45 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
 
 router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('crematoriums')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', req.params.id)
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
+      .select('id')
+      .single()
     if (error) throw error
+    if (!data) return res.status(404).json({ error: 'Crematorium not found' })
     res.status(204).send()
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /:id/generate-logo — fetch logo from website and store in Cloudinary
+router.post('/:id/generate-logo', requireAuth, async (req, res, next) => {
+  try {
+    const { data: crm, error: fetchErr } = await supabase
+      .from('crematoriums')
+      .select('website')
+      .eq('id', req.params.id)
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
+      .single()
+    if (fetchErr) throw fetchErr
+    if (!crm) return res.status(404).json({ error: 'Crematorium not found' })
+    if (!crm.website) return res.status(400).json({ error: 'No website on file to generate logo from' })
+
+    const logoUrl = await fetchAndStoreLogo(crm.website)
+    if (!logoUrl) return res.status(422).json({ error: 'Could not fetch a logo for this website' })
+
+    const { data, error } = await supabase
+      .from('crematoriums')
+      .update({ logo_url: logoUrl })
+      .eq('id', req.params.id)
+      .select()
+      .single()
+    if (error) throw error
+    res.json(shapeRow(data))
   } catch (err) {
     next(err)
   }
@@ -250,12 +316,12 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
 // GET /api/crematoriums/db — query the crematoriums_db table (separate from legacy table)
 router.get('/db', async (req, res, next) => {
   try {
-    const { state, city, is_passage_network, tier } = req.query
+    const { state, city, is_waypass_network, tier } = req.query
     let q = supabase.from('crematoriums_db').select('*').eq('needs_review', false)
     if (state) q = q.eq('state', state)
     if (city) q = q.ilike('city', `%${city}%`)
-    if (is_passage_network !== undefined) q = q.eq('is_passage_network', is_passage_network === 'true')
-    if (tier) q = q.eq('passage_tier', tier)
+    if (is_waypass_network !== undefined) q = q.eq('is_waypass_network', is_waypass_network === 'true')
+    if (tier) q = q.eq('waypass_tier', tier)
     const { data, error } = await q.order('name')
     if (error) throw error
     res.json(data)
@@ -294,10 +360,10 @@ router.patch('/db/:id/network', async (req, res, next) => {
     if (req.headers['x-admin-key'] !== process.env.ADMIN_API_KEY) {
       return res.status(401).json({ error: 'Unauthorized' })
     }
-    const { is_passage_network, passage_tier } = req.body
+    const { is_waypass_network, waypass_tier } = req.body
     const { data, error } = await supabase
       .from('crematoriums_db')
-      .update({ is_passage_network, passage_tier })
+      .update({ is_waypass_network, waypass_tier })
       .eq('id', req.params.id)
       .select()
       .single()

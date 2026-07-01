@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Check } from 'lucide-react'
 import { SectionTitle, Toggle } from './settingsShared'
 import { fetchNotificationPrefs, saveNotificationPrefs } from '../../lib/api.js'
+import { useUser } from '../../context/UserContext.jsx'
 
 const DEFAULTS = {
   newCaseSubmitted: true,
@@ -26,6 +27,7 @@ const ITEMS = [
 const SAVE_DEBOUNCE_MS = 500
 
 export function NotificationsSection() {
+  const { canWrite } = useUser()
   const [prefs, setPrefs] = useState(null)
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState('idle') // 'idle' | 'saving' | 'saved' | 'error'
@@ -79,8 +81,8 @@ export function NotificationsSection() {
             label={label}
             description={description}
             checked={loading ? false : !!prefs?.[key]}
-            disabled={loading}
-            onChange={v => update(key, v)}
+            disabled={loading || !canWrite}
+            onChange={v => canWrite && update(key, v)}
           />
         ))}
       </div>

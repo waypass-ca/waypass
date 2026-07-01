@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Search, X, CheckCircle2, Send, ChevronLeft, ChevronRight, Info, CalendarCheck } from 'lucide-react'
 import { fetchCrematoriums, fetchShippingPartners, fetchBookings, createBooking, confirmBooking, cancelBooking } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useUser } from '../context/UserContext.jsx'
 import { getDefaultShippingPartnerId } from '../lib/preferences.js'
 import { getSundayOf, slotToObj, objToKey, slotKey, slotToLabel, formatWeekRange } from '../lib/slotUtils.js'
 import { Button } from '../components/ui/Button.jsx'
@@ -140,6 +141,7 @@ function BookingPanelRow({ booking, onConfirm, onCancel, onReschedule }) {
 
 export function BookCremationPage({ cases, preselectedCase }) {
   const { user } = useAuth()
+  const { canWrite } = useUser()
   const [crematoriums, setCrematoriums] = useState([])
   const [shippingPartners, setShippingPartners] = useState([])
   const [existingBookings, setExistingBookings] = useState([])
@@ -445,10 +447,12 @@ export function BookCremationPage({ cases, preselectedCase }) {
               This case already has an active booking with <strong>{caseHasActiveBooking.crematoriumName}</strong>.
               Change or cancel it from the sidebar before booking a new one.
             </p>
-            <button onClick={() => setRescheduleTarget(caseHasActiveBooking)}
-              className="font-sans text-[12px] font-medium text-amber-800 hover:text-amber-900 underline underline-offset-2">
-              Change booking
-            </button>
+            {canWrite && (
+              <button onClick={() => setRescheduleTarget(caseHasActiveBooking)}
+                className="font-sans text-[12px] font-medium text-amber-800 hover:text-amber-900 underline underline-offset-2">
+                Change booking
+              </button>
+            )}
           </div>
         )}
 
@@ -525,10 +529,12 @@ export function BookCremationPage({ cases, preselectedCase }) {
                 <p className="font-sans text-[11px] text-muted">+ {selectedShipping.contactEmail ?? 'no email'}</p>
               )}
             </div>
-            <Button onClick={handleSend} disabled={!canSend || sending} className="flex items-center gap-2">
-              <Send size={13} strokeWidth={2} />
-              {sending ? 'Sending…' : 'Send Invite'}
-            </Button>
+            {canWrite && (
+              <Button onClick={handleSend} disabled={!canSend || sending} className="flex items-center gap-2">
+                <Send size={13} strokeWidth={2} />
+                {sending ? 'Sending…' : 'Send Invite'}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -552,7 +558,7 @@ export function BookCremationPage({ cases, preselectedCase }) {
               <p className="font-sans text-[12px] text-muted px-5 py-6">No active bookings.</p>
             ) : (
               activeBookings.map(b => (
-                <BookingPanelRow key={b.id} booking={b} onConfirm={handleConfirm} onCancel={() => setCancelTarget(b)} onReschedule={setRescheduleTarget} />
+                <BookingPanelRow key={b.id} booking={b} onConfirm={canWrite ? handleConfirm : undefined} onCancel={canWrite ? () => setCancelTarget(b) : undefined} onReschedule={canWrite ? setRescheduleTarget : undefined} />
               ))
             )}
           </div>

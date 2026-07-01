@@ -18,14 +18,18 @@ import foldersRouter from './routes/folders.js'
 import bookingsRouter from './routes/bookings.js'
 import inboxRouter from './routes/inbox.js'
 import emailTemplateRouter from './routes/email.js'
+import authRouter from './routes/auth.js'
+import funeralHomesRouter from './routes/funeralHomes.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
 
-app.use(cors({ origin: 'http://localhost:5173' }))
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN ?? 'http://localhost:5173' }))
 app.use(express.json())
 app.use(requestLogger)
 
+app.use('/api/auth', authRouter)
+app.use('/api/funeral-homes', funeralHomesRouter)
 app.use('/api/packages', packagesRouter)
 app.use('/api/addons', addonsRouter)
 app.use('/api/cases', casesRouter)
@@ -52,7 +56,7 @@ app.use((err, _req, res, _next) => {
 })
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => console.log(`Passage API running on http://localhost:${PORT}`))
+  app.listen(PORT, () => console.log(`Waypass API running on http://localhost:${PORT}`))
 }
 
 export default app

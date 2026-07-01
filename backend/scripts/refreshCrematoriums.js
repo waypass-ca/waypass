@@ -1,7 +1,7 @@
 /**
  * refreshCrematoriums.js
  *
- * Re-crawls tiles for Canadian provinces where Passage funeral homes exist.
+ * Re-crawls tiles for Canadian provinces where Waypass funeral homes exist.
  * Inserts new records, updates last_verified_at for existing ones,
  * and flags records not seen in the crawl as needs_review=true.
  *

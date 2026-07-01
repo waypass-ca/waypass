@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
-const SETTINGS_ID = 'default'
 
 function shapeRow(row) {
   return {
@@ -14,13 +13,13 @@ function shapeRow(row) {
   }
 }
 
-// GET /api/email-template — public (frontend loads on mount)
-router.get('/', async (_req, res, next) => {
+// GET /api/email-template — requires auth, scoped to funeral home
+router.get('/', requireAuth, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('email_template_settings')
       .select('*')
-      .eq('id', SETTINGS_ID)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .maybeSingle()
     if (error) throw error
     res.json(shapeRow(data ?? {}))
@@ -37,7 +36,8 @@ router.put('/', requireAuth, async (req, res, next) => {
       .from('email_template_settings')
       .upsert(
         {
-          id: SETTINGS_ID,
+          id: req.user.funeralHomeId,
+          funeral_home_id: req.user.funeralHomeId,
           active_template_id: body.activeTemplateId ?? 'classic',
           favourite_ids: body.favouriteIds ?? [],
           customizations: body.customizations ?? {},
@@ -58,6 +58,10 @@ router.put('/', requireAuth, async (req, res, next) => {
 
 router.get('/overrides/:caseId', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { data, error } = await supabase
       .from('case_email_overrides')
       .select('overrides, logo_storage_path, updated_at')
@@ -72,6 +76,10 @@ router.get('/overrides/:caseId', requireAuth, async (req, res, next) => {
 
 router.put('/overrides/:caseId', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const userId = req.user?.id ?? null
     const { overrides, logoStoragePath } = req.body
     const { data, error } = await supabase
@@ -97,6 +105,10 @@ router.put('/overrides/:caseId', requireAuth, async (req, res, next) => {
 
 router.delete('/overrides/:caseId', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { error } = await supabase
       .from('case_email_overrides')
       .delete()

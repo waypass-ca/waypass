@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Loader } from '@googlemaps/js-api-loader'
-import { PASSAGE_MAP_STYLE } from '../../lib/mapStyles.js'
+import { WAYPASS_MAP_STYLE } from '../../lib/mapStyles.js'
 import { FEATURES } from '../../lib/features.js'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
 const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? ''
 
 // Pin colors
-const PIN_GOLD   = '#c9a96e'  // Passage network
+const PIN_GOLD   = '#c9a96e'  // Waypass network
 const PIN_SLATE  = '#4a5568'  // Non-network
 const PIN_BLUE   = '#3b82f6'  // Funeral home location
 
@@ -58,9 +58,9 @@ function SidebarItem({ crematory, active, onClick, id }) {
             <p className="font-sans text-xs text-muted mt-0.5">{crematory.distance_miles} mi away</p>
           )}
         </div>
-        {crematory.is_passage_network && (
+        {crematory.is_waypass_network && (
           <span className="shrink-0 mt-0.5 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium font-sans bg-amber/15 text-amber-700">
-            Passage
+            Waypass
           </span>
         )}
       </div>
@@ -103,7 +103,7 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
     const params = new URLSearchParams()
     if (stateFilter) params.set('state', stateFilter)
     if (cityFilter)  params.set('city', cityFilter)
-    if (networkOnly) params.set('is_passage_network', 'true')
+    if (networkOnly) params.set('is_waypass_network', 'true')
 
     fetch(`${API_URL}/api/crematoriums/db?${params}`)
       .then(r => { if (!r.ok) throw new Error('Failed to load crematoriums'); return r.json() })
@@ -134,7 +134,7 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
       const map = new Map(mapRef.current, {
         center: funeralHomeLocation ?? { lat: 39.5, lng: -98.35 },
         zoom: funeralHomeLocation ? 10 : 4,
-        styles: PASSAGE_MAP_STYLE,
+        styles: WAYPASS_MAP_STYLE,
         disableDefaultUI: false,
         zoomControl: true,
         streetViewControl: false,
@@ -155,14 +155,14 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
       <div style="font-family: 'DM Sans', sans-serif; max-width: 240px; padding: 4px 0;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
           <strong style="font-size:14px;color:#1a1a1a;line-height:1.3;">${crematory.name}</strong>
-          ${crematory.is_passage_network
-            ? `<span style="background:#fef3c7;color:#92400e;font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;">Passage</span>`
+          ${crematory.is_waypass_network
+            ? `<span style="background:#fef3c7;color:#92400e;font-size:10px;padding:2px 6px;border-radius:4px;white-space:nowrap;">Waypass</span>`
             : ''}
         </div>
         ${crematory.address ? `<p style="font-size:12px;color:#6b7280;margin:0 0 4px;">${crematory.address}</p>` : ''}
         ${crematory.phone   ? `<p style="font-size:12px;color:#6b7280;margin:0 0 4px;">📞 ${crematory.phone}</p>` : ''}
         ${crematory.website ? `<p style="font-size:12px;margin:0 0 8px;"><a href="${crematory.website}" target="_blank" rel="noopener" style="color:#3b82f6;">${crematory.website.replace(/^https?:\/\//, '')}</a></p>` : ''}
-        ${crematory.passage_tier ? `<p style="font-size:11px;color:#6b7280;margin:0 0 8px;">Tier: ${crematory.passage_tier}</p>` : ''}
+        ${crematory.waypass_tier ? `<p style="font-size:11px;color:#6b7280;margin:0 0 8px;">Tier: ${crematory.waypass_tier}</p>` : ''}
         <button
           id="crm-select-${crematory.id}"
           style="width:100%;padding:6px 12px;background:#c9a96e;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;"
@@ -195,7 +195,7 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
     crematories.forEach(crematory => {
       if (!crematory.lat || !crematory.lng) return
 
-      const color  = crematory.is_passage_network ? PIN_GOLD : PIN_SLATE
+      const color  = crematory.is_waypass_network ? PIN_GOLD : PIN_SLATE
       const marker = new google.maps.Marker({
         position: { lat: crematory.lat, lng: crematory.lng },
         map: mapInstance.current,
@@ -267,7 +267,7 @@ export function CrematoryMap({ onSelect, funeralHomeLocation }) {
               onChange={e => setNetworkOnly(e.target.checked)}
               className="rounded border-line accent-amber-600"
             />
-            <span className="font-sans text-sm text-ink">Passage network only</span>
+            <span className="font-sans text-sm text-ink">Waypass network only</span>
           </label>
         </div>
 

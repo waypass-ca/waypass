@@ -1,82 +1,178 @@
 import { useState } from 'react'
-import { LogOut, Trash2, UserPlus } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { SectionTitle, Divider, Field } from './settingsShared'
-
-const MOCK_TEAM = [
-  { name: 'Sarah Holloway', email: 'sarah@evergreenememorial.com', role: 'Admin', initials: 'SH' },
-  { name: 'Marcus Reid', email: 'marcus@evergreenememorial.com', role: 'Staff', initials: 'MR' },
-]
+import { useUser } from '../../context/UserContext.jsx'
+import { SectionTitle, Divider } from './settingsShared'
+import { supabase } from '../../lib/supabase.js'
+import { updateProfile } from '../../lib/api.js'
 
 export function AccountSection() {
-  const { user, signOut } = useAuth()
-  const [showInvite, setShowInvite] = useState(false)
-  const [team, setTeam] = useState(MOCK_TEAM)
+  const { signOut } = useAuth()
+  const { profile, canWrite, setProfile } = useUser()
+
+  const [firstName, setFirstName] = useState(profile?.firstName ?? '')
+  const [lastName, setLastName] = useState(profile?.lastName ?? '')
+  const [phone, setPhone] = useState(profile?.phone ?? '')
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [profileMsg, setProfileMsg] = useState(null)
+
+  const [currentPw, setCurrentPw] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [pwSaving, setPwSaving] = useState(false)
+  const [pwMsg, setPwMsg] = useState(null)
+
+  const inputClass = (disabled) =>
+    `w-full border border-line rounded-lg px-3.5 py-2.5 text-sm font-sans text-ink outline-none transition-colors bg-surface dark:bg-surface ${
+      disabled ? 'opacity-50 cursor-not-allowed' : 'focus:border-secondary/60'
+    }`
+
+  async function saveProfile(e) {
+    e.preventDefault()
+    setProfileSaving(true)
+    setProfileMsg(null)
+    try {
+      const updated = await updateProfile(profile.id, {
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+      })
+      setProfile(updated)
+      setProfileMsg({ ok: true, text: 'Profile saved.' })
+    } catch (err) {
+      setProfileMsg({ ok: false, text: err.message ?? 'Failed to save profile.' })
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
+  async function updatePassword(e) {
+    e.preventDefault()
+    if (!newPw || newPw.length < 6) {
+      setPwMsg({ ok: false, text: 'New password must be at least 6 characters.' })
+      return
+    }
+    setPwSaving(true)
+    setPwMsg(null)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPw })
+      if (error) throw error
+      setCurrentPw('')
+      setNewPw('')
+      setPwMsg({ ok: true, text: 'Password updated.' })
+    } catch (err) {
+      setPwMsg({ ok: false, text: err.message })
+    } finally {
+      setPwSaving(false)
+    }
+  }
 
   return (
     <div>
-      <SectionTitle title="Login Credentials" description="Manage your personal login information." />
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Account Email" value={user?.email ?? 'admin@evergreenememorial.com'} type="email" className="col-span-2" />
-        <Field label="Current Password" placeholder="••••••••••" type="password" />
-        <Field label="New Password" placeholder="New password" type="password" />
-      </div>
-      <div className="mt-5 flex justify-end">
-        <Button variant="secondary">Update Password</Button>
-      </div>
+      <SectionTitle title="Profile" description="Your personal information." />
+      <form onSubmit={saveProfile}>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-sans text-muted mb-1.5">First Name</label>
+            <input
+              type="text"
+              value={firstName}
+              onChange={e => setFirstName(e.target.value)}
+              disabled={!canWrite}
+              className={inputClass(!canWrite)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-sans text-muted mb-1.5">Last Name</label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={e => setLastName(e.target.value)}
+              disabled={!canWrite}
+              className={inputClass(!canWrite)}
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs font-sans text-muted mb-1.5">Email</label>
+            <input
+              type="email"
+              value={profile?.email ?? ''}
+              readOnly
+              className={inputClass(true)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-sans text-muted mb-1.5">Phone</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="(415) 555-0100"
+              disabled={!canWrite}
+              className={inputClass(!canWrite)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-sans text-muted mb-1.5">Role</label>
+            <input
+              type="text"
+              value={profile?.role === 'read_only' ? 'Read-Only' : profile?.role === 'admin' ? 'Admin' : 'Staff'}
+              readOnly
+              className={inputClass(true)}
+            />
+          </div>
+        </div>
+        {profileMsg && (
+          <p className={`font-sans text-xs mt-3 ${profileMsg.ok ? 'text-primary' : 'text-danger'}`}>{profileMsg.text}</p>
+        )}
+        {canWrite && (
+          <div className="mt-5 flex justify-end">
+            <Button variant="primary" type="submit" disabled={profileSaving}>
+              {profileSaving ? 'Saving…' : 'Save Profile'}
+            </Button>
+          </div>
+        )}
+      </form>
 
       <Divider />
 
-      <div className="flex items-center justify-between mb-6">
-        <SectionTitle title="Team Members" description="People with access to your Passage account." />
-        <button
-          onClick={() => setShowInvite(v => !v)}
-          className="flex items-center gap-1.5 text-xs font-sans font-medium text-primary hover:text-primary/80 transition-colors cursor-pointer border-0 bg-transparent outline-none flex-shrink-0 -mt-6"
-        >
-          <UserPlus size={13} strokeWidth={1.8} />
-          Invite user
-        </button>
-      </div>
-
-      {showInvite && (
-        <div className="mb-5 p-4 rounded-xl border border-line bg-canvas flex gap-3 items-end">
-          <Field label="Email address" placeholder="colleague@example.com" className="flex-1" />
-          <div className="flex-shrink-0">
-            <label className="block text-xs font-sans text-muted mb-1.5">Role</label>
-            <select className="border border-line rounded-lg px-3 py-2.5 text-sm font-sans text-ink outline-none focus:border-secondary/60 bg-surface dark:bg-surface cursor-pointer">
-              <option>Staff</option>
-              <option>Admin</option>
-            </select>
+      <SectionTitle title="Password" description="Update your login password." />
+      <form onSubmit={updatePassword}>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-sans text-muted mb-1.5">Current Password</label>
+            <input
+              type="password"
+              value={currentPw}
+              onChange={e => setCurrentPw(e.target.value)}
+              placeholder="••••••••"
+              disabled={!canWrite}
+              className={inputClass(!canWrite)}
+            />
           </div>
-          <Button variant="primary" onClick={() => setShowInvite(false)}>Send Invite</Button>
+          <div>
+            <label className="block text-xs font-sans text-muted mb-1.5">New Password</label>
+            <input
+              type="password"
+              value={newPw}
+              onChange={e => setNewPw(e.target.value)}
+              placeholder="Min 6 characters"
+              disabled={!canWrite}
+              className={inputClass(!canWrite)}
+            />
+          </div>
         </div>
-      )}
-
-      <div className="rounded-xl border border-line overflow-hidden">
-        {team.map((member, i) => (
-          <div key={i} className={`flex items-center justify-between px-5 py-3.5 ${i > 0 ? 'border-t border-line' : ''}`}>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary-light text-primary flex items-center justify-center text-xs font-sans font-semibold flex-shrink-0">
-                {member.initials}
-              </div>
-              <div>
-                <p className="font-sans text-sm text-ink">{member.name}</p>
-                <p className="font-sans text-xs text-muted">{member.email}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="font-sans text-xs text-muted">{member.role}</span>
-              <button
-                onClick={() => setTeam(t => t.filter((_, j) => j !== i))}
-                className="text-muted hover:text-danger transition-colors cursor-pointer border-0 bg-transparent outline-none p-1"
-              >
-                <Trash2 size={13} strokeWidth={1.6} />
-              </button>
-            </div>
+        {pwMsg && (
+          <p className={`font-sans text-xs mt-3 ${pwMsg.ok ? 'text-primary' : 'text-danger'}`}>{pwMsg.text}</p>
+        )}
+        {canWrite && (
+          <div className="mt-5 flex justify-end">
+            <Button variant="secondary" type="submit" disabled={pwSaving}>
+              {pwSaving ? 'Updating…' : 'Update Password'}
+            </Button>
           </div>
-        ))}
-      </div>
+        )}
+      </form>
 
       <Divider />
 

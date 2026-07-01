@@ -92,7 +92,7 @@ export function CrematoriumResponsePage({ token }) {
             <div className="w-7 h-7 rounded bg-ink flex items-center justify-center">
               <span className="font-sans text-[9px] font-bold text-surface leading-none">P</span>
             </div>
-            <span className="font-sans text-[13px] font-semibold text-ink">Passage</span>
+            <span className="font-sans text-[13px] font-semibold text-ink">Waypass</span>
           </div>
 
           {state === 'success' ? (

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Star, Check, X, Eye, GripVertical, ChevronLeft, ChevronRight, Pencil, RotateCcw, PanelTop, AlignLeft, PanelBottom, Search } from 'lucide-react'
 import { PageTitle } from '../layout/PageTitle'
 import { fetchPortalSettings, fetchEmailTemplate, saveEmailTemplate, fetchEmailOverride, saveEmailOverride } from '../../lib/api.js'
+import { useUser } from '../../context/UserContext.jsx'
 
 // ─── Sample data ──────────────────────────────────────────────────────────────
 
@@ -1148,6 +1149,7 @@ function Inp({ label, value, onChange, placeholder, rows }) {
 }
 
 export function TemplateEditor({ template, customization, onSave, onBack, logoUrl, caseData }) {
+  const { canWrite } = useUser()
   const [openPanels, setOpenPanels] = useState(new Set(['body']))
   const [sections, setSections] = useState(
     customization?.sections || DEFAULT_SECTIONS.map(s => ({ ...s }))
@@ -1226,13 +1228,15 @@ export function TemplateEditor({ template, customization, onSave, onBack, logoUr
             </div>
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <button onClick={handleReset} className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-line bg-white font-sans text-[12.5px] text-secondary hover:text-ink hover:border-ink/30 transition-colors cursor-pointer outline-none">
-              <RotateCcw size={13} /> Reset
-            </button>
-            <button onClick={handleSave} className="flex items-center gap-1.5 h-9 px-4 rounded-lg bg-ink text-surface font-sans text-[12.5px] font-medium cursor-pointer border-0 outline-none hover:bg-ink/90 transition-colors">
-              {saveState === 'saved' && <Check size={13} />}
-              {saveState === 'saved' ? 'Saved' : 'Save Changes'}
-            </button>
+            {canWrite && <>
+              <button onClick={handleReset} className="flex items-center gap-1.5 h-9 px-3 rounded-lg border border-line bg-white font-sans text-[12.5px] text-secondary hover:text-ink hover:border-ink/30 transition-colors cursor-pointer outline-none">
+                <RotateCcw size={13} /> Reset
+              </button>
+              <button onClick={handleSave} className="flex items-center gap-1.5 h-9 px-4 rounded-lg bg-ink text-surface font-sans text-[12.5px] font-medium cursor-pointer border-0 outline-none hover:bg-ink/90 transition-colors">
+                {saveState === 'saved' && <Check size={13} />}
+                {saveState === 'saved' ? 'Saved' : 'Save Changes'}
+              </button>
+            </>}
           </div>
         </div>
         <div className="px-6 pb-3 flex items-end gap-2">
@@ -1400,13 +1404,15 @@ function TemplateCard({ t, isActive, isFavourite, onSetActive, onToggleFavourite
           <Eye size={12} />
           Preview
         </button>
-        <button
-          onClick={e => { e.stopPropagation(); onEdit(t) }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-ink font-sans text-xs font-medium shadow-md cursor-pointer border-0 outline-none hover:bg-white/90 transition-colors"
-        >
-          <Pencil size={12} />
-          Edit
-        </button>
+        {onEdit && (
+          <button
+            onClick={e => { e.stopPropagation(); onEdit(t) }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-ink font-sans text-xs font-medium shadow-md cursor-pointer border-0 outline-none hover:bg-white/90 transition-colors"
+          >
+            <Pencil size={12} />
+            Edit
+          </button>
+        )}
         {caseMode && !isActive && (
           <button
             onClick={e => { e.stopPropagation(); onSetActive(t.id) }}
@@ -1492,13 +1498,15 @@ export function PreviewModal({ t, isActive, isFavourite, onSetActive, onToggleFa
               <Star size={12} className={isFavourite ? '[&_*]:fill-current' : ''} />
               {isFavourite ? 'Favourited' : 'Favourite'}
             </button>
-            <button
-              onClick={() => { onClose(); onEdit(t) }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line font-sans text-xs font-medium text-secondary hover:text-ink hover:border-ink/30 transition-all cursor-pointer outline-none"
-            >
-              <Pencil size={12} />
-              Edit
-            </button>
+            {onEdit && (
+              <button
+                onClick={() => { onClose(); onEdit(t) }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line font-sans text-xs font-medium text-secondary hover:text-ink hover:border-ink/30 transition-all cursor-pointer outline-none"
+              >
+                <Pencil size={12} />
+                Edit
+              </button>
+            )}
             {caseMode && !isActive && (
               <button
                 onClick={() => { onSetActive(t.id); onClose() }}
@@ -1564,6 +1572,7 @@ function FavouritesRow({ templates, favouriteIds, activeId, onSetActive, onToggl
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function EmailEditorPage({ cases = [] }) {
+  const { canWrite } = useUser()
   // ── Global state ──
   const [globalActiveId, setGlobalActiveId] = useState('classic')
   const [favouriteIds, setFavouriteIds] = useState([])
@@ -1704,7 +1713,7 @@ export function EmailEditorPage({ cases = [] }) {
     persistGlobal({ favouriteIds: next })
   }
 
-  function handleEdit(t) { setEditingId(t.id) }
+  function handleEdit(t) { if (canWrite) setEditingId(t.id) }
 
   function handleSaveCustomization(data) {
     if (caseMode) {
@@ -1776,10 +1785,10 @@ export function EmailEditorPage({ cases = [] }) {
           t={previewTemplate}
           isActive={caseMode ? previewTemplate.id === effectiveActiveId : false}
           isFavourite={favouriteIds.includes(previewTemplate.id)}
-          onSetActive={id => { handleSetActive(id); setPreviewTemplate(null) }}
-          onToggleFavourite={toggleFavourite}
+          onSetActive={canWrite ? id => { handleSetActive(id); setPreviewTemplate(null) } : undefined}
+          onToggleFavourite={canWrite ? toggleFavourite : undefined}
           onClose={() => setPreviewTemplate(null)}
-          onEdit={handleEdit}
+          onEdit={canWrite ? handleEdit : undefined}
           logoUrl={logoUrl}
           caseMode={caseMode}
           customization={effectiveCustomizations[previewTemplate.id] || null}
@@ -1871,10 +1880,10 @@ export function EmailEditorPage({ cases = [] }) {
               templates={TEMPLATES}
               favouriteIds={favouriteIds}
               activeId={effectiveActiveId}
-              onSetActive={handleSetActive}
-              onToggleFavourite={toggleFavourite}
+              onSetActive={canWrite ? handleSetActive : undefined}
+              onToggleFavourite={canWrite ? toggleFavourite : undefined}
               onPreview={setPreviewTemplate}
-              onEdit={handleEdit}
+              onEdit={canWrite ? handleEdit : undefined}
               caseMode={caseMode}
             />
 
@@ -1888,10 +1897,10 @@ export function EmailEditorPage({ cases = [] }) {
                   t={t}
                   isActive={caseMode ? t.id === effectiveActiveId : false}
                   isFavourite={favouriteIds.includes(t.id)}
-                  onSetActive={handleSetActive}
-                  onToggleFavourite={toggleFavourite}
+                  onSetActive={canWrite ? handleSetActive : undefined}
+                  onToggleFavourite={canWrite ? toggleFavourite : undefined}
                   onPreview={setPreviewTemplate}
-                  onEdit={handleEdit}
+                  onEdit={canWrite ? handleEdit : undefined}
                   caseMode={caseMode}
                 />
               ))}
