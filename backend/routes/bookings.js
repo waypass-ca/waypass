@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { requireWrite } from '../middleware/requireRole.js'
 import { createInboxItem, shouldEmail } from '../lib/notifications.js'
 import { recordBookingEvent } from '../lib/bookingEvents.js'
 
@@ -583,7 +584,7 @@ router.get('/:id', async (req, res, next) => {
 })
 
 // ── POST /api/bookings ───────────────────────────
-router.post('/', async (req, res, next) => {
+router.post('/', requireWrite, async (req, res, next) => {
   try {
     const {
       caseId,
@@ -731,7 +732,7 @@ router.post('/', async (req, res, next) => {
 })
 
 // ── POST /api/bookings/:id/confirm ───────────────
-router.post('/:id/confirm', async (req, res, next) => {
+router.post('/:id/confirm', requireWrite, async (req, res, next) => {
   try {
     const { slot } = req.body // { date, start, end }
     if (!slot?.date || !slot?.start) return res.status(400).json({ error: 'slot required' })
@@ -843,7 +844,7 @@ router.post('/:id/confirm', async (req, res, next) => {
 })
 
 // ── POST /api/bookings/:id/reschedule ────────────
-router.post('/:id/reschedule', async (req, res, next) => {
+router.post('/:id/reschedule', requireWrite, async (req, res, next) => {
   try {
     const { proposedSlots } = req.body
     if (!Array.isArray(proposedSlots) || proposedSlots.length === 0) {
@@ -956,7 +957,7 @@ router.post('/:id/reschedule', async (req, res, next) => {
 })
 
 // ── DELETE /api/bookings/:id ─────────────────────
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireWrite, async (req, res, next) => {
   try {
     const { data: existing, error: fetchErr } = await supabase
       .from('cremation_bookings').select('*')

@@ -9,6 +9,11 @@ async function request(path, options = {}) {
     ...options,
     headers: { 'Content-Type': 'application/json', ...options.headers },
   })
+  if (res.status === 401) {
+    await supabase.auth.signOut().catch(() => {})
+    window.location.href = '/'
+    return
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error ?? `HTTP ${res.status}`)
@@ -220,6 +225,7 @@ export const fetchPendingInvites = () => mutate('/api/users/invites')
 export const inviteUser = (email, role) =>
   mutate('/api/users/invite', { method: 'POST', body: JSON.stringify({ email, role }) })
 export const revokeInvite = (id) => mutate(`/api/users/invites/${id}`, { method: 'DELETE' })
+export const resendInvite = (id) => mutate(`/api/users/invites/${id}/resend`, { method: 'POST' })
 export const changeUserRole = (id, role) =>
   mutate(`/api/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) })
 export const removeUser = (id) => mutate(`/api/users/${id}`, { method: 'DELETE' })

@@ -5,10 +5,11 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import { useUser } from '../../context/UserContext.jsx'
 import { SectionTitle, Divider } from './settingsShared'
 import { supabase } from '../../lib/supabase.js'
+import { updateProfile } from '../../lib/api.js'
 
 export function AccountSection() {
   const { signOut } = useAuth()
-  const { profile, canWrite } = useUser()
+  const { profile, canWrite, setProfile } = useUser()
 
   const [firstName, setFirstName] = useState(profile?.firstName ?? '')
   const [lastName, setLastName] = useState(profile?.lastName ?? '')
@@ -31,10 +32,15 @@ export function AccountSection() {
     setProfileSaving(true)
     setProfileMsg(null)
     try {
-      // In practice call PATCH /api/users/:id — here just show success
+      const updated = await updateProfile(profile.id, {
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+      })
+      setProfile(updated)
       setProfileMsg({ ok: true, text: 'Profile saved.' })
-    } catch {
-      setProfileMsg({ ok: false, text: 'Failed to save profile.' })
+    } catch (err) {
+      setProfileMsg({ ok: false, text: err.message ?? 'Failed to save profile.' })
     } finally {
       setProfileSaving(false)
     }

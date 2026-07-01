@@ -58,6 +58,10 @@ router.put('/', requireAuth, async (req, res, next) => {
 
 router.get('/overrides/:caseId', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { data, error } = await supabase
       .from('case_email_overrides')
       .select('overrides, logo_storage_path, updated_at')
@@ -72,6 +76,10 @@ router.get('/overrides/:caseId', requireAuth, async (req, res, next) => {
 
 router.put('/overrides/:caseId', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const userId = req.user?.id ?? null
     const { overrides, logoStoragePath } = req.body
     const { data, error } = await supabase
@@ -97,6 +105,10 @@ router.put('/overrides/:caseId', requireAuth, async (req, res, next) => {
 
 router.delete('/overrides/:caseId', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { error } = await supabase
       .from('case_email_overrides')
       .delete()

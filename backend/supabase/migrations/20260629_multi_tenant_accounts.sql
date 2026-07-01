@@ -56,6 +56,14 @@ DELETE FROM portal_settings;
 
 -- ── 6. Fix broken / missing RLS policies ────────────────────────────────────
 
+-- Helper function required by all tenant-scoped policies below
+CREATE OR REPLACE FUNCTION get_my_funeral_home_id()
+RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT funeral_home_id FROM users
+  WHERE id = auth.uid() AND status = 'active' AND deleted_at IS NULL
+  LIMIT 1;
+$$;
+
 -- cases: replace open "anon all" with tenant-scoped policy
 DROP POLICY IF EXISTS "anon all" ON cases;
 CREATE POLICY "tenant cases all" ON cases
@@ -82,8 +90,8 @@ CREATE POLICY "tenant case_notes all" ON case_notes
 DROP POLICY IF EXISTS "anon all" ON crematoriums;
 CREATE POLICY "tenant crematoriums all" ON crematoriums
   FOR ALL
-  USING  (auth.uid() = ANY(connected_funeral_home_ids))
-  WITH CHECK (auth.uid() = ANY(connected_funeral_home_ids));
+  USING  (get_my_funeral_home_id() = ANY(connected_funeral_home_ids))
+  WITH CHECK (get_my_funeral_home_id() = ANY(connected_funeral_home_ids));
 
 -- crematorium_orders: replace open "anon all" with tenant-scoped policy
 DROP POLICY IF EXISTS "anon all" ON crematorium_orders;
@@ -132,3 +140,8 @@ CREATE POLICY "tenant invites all" ON funeral_home_invites
   FOR ALL
   USING  (funeral_home_id = get_my_funeral_home_id())
   WITH CHECK (funeral_home_id = get_my_funeral_home_id());
+
+-- Prevent duplicate pending invites per (funeral_home, email)
+CREATE UNIQUE INDEX IF NOT EXISTS funeral_home_invites_pending_email_idx
+  ON funeral_home_invites (funeral_home_id, email)
+  WHERE accepted_at IS NULL;

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { Button } from '../ui/Button.jsx'
+import { supabase } from '../../lib/supabase.js'
 
 export function LoginScreen() {
   const { signIn, signUp } = useAuth()
@@ -12,10 +13,21 @@ export function LoginScreen() {
   const [funeralHomeName, setFuneralHomeName] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [resetMsg, setResetMsg] = useState(null)
 
   function switchMode(next) {
     setMode(next)
     setError(null)
+    setResetMsg(null)
+  }
+
+  async function handleForgotPassword() {
+    if (!email) {
+      setResetMsg({ ok: false, text: 'Please enter your email address above first.' })
+      return
+    }
+    await supabase.auth.resetPasswordForEmail(email)
+    setResetMsg({ ok: true, text: 'Check your email for a password reset link.' })
   }
 
   async function handleSubmit(e) {
@@ -114,7 +126,22 @@ export function LoginScreen() {
             {mode === 'signup' && (
               <p className="font-sans text-[11px] text-muted mt-1">Minimum 6 characters</p>
             )}
+            {mode === 'signin' && (
+              <div className="mt-1.5 text-right">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="font-sans text-[11px] text-muted hover:text-primary transition-colors cursor-pointer border-0 bg-transparent outline-none"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
           </div>
+
+          {resetMsg && (
+            <p className={`font-sans text-xs ${resetMsg.ok ? 'text-primary' : 'text-danger'}`}>{resetMsg.text}</p>
+          )}
 
           {error && (
             <p className="font-sans text-xs text-danger">{error}</p>

@@ -341,6 +341,7 @@ router.patch('/:id/financials', requireAuth, async (req, res, next) => {
       .from('cases')
       .update(patch)
       .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .select(CASE_SELECT)
       .single()
     if (error) throw error
@@ -364,10 +365,12 @@ router.patch('/:id/status', requireAuth, async (req, res, next) => {
       .from('cases')
       .update({ status, modified_at: new Date().toISOString() })
       .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .select(CASE_SELECT)
       .single()
 
     if (error) throw error
+    if (!data) return res.status(404).json({ error: 'Case not found' })
     res.json(shapeRow(data))
   } catch (err) {
     next(err)
@@ -382,6 +385,7 @@ router.patch('/:id/folder', requireAuth, async (req, res, next) => {
       .from('cases')
       .update({ folder_id: folderId ?? null, modified_at: new Date().toISOString() })
       .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .select(CASE_SELECT)
       .single()
     if (error) throw error
@@ -397,6 +401,10 @@ router.post('/:id/notes', requireAuth, async (req, res, next) => {
   try {
     const { author, text, time } = req.body
     if (!text?.trim()) return res.status(400).json({ error: 'text is required' })
+
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
 
     const displayTime = time ?? new Date().toLocaleString('en-US', {
       month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
@@ -435,8 +443,10 @@ router.post('/:id/documents', requireAuth, async (req, res, next) => {
       .from('cases')
       .select('documents')
       .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .single()
     if (fetchError) throw fetchError
+    if (!existing) return res.status(404).json({ error: 'Case not found' })
 
     const current = existing.documents ?? []
     const updated = [...current, { type: type ?? null, path, name }]
@@ -456,6 +466,10 @@ router.post('/:id/documents', requireAuth, async (req, res, next) => {
 // ── GET /api/cases/:id/custody ───────────────────
 router.get('/:id/custody', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { data, error } = await supabase
       .from('case_custody')
       .select('stage, completed, staff_label, staff, timestamp')
@@ -486,6 +500,10 @@ router.put('/:id/custody/:stage', requireAuth, async (req, res, next) => {
     if (isNaN(stage) || stage < 0 || stage > 8) {
       return res.status(400).json({ error: 'stage must be 0–8' })
     }
+
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
 
     const { completed, staff, timestamp } = req.body
 
@@ -573,6 +591,11 @@ const BOOKING_EVENT_TITLES = {
 router.get('/:id/activity', requireAuth, async (req, res, next) => {
   try {
     const caseId = req.params.id
+
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const [
       { data: notes, error: notesErr },
       { data: docs, error: docsErr },

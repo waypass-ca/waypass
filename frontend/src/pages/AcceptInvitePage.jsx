@@ -55,7 +55,7 @@ export function AcceptInvitePage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-canvas">
         <div className="text-center">
-          <h2 className="font-display text-2xl text-ink mb-2">Welcome to Passage</h2>
+          <h2 className="font-display text-2xl text-ink mb-2">Welcome to Waypass</h2>
           <p className="font-sans text-sm text-muted">Setting up your account…</p>
         </div>
       </div>

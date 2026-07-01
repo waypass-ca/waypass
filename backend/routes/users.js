@@ -89,6 +89,16 @@ router.post('/invite', requireAuth, requireAdmin, async (req, res, next) => {
       .maybeSingle()
     if (existing) return res.status(409).json({ error: 'User is already a member' })
 
+    // Check for an existing pending invite
+    const { data: existingInvite } = await supabase
+      .from('funeral_home_invites')
+      .select('id')
+      .eq('funeral_home_id', req.user.funeralHomeId)
+      .eq('email', email)
+      .is('accepted_at', null)
+      .maybeSingle()
+    if (existingInvite) return res.status(409).json({ error: 'A pending invite already exists for this email' })
+
     const token = crypto.randomBytes(32).toString('hex')
 
     const { data: invite, error: invErr } = await supabase
@@ -119,6 +129,36 @@ router.post('/invite', requireAuth, requireAdmin, async (req, res, next) => {
     }).catch(err => console.error('Failed to send invite email:', err.message))
 
     res.status(201).json({ id: invite.id, email, role: inviteRole })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// POST /api/users/invites/:id/resend — resend invite email (admin only)
+router.post('/invites/:id/resend', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const { data: invite, error } = await supabase
+      .from('funeral_home_invites')
+      .update({ expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() })
+      .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
+      .is('accepted_at', null)
+      .select()
+      .single()
+    if (error) throw error
+    if (!invite) return res.status(404).json({ error: 'Invite not found' })
+
+    const { data: home } = await supabase
+      .from('funeral_homes').select('name').eq('id', req.user.funeralHomeId).single()
+    const baseUrl = process.env.APP_BASE_URL ?? 'http://localhost:5173'
+    await sendInviteEmail({
+      to: invite.email,
+      funeralHomeName: home?.name ?? 'Waypass',
+      inviteUrl: `${baseUrl}/accept-invite?token=${invite.token}`,
+      role: invite.role,
+    }).catch(err => console.error('Failed to resend invite email:', err.message))
+
+    res.status(200).json({ id: invite.id, email: invite.email })
   } catch (err) {
     next(err)
   }
@@ -226,6 +266,9 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res, next) => {
       .eq('id', req.params.id)
       .eq('funeral_home_id', req.user.funeralHomeId)
     if (error) throw error
+    await supabase.auth.admin.signOut(req.params.id).catch(err =>
+      console.error('Failed to invalidate session for removed user:', err.message)
+    )
     res.status(204).send()
   } catch (err) {
     next(err)

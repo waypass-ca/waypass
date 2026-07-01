@@ -215,6 +215,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
         modified_at: new Date().toISOString(),
       })
       .eq('id', req.params.id)
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
       .select()
       .single()
     if (error) throw error
@@ -227,11 +228,15 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
 
 router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('shipping_partners')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', req.params.id)
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
+      .select('id')
+      .single()
     if (error) throw error
+    if (!data) return res.status(404).json({ error: 'Shipping partner not found' })
     res.status(204).send()
   } catch (err) {
     next(err)

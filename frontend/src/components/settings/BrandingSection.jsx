@@ -1,11 +1,41 @@
+import { useState, useEffect } from 'react'
 import { Button } from '../ui/Button'
 import { SectionTitle, Divider, Field } from './settingsShared'
 import { useUser } from '../../context/UserContext.jsx'
+import { fetchFuneralHome, updateFuneralHome } from '../../lib/api.js'
 
 export function BrandingSection() {
   const { isAdmin } = useUser()
   const disabled = !isAdmin
+
+  const [displayName, setDisplayName] = useState('')
+  const [accentColor, setAccentColor] = useState('#6B8F71')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState(null)
+
+  useEffect(() => {
+    fetchFuneralHome()
+      .then(data => {
+        setDisplayName(data.widgetDisplayName ?? data.widget_display_name ?? data.name ?? '')
+        setAccentColor(data.accentColor ?? data.accent_color ?? '#6B8F71')
+      })
+      .catch(() => {})
+  }, [])
+
   const inputClass = `flex-1 border border-line rounded-lg px-3.5 py-2.5 text-sm font-sans text-ink outline-none transition-colors bg-surface ${disabled ? 'opacity-50 cursor-not-allowed' : 'focus:border-secondary/60'}`
+
+  async function handleSave() {
+    setSaving(true)
+    setMsg(null)
+    try {
+      await updateFuneralHome({ widget_display_name: displayName, accent_color: accentColor })
+      setMsg({ ok: true, text: 'Branding saved.' })
+    } catch (err) {
+      setMsg({ ok: false, text: err.message ?? 'Failed to save branding.' })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div>
@@ -27,21 +57,45 @@ export function BrandingSection() {
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-1">
           <label className="block text-xs font-sans text-muted mb-1.5">Display Name in Widget</label>
-          <input type="text" defaultValue="Evergreen Memorial" disabled={disabled} className={`w-full border border-line rounded-lg px-3.5 py-2.5 text-sm font-sans text-ink outline-none transition-colors bg-surface ${disabled ? 'opacity-50 cursor-not-allowed' : 'focus:border-secondary/60'}`} />
+          <input
+            type="text"
+            value={displayName}
+            onChange={e => setDisplayName(e.target.value)}
+            disabled={disabled}
+            className={`w-full border border-line rounded-lg px-3.5 py-2.5 text-sm font-sans text-ink outline-none transition-colors bg-surface ${disabled ? 'opacity-50 cursor-not-allowed' : 'focus:border-secondary/60'}`}
+          />
           <p className="font-sans text-[11px] text-muted mt-1">Shown as "Powered by Waypass" header</p>
         </div>
         <div>
           <label className="block text-xs font-sans text-muted mb-1.5">Accent Color</label>
           <div className="flex items-center gap-3">
-            <input type="color" defaultValue="#6B8F71" disabled={disabled} className={`w-10 h-10 rounded-lg border border-line bg-surface ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`} />
-            <input type="text" defaultValue="#6B8F71" disabled={disabled} className={inputClass} />
+            <input
+              type="color"
+              value={accentColor}
+              onChange={e => setAccentColor(e.target.value)}
+              disabled={disabled}
+              className={`w-10 h-10 rounded-lg border border-line bg-surface ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            />
+            <input
+              type="text"
+              value={accentColor}
+              onChange={e => setAccentColor(e.target.value)}
+              disabled={disabled}
+              className={inputClass}
+            />
           </div>
         </div>
       </div>
 
+      {msg && (
+        <p className={`font-sans text-xs mt-3 ${msg.ok ? 'text-primary' : 'text-danger'}`}>{msg.text}</p>
+      )}
+
       {isAdmin && (
         <div className="mt-5 flex justify-end">
-          <Button variant="primary">Save Branding</Button>
+          <Button variant="primary" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Save Branding'}
+          </Button>
         </div>
       )}
 
@@ -49,7 +103,7 @@ export function BrandingSection() {
 
       <SectionTitle title="Widget Preview" description="A live preview of how families will see your booking widget." />
       <div className="bg-canvas rounded-xl p-8 text-center border border-line">
-        <p className="font-sans text-xs text-muted mb-1">Evergreen Memorial · Powered by Waypass</p>
+        <p className="font-sans text-xs text-muted mb-1">{displayName || 'Your Funeral Home'} · Powered by Waypass</p>
         <p className="font-display text-3xl font-light text-ink">Cremation Services</p>
         <p className="font-sans text-xs text-secondary mt-2 max-w-xs mx-auto">
           Transparent pricing, compassionate care. We guide your family through every step.

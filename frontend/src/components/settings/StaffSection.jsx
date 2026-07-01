@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Mail, Trash2, ChevronDown } from 'lucide-react'
+import { Mail, Trash2, ChevronDown, RotateCcw } from 'lucide-react'
 import { SectionTitle, Divider } from './settingsShared.jsx'
 import { useUser } from '../../context/UserContext.jsx'
-import { fetchUsers, fetchPendingInvites, inviteUser, revokeInvite, changeUserRole, removeUser } from '../../lib/api.js'
+import { ConfirmModal } from '../ui/ConfirmModal.jsx'
+import { fetchUsers, fetchPendingInvites, inviteUser, revokeInvite, resendInvite, changeUserRole, removeUser } from '../../lib/api.js'
 
 const ROLE_LABELS = { admin: 'Admin', staff: 'Staff', read_only: 'Read-Only' }
 
@@ -19,19 +20,40 @@ function RoleBadge({ role }) {
   )
 }
 
+function SkeletonRow() {
+  return (
+    <div className="flex items-center justify-between py-3">
+      <div className="space-y-1.5">
+        <div className="animate-pulse h-3.5 w-32 bg-line rounded" />
+        <div className="animate-pulse h-3 w-44 bg-line rounded" />
+      </div>
+      <div className="animate-pulse h-6 w-16 bg-line rounded-full" />
+    </div>
+  )
+}
+
 export function StaffSection() {
   const { profile, isAdmin } = useUser()
   const [users, setUsers] = useState([])
   const [invites, setInvites] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [actionError, setActionError] = useState(null)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('staff')
   const [inviteError, setInviteError] = useState(null)
   const [inviteLoading, setInviteLoading] = useState(false)
   const [inviteSent, setInviteSent] = useState(false)
+  const [confirmTarget, setConfirmTarget] = useState(null)
 
   function load() {
-    fetchUsers().then(setUsers).catch(() => {})
-    if (isAdmin) fetchPendingInvites().then(setInvites).catch(() => {})
+    setLoading(true)
+    Promise.all([
+      fetchUsers(),
+      isAdmin ? fetchPendingInvites() : Promise.resolve([]),
+    ])
+      .then(([u, inv]) => { setUsers(u); setInvites(inv) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
   }
 
   useEffect(() => { load() }, [isAdmin])
@@ -54,19 +76,45 @@ export function StaffSection() {
   }
 
   async function handleRoleChange(userId, role) {
-    await changeUserRole(userId, role).catch(() => {})
-    load()
+    setActionError(null)
+    try {
+      await changeUserRole(userId, role)
+      load()
+    } catch (err) {
+      setActionError(err.message ?? 'Failed to change role.')
+    }
   }
 
-  async function handleRemove(userId) {
-    if (!window.confirm('Remove this user from your funeral home?')) return
-    await removeUser(userId).catch(() => {})
-    load()
+  async function handleRemoveConfirmed() {
+    const userId = confirmTarget
+    setConfirmTarget(null)
+    setActionError(null)
+    try {
+      await removeUser(userId)
+      load()
+    } catch (err) {
+      setActionError(err.message ?? 'Failed to remove user.')
+    }
   }
 
   async function handleRevokeInvite(id) {
-    await revokeInvite(id).catch(() => {})
-    load()
+    setActionError(null)
+    try {
+      await revokeInvite(id)
+      load()
+    } catch (err) {
+      setActionError(err.message ?? 'Failed to revoke invite.')
+    }
+  }
+
+  async function handleResendInvite(id) {
+    setActionError(null)
+    try {
+      await resendInvite(id)
+      load()
+    } catch (err) {
+      setActionError(err.message ?? 'Failed to resend invite.')
+    }
   }
 
   return (
@@ -76,46 +124,56 @@ export function StaffSection() {
         description="Manage who has access to your funeral home."
       />
 
+      {actionError && (
+        <p className="font-sans text-xs text-danger mb-3">{actionError}</p>
+      )}
+
       {/* Active users */}
       <div className="divide-y divide-line">
-        {users.map(u => (
-          <div key={u.id} className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-sans text-sm text-ink">
-                {u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email}
-              </p>
-              {(u.firstName || u.lastName) && (
-                <p className="font-sans text-xs text-muted">{u.email}</p>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {isAdmin && u.id !== profile?.id ? (
-                <div className="relative">
-                  <select
-                    value={u.role}
-                    onChange={e => handleRoleChange(u.id, e.target.value)}
-                    className="appearance-none text-xs font-sans border border-line rounded-lg px-3 py-1.5 pr-7 text-ink bg-surface outline-none cursor-pointer"
+        {loading
+          ? [0, 1, 2].map(i => <SkeletonRow key={i} />)
+          : users.map(u => (
+            <div key={u.id} className="flex items-center justify-between py-3">
+              <div>
+                <p className="font-sans text-sm text-ink flex items-center gap-1.5">
+                  {u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.email}
+                  {u.id === profile?.id && (
+                    <span className="text-xs border border-line rounded-full px-2 py-0.5 text-muted">You</span>
+                  )}
+                </p>
+                {(u.firstName || u.lastName) && (
+                  <p className="font-sans text-xs text-muted">{u.email}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {isAdmin && u.id !== profile?.id ? (
+                  <div className="relative">
+                    <select
+                      value={u.role}
+                      onChange={e => handleRoleChange(u.id, e.target.value)}
+                      className="appearance-none text-xs font-sans border border-line rounded-lg px-3 py-1.5 pr-7 text-ink bg-surface outline-none cursor-pointer"
+                    >
+                      <option value="admin">Admin</option>
+                      <option value="staff">Staff</option>
+                      <option value="read_only">Read-Only</option>
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+                  </div>
+                ) : (
+                  <RoleBadge role={u.role} />
+                )}
+                {isAdmin && u.id !== profile?.id && (
+                  <button
+                    onClick={() => setConfirmTarget(u.id)}
+                    className="text-muted hover:text-danger transition-colors cursor-pointer border-0 bg-transparent outline-none"
                   >
-                    <option value="admin">Admin</option>
-                    <option value="staff">Staff</option>
-                    <option value="read_only">Read-Only</option>
-                  </select>
-                  <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
-                </div>
-              ) : (
-                <RoleBadge role={u.role} />
-              )}
-              {isAdmin && u.id !== profile?.id && (
-                <button
-                  onClick={() => handleRemove(u.id)}
-                  className="text-muted hover:text-danger transition-colors cursor-pointer border-0 bg-transparent outline-none"
-                >
-                  <Trash2 size={14} />
-                </button>
-              )}
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        }
       </div>
 
       {/* Pending invites */}
@@ -133,7 +191,15 @@ export function StaffSection() {
                 <div className="flex items-center gap-3">
                   <RoleBadge role={inv.role} />
                   <button
+                    onClick={() => handleResendInvite(inv.id)}
+                    title="Resend invite"
+                    className="text-muted hover:text-ink transition-colors cursor-pointer border-0 bg-transparent outline-none"
+                  >
+                    <RotateCcw size={14} />
+                  </button>
+                  <button
                     onClick={() => handleRevokeInvite(inv.id)}
+                    title="Revoke invite"
                     className="text-muted hover:text-danger transition-colors cursor-pointer border-0 bg-transparent outline-none"
                   >
                     <Trash2 size={14} />
@@ -191,6 +257,17 @@ export function StaffSection() {
             </button>
           </form>
         </>
+      )}
+
+      {confirmTarget && (
+        <ConfirmModal
+          title="Remove team member"
+          message="This will revoke their access immediately. They can be re-invited later."
+          confirmLabel="Remove"
+          destructive
+          onConfirm={handleRemoveConfirmed}
+          onCancel={() => setConfirmTarget(null)}
+        />
       )}
     </div>
   )

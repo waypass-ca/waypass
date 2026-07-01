@@ -18,12 +18,12 @@ async function sendInviteEmail({ to, funeralHomeName, inviteUrl, role }) {
   const roleLabel = role === 'admin' ? 'Admin' : role === 'read_only' ? 'Read-Only' : 'Staff'
 
   await resend.emails.send({
-    from: process.env.RESEND_FROM ?? 'noreply@passagefunerals.com',
+    from: process.env.RESEND_FROM ?? 'noreply@waypass.ca',
     to,
     subject: `You've been invited to join ${funeralHomeName} on Waypass`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a">
-        <p style="font-size:14px;color:#666">Passage Funeral Management</p>
+        <p style="font-size:14px;color:#666">Waypass</p>
         <h2 style="margin:0 0 12px">You're invited to join ${esc(funeralHomeName)}</h2>
         <p style="font-size:14px;color:#444">
           You've been added as a <strong>${esc(roleLabel)}</strong> member.
@@ -178,8 +178,8 @@ router.post('/accept-invite', async (req, res, next) => {
       const isAlreadyRegistered = authErr.message?.includes('already registered') || authErr.code === 'email_exists'
       if (!isAlreadyRegistered) throw authErr
 
-      const { data: listData } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
-      const orphan = listData?.users?.find(u => u.email === invite.email)
+      const { data: listData } = await supabase.auth.admin.listUsers({ filters: { email: invite.email } })
+      const orphan = listData?.users?.[0]
       if (!orphan) return res.status(409).json({ error: 'An account with this email already exists' })
       userId = orphan.id
     } else {
