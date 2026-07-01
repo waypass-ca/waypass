@@ -79,12 +79,12 @@ describe('POST /api/cases/:caseId/messages', () => {
     expect(res.body.error).toBe('body is required')
   })
 
-  it('returns 400 for invalid senderType', async () => {
+  it('ignores caller-supplied senderType and always stores family', async () => {
     const res = await request(app)
       .post(`/api/cases/${CASE_ID}/messages`)
       .send({ senderType: 'admin', body: 'Hello' })
-    expect(res.status).toBe(400)
-    expect(res.body.error).toBe('senderType must be family or staff')
+    expect(res.status).toBe(201)
+    expect(res.body.senderType).toBe('family')
   })
 
   it('returns 201 — family can post without auth', async () => {

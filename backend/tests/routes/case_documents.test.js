@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
-import { makeSupabaseMock, authedUser, badToken, authHeader , resetDispatch } from '../setup.js'
+import { makeChain, makeSupabaseMock, authedUser, badToken, authHeader , resetDispatch } from '../setup.js'
 
 const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
@@ -44,6 +44,7 @@ describe('GET /api/cases/:caseId/documents/structured', () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
+    chain.single.mockResolvedValue({ data: { id: CASE_ID }, error: null })
     chain.order.mockResolvedValue({ data: [dbDocument], error: null })
   })
 
@@ -80,7 +81,9 @@ describe('POST /api/cases/:caseId/documents/structured', () => {
     resetDispatch(supabase, usersChain, chain)
     chain.insert.mockReturnThis()
     chain.select.mockReturnThis()
-    chain.single.mockResolvedValue({ data: dbDocument, error: null })
+    chain.single
+      .mockResolvedValueOnce({ data: { id: CASE_ID }, error: null })
+      .mockResolvedValueOnce({ data: dbDocument, error: null })
   })
 
   it('returns 401 without auth', async () => {
@@ -141,6 +144,14 @@ describe('PATCH /api/cases/:caseId/documents/structured/:id', () => {
 
   it('returns 404 when document not found', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
+    const casesChain = makeChain()
+    casesChain.single.mockResolvedValue({ data: { id: CASE_ID }, error: null })
+    supabase.from.mockImplementation(table => {
+      if (table === 'users') return usersChain
+      if (table === 'cases') return casesChain
+      return chain
+    })
+    chain.single.mockReset()
     chain.single.mockResolvedValue({ data: null, error: null })
     const res = await request(app)
       .patch(`/api/cases/${CASE_ID}/documents/structured/nope`)
@@ -156,10 +167,8 @@ describe('DELETE /api/cases/:caseId/documents/structured/:id', () => {
     vi.clearAllMocks()
     resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
-    // Two .eq() calls: first returns this, second resolves
-    chain.eq
-      .mockReturnValueOnce(chain)
-      .mockResolvedValueOnce({ data: null, error: null })
+    chain.eq.mockReturnThis()
+    chain.single.mockResolvedValue({ data: { id: CASE_ID }, error: null })
   })
 
   it('returns 401 without auth', async () => {

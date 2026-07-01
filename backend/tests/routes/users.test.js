@@ -112,6 +112,7 @@ describe('POST /api/users/invite', () => {
     const inviteChain = makeChain()
     inviteChain.insert.mockReturnThis()
     inviteChain.select.mockReturnThis()
+    inviteChain.maybeSingle.mockResolvedValue({ data: null, error: null })
     inviteChain.single.mockResolvedValue({ data: { id: 'invite-uuid', email: 'staff@acme.com', role: 'staff' }, error: null })
 
     const fhChain = makeChain()

@@ -40,6 +40,7 @@ describe('GET /api/cases/:caseId/contacts', () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
+    chain.single.mockResolvedValue({ data: { id: CASE_ID }, error: null })
     chain.order.mockResolvedValue({ data: [dbContact], error: null })
   })
 
@@ -76,7 +77,9 @@ describe('POST /api/cases/:caseId/contacts', () => {
     resetDispatch(supabase, usersChain, chain)
     chain.insert.mockReturnThis()
     chain.select.mockReturnThis()
-    chain.single.mockResolvedValue({ data: dbContact, error: null })
+    chain.single
+      .mockResolvedValueOnce({ data: { id: CASE_ID }, error: null })
+      .mockResolvedValueOnce({ data: dbContact, error: null })
   })
 
   it('returns 401 without auth', async () => {
@@ -119,9 +122,13 @@ describe('POST /api/cases/:caseId/contacts', () => {
     insertChain.select.mockReturnThis()
     insertChain.single.mockResolvedValue({ data: dbContact, error: null })
 
+    const casesChain = makeChain()
+    casesChain.single.mockResolvedValue({ data: { id: CASE_ID }, error: null })
+
     let callCount = 0
     supabase.from.mockImplementation(table => {
       if (table === 'users') return usersChain
+      if (table === 'cases') return casesChain
       callCount++
       return callCount === 1 ? updateChain : insertChain
     })
@@ -164,6 +171,14 @@ describe('PATCH /api/cases/:caseId/contacts/:id', () => {
 
   it('returns 404 when contact not found', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
+    const casesChain = makeChain()
+    casesChain.single.mockResolvedValue({ data: { id: CASE_ID }, error: null })
+    supabase.from.mockImplementation(table => {
+      if (table === 'users') return usersChain
+      if (table === 'cases') return casesChain
+      return chain
+    })
+    chain.single.mockReset()
     chain.single.mockResolvedValue({ data: null, error: null })
     const res = await request(app)
       .patch(`/api/cases/${CASE_ID}/contacts/nope`)
@@ -179,10 +194,8 @@ describe('DELETE /api/cases/:caseId/contacts/:id', () => {
     vi.clearAllMocks()
     resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
-    // Two .eq() calls: first returns this, second resolves
-    chain.eq
-      .mockReturnValueOnce(chain)
-      .mockResolvedValueOnce({ data: null, error: null })
+    chain.eq.mockReturnThis()
+    chain.single.mockResolvedValue({ data: { id: CASE_ID }, error: null })
   })
 
   it('returns 401 without auth', async () => {

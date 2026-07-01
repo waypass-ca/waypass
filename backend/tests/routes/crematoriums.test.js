@@ -350,7 +350,8 @@ describe('DELETE /api/crematoriums/:id', () => {
     vi.clearAllMocks()
     resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
-    chain.eq.mockResolvedValue({ data: null, error: null })
+    chain.eq.mockReturnThis()
+    chain.single.mockResolvedValue({ data: { id: 'CRM-000001' }, error: null })
   })
 
   it('returns 401 without auth', async () => {

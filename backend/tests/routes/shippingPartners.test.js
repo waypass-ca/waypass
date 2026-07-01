@@ -205,7 +205,8 @@ describe('DELETE /api/shipping-partners/:id', () => {
     resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.update.mockReturnThis()
-    chain.eq.mockReturnValue({ error: null })
+    chain.eq.mockReturnThis()
+    chain.single.mockResolvedValue({ data: { id: 'SHP-000001' }, error: null })
   })
 
   it('returns 204 and soft-deletes', async () => {
