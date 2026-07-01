@@ -166,11 +166,11 @@ router.post('/:id/connect', requireAuth, async (req, res, next) => {
 
     // Fire-and-forget: fetch logo if missing but website is known
     if (!current.logo_url && current.website) {
-      fetchAndStoreLogo(current.website).then(logoUrl => {
+      fetchAndStoreLogo(current.website).then(async logoUrl => {
         if (logoUrl) {
-          supabase.from('crematoriums').update({ logo_url: logoUrl }).eq('id', req.params.id).then()
+          await supabase.from('crematoriums').update({ logo_url: logoUrl }).eq('id', req.params.id).select('id').single()
         }
-      })
+      }).catch(() => {})
     }
   } catch (err) {
     next(err)
