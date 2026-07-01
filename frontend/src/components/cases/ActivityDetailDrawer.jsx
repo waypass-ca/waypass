@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { supabase } from '../../lib/supabase.js'
 import { deleteCaseDocument, updateCaseDocument } from '../../lib/api.js'
 import { toastError, toastSuccess } from '../../lib/toast.js'
+import { useUser } from '../../context/UserContext.jsx'
 
 function fmtSlot(s) {
   if (!s) return null
@@ -56,6 +57,7 @@ function DocumentBody({ event }) {
 }
 
 function DocumentFooter({ event, caseId, onChanged, onClose }) {
+  const { canWrite } = useUser()
   const p = event.payload ?? {}
   const openPreview = async () => {
     if (!p.storagePath) return
@@ -89,8 +91,8 @@ function DocumentFooter({ event, caseId, onChanged, onClose }) {
   return (
     <div className="shrink-0 border-t border-line p-4 flex gap-2">
       <button onClick={openPreview} className="flex-1 h-9 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium cursor-pointer border-0">Open</button>
-      <button onClick={rename} className="flex-1 h-9 rounded-lg border border-line bg-surface hover:bg-canvas text-ink font-sans text-[12.5px] font-medium cursor-pointer">Edit</button>
-      <button onClick={remove} className="h-9 px-3 rounded-lg border border-danger/30 bg-surface hover:bg-red-50 text-danger font-sans text-[12.5px] font-medium cursor-pointer">Delete</button>
+      {canWrite && <button onClick={rename} className="flex-1 h-9 rounded-lg border border-line bg-surface hover:bg-canvas text-ink font-sans text-[12.5px] font-medium cursor-pointer">Edit</button>}
+      {canWrite && <button onClick={remove} className="h-9 px-3 rounded-lg border border-danger/30 bg-surface hover:bg-red-50 text-danger font-sans text-[12.5px] font-medium cursor-pointer">Delete</button>}
     </div>
   )
 }

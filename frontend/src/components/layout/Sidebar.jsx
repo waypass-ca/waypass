@@ -75,7 +75,7 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [collapsed, setCollapsed] = useState({ patients: false, partners: false })
   const inboxUnread = useInboxUnreadCount()
-  const { profile } = useUser()
+  const { profile, canWrite } = useUser()
   const [funeralHome, setFuneralHome] = useState(null)
 
   useEffect(() => {
@@ -144,7 +144,7 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
           <>
             <NavItem id="partners"          label="Crematoriums"   icon={Building2}    isActive={activeItem === 'partners'}          onClick={onItemChange} collapsed={sidebarCollapsed} />
             <NavItem id="shipping-partners" label="Shipping"       icon={Truck}        isActive={activeItem === 'shipping-partners'} onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="book-cremation"    label="Book Cremation" icon={CalendarPlus} isActive={activeItem === 'book-cremation'}    onClick={onItemChange} collapsed={sidebarCollapsed} />
+            {canWrite && <NavItem id="book-cremation" label="Book Cremation" icon={CalendarPlus} isActive={activeItem === 'book-cremation'} onClick={onItemChange} collapsed={sidebarCollapsed} />}
           </>
         )}
 

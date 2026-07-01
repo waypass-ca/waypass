@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { fetchCrematoriums, createCrematorium, fetchNearbyCrematoriums } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useUser } from '../context/UserContext.jsx'
 import { PageTitle } from '../components/layout/PageTitle'
 import { Button } from '../components/ui/Button'
 import { Search } from 'lucide-react'
@@ -12,6 +13,7 @@ import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
 export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }) {
   const { user } = useAuth()
+  const { canWrite } = useUser()
   const [tab, setTab] = useState('partners')
   const [crematoriums, setCrematoriums] = useState([])
   const [nearby, setNearby] = useState([])
@@ -164,14 +166,14 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }
             locationError={locationError}
             search={search}
             setSearch={setSearch}
-            onAdd={crm => setAddingCrm(crm)}
+            onAdd={canWrite ? crm => setAddingCrm(crm) : undefined}
           />
           <footer className="flex-shrink-0 bg-surface border-t border-line px-6 py-5 flex items-center justify-between gap-4">
             <div>
               <p className="font-sans text-sm font-medium text-ink">Don&rsquo;t see yours?</p>
               <p className="font-sans text-xs text-muted mt-0.5">Manually add a crematorium that isn&rsquo;t in our directory.</p>
             </div>
-            <Button variant="primary" onClick={onAddPartner}>+ Add New</Button>
+            {canWrite && <Button variant="primary" onClick={onAddPartner}>+ Add New</Button>}
           </footer>
         </div>
       )}

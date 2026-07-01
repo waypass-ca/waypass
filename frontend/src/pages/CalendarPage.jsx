@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { fetchBookings, confirmBooking, cancelBooking } from '../lib/api.js'
+import { useUser } from '../context/UserContext.jsx'
 import { objToKey, slotToLabel, slotKey, getSundayOf, formatWeekRange } from '../lib/slotUtils.js'
 import { WeekGrid } from '../components/booking/WeekGrid.jsx'
 import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
@@ -167,6 +168,7 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onReschedule,
 
 
 export function CalendarPage({ cases = [] }) {
+  const { canWrite } = useUser()
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
@@ -370,9 +372,9 @@ export function CalendarPage({ cases = [] }) {
           <DetailPanel
             booking={selectedBooking}
             deceasedName={cases.find(c => c.id === selectedBooking.caseId)?.deceased ?? null}
-            onConfirm={handleConfirm}
-            onCancel={() => setCancelTarget(selectedBooking)}
-            onReschedule={b => { setSelectedBooking(null); setRescheduleTarget(b) }}
+            onConfirm={canWrite ? handleConfirm : undefined}
+            onCancel={canWrite ? () => setCancelTarget(selectedBooking) : undefined}
+            onReschedule={canWrite ? b => { setSelectedBooking(null); setRescheduleTarget(b) } : undefined}
             onClose={() => setSelectedBooking(null)}
           />
         </>

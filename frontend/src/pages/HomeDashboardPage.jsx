@@ -4,6 +4,7 @@ import { StatusPill } from '../components/ui/StatusPill'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { fetchInbox } from '../lib/api.js'
+import { useUser } from '../context/UserContext.jsx'
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -79,6 +80,7 @@ function SectionLabel({ icon: Icon, children }) {
 }
 
 export function HomeDashboardPage({ cases, onViewCase, onNewCase, onViewInbox }) {
+  const { canWrite } = useUser()
   const [alerts, setAlerts] = useState([])
 
   useEffect(() => {
@@ -108,13 +110,15 @@ export function HomeDashboardPage({ cases, onViewCase, onNewCase, onViewInbox })
             <Clock size={13} className="text-muted" strokeWidth={2} />
             <span className="font-sans text-[11px] font-semibold text-muted uppercase tracking-widest">Recent Cases</span>
           </div>
-          <button
-            onClick={onNewCase}
-            className="flex items-center gap-1.5 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans hover:bg-info hover:text-info-tint bg-info-tint text-info transition-colors"
-          >
-            <Plus size={13} strokeWidth={2} />
-            New case
-          </button>
+          {canWrite && (
+            <button
+              onClick={onNewCase}
+              className="flex items-center gap-1.5 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans hover:bg-info hover:text-info-tint bg-info-tint text-info transition-colors"
+            >
+              <Plus size={13} strokeWidth={2} />
+              New case
+            </button>
+          )}
         </div>
         <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hidden">
           {cases.slice(0, 6).map(c => (
