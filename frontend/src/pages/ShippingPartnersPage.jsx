@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { fetchShippingPartners, createShippingPartner, fetchNearbyShippingPartners } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useUser } from '../context/UserContext.jsx'
 import { PageTitle } from '../components/layout/PageTitle'
 import { Button } from '../components/ui/Button'
 import { Search } from 'lucide-react'
@@ -12,6 +13,7 @@ import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
 export function ShippingPartnersPage({ cases = [], onViewCase }) {
   const { user } = useAuth()
+  const { canWrite } = useUser()
   const [tab, setTab] = useState('partners')
   const [partners, setPartners] = useState([])
   const [nearby, setNearby] = useState([])
@@ -167,14 +169,14 @@ export function ShippingPartnersPage({ cases = [], onViewCase }) {
             search={search}
             setSearch={setSearch}
             kind="shipping"
-            onAdd={crm => setAddingPartner(crm)}
+            onAdd={canWrite ? crm => setAddingPartner(crm) : undefined}
           />
           <footer className="flex-shrink-0 bg-surface border-t border-line px-6 py-5 flex items-center justify-between gap-4">
             <div>
               <p className="font-sans text-sm font-medium text-ink">Don&rsquo;t see yours?</p>
               <p className="font-sans text-xs text-muted mt-0.5">Manually add a shipping partner that isn&rsquo;t in our directory.</p>
             </div>
-            <Button variant="primary" onClick={() => setAddingPartner({})}>+ Add New</Button>
+            {canWrite && <Button variant="primary" onClick={() => setAddingPartner({})}>+ Add New</Button>}
           </footer>
         </div>
       )}

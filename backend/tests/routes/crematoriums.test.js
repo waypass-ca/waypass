@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
-import { makeSupabaseMock, authedUser, badToken, authHeader, adminKeyHeader } from '../setup.js'
+import { makeSupabaseMock, authedUser, badToken, authHeader, adminKeyHeader, resetDispatch } from '../setup.js'
 
-const { supabase, chain } = makeSupabaseMock()
+const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
 // Set ADMIN_API_KEY before app imports so the route can read it
@@ -102,6 +102,7 @@ const dbRecord = {
 describe('GET /api/crematoriums', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.is.mockReturnThis()
     chain.contains.mockReturnThis()
@@ -124,7 +125,7 @@ describe('GET /api/crematoriums', () => {
   it('filters by connected_funeral_home_ids via contains', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     await request(app).get('/api/crematoriums').set(authHeader)
-    expect(chain.contains).toHaveBeenCalledWith('connected_funeral_home_ids', ['test-user-id'])
+    expect(chain.contains).toHaveBeenCalledWith('connected_funeral_home_ids', ['fh-uuid-1'])
   })
 
   it('returns 500 on DB error', async () => {
@@ -140,6 +141,7 @@ describe('GET /api/crematoriums', () => {
 describe('GET /api/crematoriums/nearby', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.is.mockReturnThis()
     chain.not.mockReturnThis()
@@ -162,7 +164,7 @@ describe('GET /api/crematoriums/nearby', () => {
   it('filters out user-connected crematoriums via not()', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     await request(app).get('/api/crematoriums/nearby').set(authHeader)
-    expect(chain.not).toHaveBeenCalledWith('connected_funeral_home_ids', 'cs', `{test-user-id}`)
+    expect(chain.not).toHaveBeenCalledWith('connected_funeral_home_ids', 'cs', `{fh-uuid-1}`)
   })
 
   it('applies name/location filter when query param provided', async () => {
@@ -188,6 +190,7 @@ describe('POST /api/crematoriums', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.insert.mockReturnThis()
     chain.select.mockReturnThis()
     chain.single.mockResolvedValue({ data: dbRow, error: null })
@@ -206,11 +209,11 @@ describe('POST /api/crematoriums', () => {
     expect(res.body).toEqual(shaped)
   })
 
-  it('auto-connects creating user in connected_funeral_home_ids', async () => {
+  it('auto-connects creating funeral home in connected_funeral_home_ids', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     await request(app).post('/api/crematoriums').set(authHeader).send(payload)
     expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({
-      connected_funeral_home_ids: ['test-user-id'],
+      connected_funeral_home_ids: ['fh-uuid-1'],
     }))
   })
 })
@@ -220,6 +223,7 @@ describe('POST /api/crematoriums', () => {
 describe('POST /api/crematoriums/:id/connect', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.is.mockReturnThis()
@@ -242,20 +246,20 @@ describe('POST /api/crematoriums/:id/connect', () => {
       .set(authHeader)
     expect(res.status).toBe(200)
     expect(chain.update).toHaveBeenCalledWith(
-      expect.objectContaining({ connected_funeral_home_ids: expect.arrayContaining(['test-user-id']) })
+      expect.objectContaining({ connected_funeral_home_ids: expect.arrayContaining(['fh-uuid-1']) })
     )
   })
 
   it('does not duplicate if already connected', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.single
-      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: ['test-user-id'] }, error: null })
+      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: ['fh-uuid-1'] }, error: null })
       .mockResolvedValueOnce({ data: dbRow, error: null })
     chain.update.mockReturnThis()
     await request(app).post('/api/crematoriums/CRM-000001/connect').set(authHeader)
     const updateCall = chain.update.mock.calls[0][0]
     const ids = updateCall.connected_funeral_home_ids
-    expect(ids.filter(id => id === 'test-user-id')).toHaveLength(1)
+    expect(ids.filter(id => id === 'fh-uuid-1')).toHaveLength(1)
   })
 
   it('returns 404 when crematorium not found', async () => {
@@ -271,6 +275,7 @@ describe('POST /api/crematoriums/:id/connect', () => {
 describe('DELETE /api/crematoriums/:id/connect', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.is.mockReturnThis()
@@ -285,13 +290,13 @@ describe('DELETE /api/crematoriums/:id/connect', () => {
   it('removes user ID from connected_funeral_home_ids', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.single
-      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: ['test-user-id', 'other-id'] }, error: null })
+      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: ['fh-uuid-1', 'other-id'] }, error: null })
       .mockResolvedValueOnce({ data: { ...dbRow, connected_funeral_home_ids: ['other-id'] }, error: null })
     chain.update.mockReturnThis()
     const res = await request(app).delete('/api/crematoriums/CRM-000001/connect').set(authHeader)
     expect(res.status).toBe(200)
     const updateCall = chain.update.mock.calls[0][0]
-    expect(updateCall.connected_funeral_home_ids).not.toContain('test-user-id')
+    expect(updateCall.connected_funeral_home_ids).not.toContain('fh-uuid-1')
     expect(updateCall.connected_funeral_home_ids).toContain('other-id')
   })
 
@@ -310,6 +315,7 @@ describe('PATCH /api/crematoriums/:id', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.select.mockReturnThis()
@@ -342,8 +348,10 @@ describe('PATCH /api/crematoriums/:id', () => {
 describe('DELETE /api/crematoriums/:id', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
-    chain.eq.mockResolvedValue({ data: null, error: null })
+    chain.eq.mockReturnThis()
+    chain.single.mockResolvedValue({ data: { id: 'CRM-000001' }, error: null })
   })
 
   it('returns 401 without auth', async () => {
@@ -367,6 +375,7 @@ describe('DELETE /api/crematoriums/:id', () => {
 describe('GET /api/crematoriums/db', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.ilike.mockReturnThis()
@@ -441,6 +450,7 @@ describe('GET /api/crematoriums/nearby-db', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.rpc.mockResolvedValue({ data: nearbyResult, error: null })
   })
 
@@ -491,6 +501,7 @@ describe('GET /api/crematoriums/nearby-db', () => {
 describe('GET /api/crematoriums/db/:id', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
   })
@@ -523,6 +534,7 @@ describe('PATCH /api/crematoriums/db/:id/network', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.select.mockReturnThis()

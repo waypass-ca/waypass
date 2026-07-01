@@ -43,7 +43,7 @@ router.get('/', requireAuth, async (req, res, next) => {
       .from('shipping_partners')
       .select('*')
       .is('deleted_at', null)
-      .contains('connected_funeral_home_ids', [req.user.id])
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
       .order('name')
     if (error) throw error
     res.json(data.map(shapeRow))
@@ -61,7 +61,7 @@ router.get('/nearby', requireAuth, async (req, res, next) => {
       .from('shipping_partners')
       .select('*')
       .is('deleted_at', null)
-      .not('connected_funeral_home_ids', 'cs', `{${req.user.id}}`)
+      .not('connected_funeral_home_ids', 'cs', `{${req.user.funeralHomeId}}`)
 
     if (query) {
       dbQuery = dbQuery.or(`name.ilike.%${query}%,location.ilike.%${query}%,city.ilike.%${query}%`)
@@ -116,7 +116,7 @@ router.post('/', requireAuth, async (req, res, next) => {
         partner_since: partnerSince,
         license_number: body.licenseNumber ?? null,
         vetting_notes: body.vettingNotes ?? null,
-        connected_funeral_home_ids: [req.user.id],
+        connected_funeral_home_ids: [req.user.funeralHomeId],
       })
       .select()
       .single()
@@ -140,8 +140,8 @@ router.post('/:id/connect', requireAuth, async (req, res, next) => {
     if (!current) return res.status(404).json({ error: 'Shipping partner not found' })
 
     const ids = current.connected_funeral_home_ids ?? []
-    if (!ids.includes(req.user.id)) {
-      ids.push(req.user.id)
+    if (!ids.includes(req.user.funeralHomeId)) {
+      ids.push(req.user.funeralHomeId)
     }
 
     const { data, error } = await supabase
@@ -169,7 +169,7 @@ router.delete('/:id/connect', requireAuth, async (req, res, next) => {
     if (fetchErr) throw fetchErr
     if (!current) return res.status(404).json({ error: 'Shipping partner not found' })
 
-    const ids = (current.connected_funeral_home_ids ?? []).filter(id => id !== req.user.id)
+    const ids = (current.connected_funeral_home_ids ?? []).filter(id => id !== req.user.funeralHomeId)
 
     const { data, error } = await supabase
       .from('shipping_partners')
@@ -215,6 +215,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
         modified_at: new Date().toISOString(),
       })
       .eq('id', req.params.id)
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
       .select()
       .single()
     if (error) throw error
@@ -227,11 +228,15 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
 
 router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('shipping_partners')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', req.params.id)
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
+      .select('id')
+      .single()
     if (error) throw error
+    if (!data) return res.status(404).json({ error: 'Shipping partner not found' })
     res.status(204).send()
   } catch (err) {
     next(err)

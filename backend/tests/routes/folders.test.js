@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
-import { makeSupabaseMock, authedUser, badToken, authHeader } from '../setup.js'
+import { makeSupabaseMock, authedUser, badToken, authHeader , resetDispatch } from '../setup.js'
 
-const { supabase, chain } = makeSupabaseMock()
+const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
 const { default: app } = await import('../../server.js')
@@ -30,6 +30,7 @@ const shapedFolder = {
 describe('GET /api/folders', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.is.mockReturnThis()
@@ -68,6 +69,7 @@ describe('POST /api/folders', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.insert.mockReturnThis()
     chain.select.mockReturnThis()
     chain.single.mockResolvedValue({ data: dbFolder, error: null })
@@ -106,6 +108,7 @@ describe('PATCH /api/folders/:id', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.select.mockReturnThis()
@@ -137,8 +140,11 @@ describe('PATCH /api/folders/:id', () => {
 describe('DELETE /api/folders/:id', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.update.mockReturnThis()
-    chain.eq.mockResolvedValue({ data: null, error: null })
+    chain.eq.mockReturnThis()
+    chain.is.mockReturnThis()
   })
 
   it('returns 401 without auth', async () => {

@@ -38,15 +38,19 @@ router.post('/', async (req, res, next) => {
   try {
     const body = req.body
     if (!body.body?.trim()) return res.status(400).json({ error: 'body is required' })
-    if (!['family', 'staff'].includes(body.senderType)) {
-      return res.status(400).json({ error: 'senderType must be family or staff' })
-    }
+    if (body.body.length > 5000) return res.status(400).json({ error: 'Message exceeds maximum length of 5000 characters' })
+
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
+    const senderType = 'family'
 
     const { data, error } = await supabase
       .from('case_family_messages')
       .insert({
         case_id: req.params.caseId,
-        sender_type: body.senderType,
+        sender_type: senderType,
         sender_id: body.senderId ?? null,
         sender_name: body.senderName ?? null,
         body: body.body.trim(),

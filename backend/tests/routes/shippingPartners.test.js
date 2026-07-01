@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
-import { makeSupabaseMock, authedUser, authHeader } from '../setup.js'
+import { makeSupabaseMock, authedUser, authHeader, resetDispatch } from '../setup.js'
 
-const { supabase, chain } = makeSupabaseMock()
+const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
 const { default: app } = await import('../../server.js')
 
 const USER_ID = authedUser.data.user.id
+const FH_ID = 'fh-uuid-1' // req.user.funeralHomeId from the mocked profile
 
 function dbPartner(overrides = {}) {
   return {
@@ -38,6 +39,7 @@ function dbPartner(overrides = {}) {
 describe('GET /api/shipping-partners', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.is.mockReturnThis()
@@ -57,13 +59,14 @@ describe('GET /api/shipping-partners', () => {
     expect(res.body).toHaveLength(1)
     expect(res.body[0].id).toBe('SHP-000001')
     expect(res.body[0].contactName).toBe('Pat Jones')
-    expect(chain.contains).toHaveBeenCalledWith('connected_funeral_home_ids', [USER_ID])
+    expect(chain.contains).toHaveBeenCalledWith('connected_funeral_home_ids', [FH_ID])
   })
 })
 
 describe('GET /api/shipping-partners/nearby', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.is.mockReturnThis()
@@ -82,13 +85,14 @@ describe('GET /api/shipping-partners/nearby', () => {
     const res = await request(app).get('/api/shipping-partners/nearby?query=ship').set(authHeader)
     expect(res.status).toBe(200)
     expect(res.body[0].onWaypass).toBe(true)
-    expect(chain.not).toHaveBeenCalledWith('connected_funeral_home_ids', 'cs', `{${USER_ID}}`)
+    expect(chain.not).toHaveBeenCalledWith('connected_funeral_home_ids', 'cs', `{${FH_ID}}`)
   })
 })
 
 describe('POST /api/shipping-partners', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.insert.mockReturnThis()
@@ -112,13 +116,14 @@ describe('POST /api/shipping-partners', () => {
     expect(insertArgs.contact).toBeUndefined() // dropped column should not be written
     expect(insertArgs.since).toBeUndefined()
     expect(insertArgs.active).toBeUndefined()
-    expect(insertArgs.connected_funeral_home_ids).toEqual([USER_ID])
+    expect(insertArgs.connected_funeral_home_ids).toEqual([FH_ID])
   })
 })
 
 describe('POST /api/shipping-partners/:id/connect', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.update.mockReturnThis()
@@ -137,12 +142,12 @@ describe('POST /api/shipping-partners/:id/connect', () => {
   it('appends the user to connected_funeral_home_ids', async () => {
     chain.single
       .mockResolvedValueOnce({ data: { connected_funeral_home_ids: ['other-user'] }, error: null })
-      .mockResolvedValueOnce({ data: dbPartner({ connected_funeral_home_ids: ['other-user', USER_ID] }), error: null })
+      .mockResolvedValueOnce({ data: dbPartner({ connected_funeral_home_ids: ['other-user', FH_ID] }), error: null })
 
     const res = await request(app).post('/api/shipping-partners/SHP-000001/connect').set(authHeader)
     expect(res.status).toBe(200)
     const updateArgs = chain.update.mock.calls.at(-1)[0]
-    expect(updateArgs.connected_funeral_home_ids).toContain(USER_ID)
+    expect(updateArgs.connected_funeral_home_ids).toContain(FH_ID)
     expect(updateArgs.connected_funeral_home_ids).toContain('other-user')
   })
 })
@@ -150,6 +155,7 @@ describe('POST /api/shipping-partners/:id/connect', () => {
 describe('DELETE /api/shipping-partners/:id/connect', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.update.mockReturnThis()
@@ -159,7 +165,7 @@ describe('DELETE /api/shipping-partners/:id/connect', () => {
 
   it('removes the user from connected_funeral_home_ids', async () => {
     chain.single
-      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: [USER_ID, 'other-user'] }, error: null })
+      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: [FH_ID, 'other-user'] }, error: null })
       .mockResolvedValueOnce({ data: dbPartner({ connected_funeral_home_ids: ['other-user'] }), error: null })
 
     const res = await request(app).delete('/api/shipping-partners/SHP-000001/connect').set(authHeader)
@@ -172,6 +178,7 @@ describe('DELETE /api/shipping-partners/:id/connect', () => {
 describe('PATCH /api/shipping-partners/:id', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.update.mockReturnThis()
@@ -195,9 +202,11 @@ describe('PATCH /api/shipping-partners/:id', () => {
 describe('DELETE /api/shipping-partners/:id', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.update.mockReturnThis()
-    chain.eq.mockReturnValue({ error: null })
+    chain.eq.mockReturnThis()
+    chain.single.mockResolvedValue({ data: { id: 'SHP-000001' }, error: null })
   })
 
   it('returns 204 and soft-deletes', async () => {
@@ -211,6 +220,7 @@ describe('DELETE /api/shipping-partners/:id', () => {
 describe('GET /api/shipping-partners/db (no auth)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.ilike.mockReturnThis()
@@ -228,6 +238,7 @@ describe('GET /api/shipping-partners/db (no auth)', () => {
 describe('PATCH /api/shipping-partners/db/:id/network — admin key', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()

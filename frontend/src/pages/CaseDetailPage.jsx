@@ -22,8 +22,10 @@ import { AuthorizationModal } from '../components/cases/modals/AuthorizationModa
 import { TriangleAlert, Plus } from 'lucide-react'
 import { ActivityDetailDrawer } from '../components/cases/ActivityDetailDrawer'
 import { EditCaseModal } from '../components/cases/modals/EditCaseModal'
+import { useUser } from '../context/UserContext.jsx'
 
 export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule }) {
+  const { canWrite } = useUser()
   const [caseRow, setCaseRow] = useState(caseData)
   const [status, setStatus] = useState(caseData.status)
   const [documents, setDocuments] = useState([])
@@ -251,7 +253,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
         onShowNote={() => setShowNoteModal(true)}
         onSchedule={onSchedule}
         shippingPartnerName={caseBookings.find(b => b.status !== 'cancelled' && b.shippingPartnerName)?.shippingPartnerName ?? null}
-        onEdit={() => setShowEditModal(true)}
+        onEdit={canWrite ? () => setShowEditModal(true) : undefined}
       />
 
       <div className="flex-1 flex flex-col min-w-0 bg-white overflow-hidden">
@@ -275,7 +277,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
               </button>
             ))}
           </div>
-          {activeTab === 'activity' && (
+          {activeTab === 'activity' && canWrite && (
             <div className="flex gap-2">
               <button
                 onClick={() => setShowNoteModal(true)}
@@ -293,7 +295,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
               </button>
             </div>
           )}
-          {activeTab === 'documents' && (
+          {activeTab === 'documents' && canWrite && (
             <div className="flex gap-2">
               <input
                 ref={uploadInputRef}
@@ -331,8 +333,8 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
               <CaseActivityTab
                 activityFeed={activity}
                 onSelectEvent={setSelectedActivity}
-                onShowNote={() => setShowNoteModal(true)}
-                onShowLog={() => setShowLogModal(true)}
+                onShowNote={canWrite ? () => setShowNoteModal(true) : undefined}
+                onShowLog={canWrite ? () => setShowLogModal(true) : undefined}
               />
             </div>
           )}
@@ -343,12 +345,12 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
                 uploading={uploading}
                 docsActionNeeded={docsActionNeeded}
                 authorizationComplete={authorizationComplete}
-                onShowAuth={() => setShowAuthModal(true)}
-                onUpload={handleUpload}
+                onShowAuth={canWrite ? () => setShowAuthModal(true) : undefined}
+                onUpload={canWrite ? handleUpload : undefined}
                 onPreview={handlePreview}
-                onRenameDoc={handleRenameDoc}
-                onDeleteDoc={handleDeleteDoc}
-                onUpdateDocMeta={handleUpdateDocMeta}
+                onRenameDoc={canWrite ? handleRenameDoc : undefined}
+                onDeleteDoc={canWrite ? handleDeleteDoc : undefined}
+                onUpdateDocMeta={canWrite ? handleUpdateDocMeta : undefined}
               />
             </div>
           )}
@@ -358,8 +360,8 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
                 <BookingCard
                   key={b.id}
                   booking={b}
-                  onReschedule={setRescheduleTarget}
-                  onCancel={setCancelTarget}
+                  onReschedule={canWrite ? setRescheduleTarget : undefined}
+                  onCancel={canWrite ? setCancelTarget : undefined}
                 />
               ))}
             </div>
@@ -367,10 +369,10 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
         </div>
       </div>
 
-      {showNoteModal && (
+      {showNoteModal && canWrite && (
         <NoteModal onAdd={addNote} onClose={() => setShowNoteModal(false)} />
       )}
-      {showLogModal && (
+      {showLogModal && canWrite && (
         <LogCustodyModal
           custody={custody}
           onUpdate={handleCustodyUpdate}
@@ -421,7 +423,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
         onClose={() => setSelectedActivity(null)}
         onChanged={() => { refetchActivity(); refetchDocuments() }}
       />
-      {showEditModal && (
+      {showEditModal && canWrite && (
         <EditCaseModal
           caseData={caseRow}
           primaryContact={contacts.find(c => c.isPrimary) ?? contacts[0] ?? null}

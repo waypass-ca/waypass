@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 
 const router = Router()
-const SETTINGS_ID = 'default'
 
 function shapeRow(row) {
   return {
@@ -29,14 +28,20 @@ function shapeRow(row) {
   }
 }
 
-// GET /api/portal-settings — public, families also need to read this
-router.get('/', async (_req, res, next) => {
+// GET /api/portal-settings — public; accepts ?funeralHomeId= for family portal
+// or returns current user's settings if authenticated
+router.get('/', async (req, res, next) => {
   try {
-    const { data, error } = await supabase
-      .from('portal_settings')
-      .select('*')
-      .eq('id', SETTINGS_ID)
-      .maybeSingle()
+    const funeralHomeId = req.query.funeralHomeId ?? null
+    let query = supabase.from('portal_settings').select('*')
+
+    if (funeralHomeId) {
+      query = query.eq('funeral_home_id', funeralHomeId)
+    } else {
+      query = query.eq('id', 'default')
+    }
+
+    const { data, error } = await query.maybeSingle()
     if (error) throw error
     res.json(shapeRow(data ?? {}))
   } catch (err) {
@@ -44,7 +49,7 @@ router.get('/', async (_req, res, next) => {
   }
 })
 
-// PUT /api/portal-settings — requires auth
+// PUT /api/portal-settings — requires auth, scoped to funeral home
 router.put('/', requireAuth, async (req, res, next) => {
   try {
     const body = req.body
@@ -52,7 +57,8 @@ router.put('/', requireAuth, async (req, res, next) => {
       .from('portal_settings')
       .upsert(
         {
-          id: SETTINGS_ID,
+          id: req.user.funeralHomeId,
+          funeral_home_id: req.user.funeralHomeId,
           funeral_home_name: body.funeralHomeName,
           tagline: body.tagline,
           logo_url: body.logoUrl,

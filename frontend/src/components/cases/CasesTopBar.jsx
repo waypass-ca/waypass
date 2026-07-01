@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, Plus, Filter, List, Grid2x2, Columns2, Check } from 'lucide-react'
 import { PageTitle } from '../layout/PageTitle'
+import { useUser } from '../../context/UserContext.jsx'
 
 export function CasesTopBar({ search, setSearch, view, setView, sortBy, setSortBy,
   count, total, filters, setFilters, filtersActive, crematoriumOptions, onNewCase }) {
+  const { canWrite } = useUser()
   const [filterOpen, setFilterOpen] = useState(false)
   const filterRef = useRef(null)
 
@@ -32,10 +34,12 @@ export function CasesTopBar({ search, setSearch, view, setView, sortBy, setSortB
             <span className="font-sans text-[12.5px] text-muted">{count} of {total}</span>
           </div>
         </div>
-        <button onClick={onNewCase}
-          className="h-9 px-3.5 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 mt-1">
-          <Plus size={14} /> New Case
-        </button>
+        {canWrite && (
+          <button onClick={onNewCase}
+            className="h-9 px-3.5 rounded-lg bg-ink hover:bg-ink/90 text-surface font-sans text-[12.5px] font-medium flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 mt-1">
+            <Plus size={14} /> New Case
+          </button>
+        )}
       </div>
 
       <div className="px-6 pb-3 flex items-end justify-between gap-2 flex-wrap">

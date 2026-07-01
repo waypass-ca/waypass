@@ -19,11 +19,12 @@ function shapeRow(o) {
 }
 
 // ── GET /api/orders ─────────────────────────────
-router.get('/', async (_req, res, next) => {
+router.get('/', requireAuth, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('crematorium_orders')
       .select('*')
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .order('id')
     if (error) throw error
     res.json(data.map(shapeRow))
@@ -39,6 +40,7 @@ router.patch('/:id/advance', requireAuth, async (req, res, next) => {
       .from('crematorium_orders')
       .select('status')
       .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .single()
 
     if (fetchErr) throw fetchErr

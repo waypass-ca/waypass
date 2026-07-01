@@ -19,6 +19,7 @@ import { CalendarPage } from './CalendarPage'
 import { Button } from '../components/ui/Button'
 import { NotificationToast } from '../components/notifications/NotificationToast'
 import { AppToastContainer } from '../components/ui/AppToastContainer'
+import { useUser } from '../context/UserContext.jsx'
 
 // Map sidebar ids to internal views
 const SIDEBAR_TO_VIEW = {
@@ -77,6 +78,7 @@ function ErrorState({ message }) {
 }
 
 export function FuneralDashboardPage() {
+  const { canWrite } = useUser()
   const [view, setView] = useState('dashboard')
   const [selectedCaseId, setSelectedCaseId] = useState(null)
   const [bookingPreselect, setBookingPreselect] = useState(null)
@@ -161,7 +163,7 @@ export function FuneralDashboardPage() {
 
       {view === 'pickup-calendar' ? (
         <CalendarPage cases={cases} />
-      ) : view === 'book-cremation' ? (
+      ) : view === 'book-cremation' && canWrite ? (
         <BookCremationPage cases={cases} preselectedCase={bookingPreselect} />
       ) : view === 'inbox' ? (
         <InboxPage initialActiveId={initialInboxId} onViewCase={viewCase} />

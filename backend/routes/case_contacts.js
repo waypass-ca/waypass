@@ -21,6 +21,10 @@ function shapeRow(row) {
 // GET /api/cases/:caseId/contacts
 router.get('/', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { data, error } = await supabase
       .from('case_contacts')
       .select('*')
@@ -39,6 +43,10 @@ router.post('/', requireAuth, async (req, res, next) => {
   try {
     const body = req.body
     if (!body.name?.trim()) return res.status(400).json({ error: 'name is required' })
+
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
 
     if (body.isPrimary) {
       await supabase
@@ -72,6 +80,10 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
   try {
     const body = req.body
 
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     if (body.isPrimary) {
       await supabase
         .from('case_contacts')
@@ -104,6 +116,10 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
 // DELETE /api/cases/:caseId/contacts/:id
 router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { error } = await supabase
       .from('case_contacts')
       .update({ deleted_at: new Date().toISOString() })

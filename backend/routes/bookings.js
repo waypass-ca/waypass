@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { requireWrite } from '../middleware/requireRole.js'
 import { createInboxItem, shouldEmail } from '../lib/notifications.js'
 import { recordBookingEvent } from '../lib/bookingEvents.js'
 
@@ -12,6 +13,42 @@ async function safeRecordBookingEvent(args) {
     console.error(`booking_events insert failed (${args.eventType}):`, err.message)
     return null
   }
+}
+
+// Get active user IDs for a funeral home (for inbox/email notifications in public handlers)
+async function getFhUserIds(funeralHomeId) {
+  const { data } = await supabase
+    .from('users')
+    .select('id, role')
+    .eq('funeral_home_id', funeralHomeId)
+    .eq('status', 'active')
+    .is('deleted_at', null)
+  return (data ?? []).map(u => u.id)
+}
+
+// Notify all active users of a funeral home via inbox
+async function notifyFhUsers(funeralHomeId, inboxItemArgs) {
+  const userIds = await getFhUserIds(funeralHomeId)
+  for (const userId of userIds) {
+    await createInboxItem({ ...inboxItemArgs, userId }).catch(e =>
+      console.error('createInboxItem failed for user', userId, e.message)
+    )
+  }
+}
+
+// Check email prefs using the first admin user ID (for pre-send shouldEmail checks)
+async function fhShouldEmail(funeralHomeId, flag) {
+  const { data } = await supabase
+    .from('users')
+    .select('id')
+    .eq('funeral_home_id', funeralHomeId)
+    .eq('role', 'admin')
+    .eq('status', 'active')
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle()
+  if (!data) return true
+  return shouldEmail(data.id, flag)
 }
 
 const withLastName = (name, subject) => {
@@ -333,7 +370,7 @@ router.post('/respond/:token', async (req, res, next) => {
 
     if (hasShipping) {
       let shippingSent = false
-      if (await shouldEmail(shaped.funeralHomeId, 'new_shipping_request')) {
+      if (await fhShouldEmail(shaped.funeralHomeId, 'new_shipping_request')) {
         try {
           shippingSent = await sendShippingInvite(shaped, deceased)
         } catch (emailErr) {
@@ -356,8 +393,7 @@ router.post('/respond/:token', async (req, res, next) => {
         },
       })
 
-      await createInboxItem({
-        userId: shaped.funeralHomeId,
+      await notifyFhUsers(shaped.funeralHomeId, {
         type: 'schedule',
         sender: cremName,
         subject: withLastName(deceased, 'Awaiting shipping availability'),
@@ -378,8 +414,7 @@ router.post('/respond/:token', async (req, res, next) => {
       })
     } else {
       const preview = `${deceased} · ${cremName} responded with ${slotCount} available time${slotCount === 1 ? '' : 's'}.`
-      await createInboxItem({
-        userId: shaped.funeralHomeId,
+      await notifyFhUsers(shaped.funeralHomeId, {
         type: 'schedule',
         sender: cremName,
         subject: withLastName(deceased, 'Availability received'),
@@ -489,8 +524,7 @@ router.post('/respond-shipping/:token', async (req, res, next) => {
       },
     })
 
-    await createInboxItem({
-      userId: shaped.funeralHomeId,
+    await notifyFhUsers(shaped.funeralHomeId, {
       type: 'schedule',
       sender: shipName,
       subject: withLastName(deceased, 'Shipping availability received'),
@@ -524,7 +558,7 @@ router.get('/', async (req, res, next) => {
     const { data, error } = await supabase
       .from('cremation_bookings')
       .select('*')
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .order('created_at', { ascending: false })
     if (error) throw error
     res.json(data.map(shapeRow))
@@ -540,7 +574,7 @@ router.get('/:id', async (req, res, next) => {
       .from('cremation_bookings')
       .select('*')
       .eq('id', req.params.id)
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .single()
     if (error || !data) return res.status(404).json({ error: 'Not found' })
     res.json(shapeRow(data))
@@ -550,7 +584,7 @@ router.get('/:id', async (req, res, next) => {
 })
 
 // ── POST /api/bookings ───────────────────────────
-router.post('/', async (req, res, next) => {
+router.post('/', requireWrite, async (req, res, next) => {
   try {
     const {
       caseId,
@@ -571,7 +605,7 @@ router.post('/', async (req, res, next) => {
       .from('cremation_bookings')
       .select('id')
       .eq('case_id', caseId)
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .neq('status', 'cancelled')
       .maybeSingle()
     if (existingActive) {
@@ -588,7 +622,7 @@ router.post('/', async (req, res, next) => {
         .eq('id', shippingPartnerId)
         .is('deleted_at', null)
         .single()
-      if (!partner?.connected_funeral_home_ids?.includes(req.user.id)) {
+      if (!partner?.connected_funeral_home_ids?.includes(req.user.funeralHomeId)) {
         return res.status(400).json({ error: 'Shipping partner is not connected to your account' })
       }
     }
@@ -604,7 +638,7 @@ router.post('/', async (req, res, next) => {
         shipping_partner_email: shippingPartnerEmail ?? null,
         shipping_partner_name: shippingPartnerName ?? null,
         deceased_name: deceasedName ?? null,
-        funeral_home_id: req.user.id,
+        funeral_home_id: req.user.funeralHomeId,
         proposed_slots: proposedSlots,
       })
       .select()
@@ -698,7 +732,7 @@ router.post('/', async (req, res, next) => {
 })
 
 // ── POST /api/bookings/:id/confirm ───────────────
-router.post('/:id/confirm', async (req, res, next) => {
+router.post('/:id/confirm', requireWrite, async (req, res, next) => {
   try {
     const { slot } = req.body // { date, start, end }
     if (!slot?.date || !slot?.start) return res.status(400).json({ error: 'slot required' })
@@ -707,7 +741,7 @@ router.post('/:id/confirm', async (req, res, next) => {
       .from('cremation_bookings')
       .select('*')
       .eq('id', req.params.id)
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .single()
     if (fetchErr || !existing) return res.status(404).json({ error: 'Not found' })
     if (existing.status !== 'responded') return res.status(400).json({ error: 'Booking must be in responded status to confirm' })
@@ -810,7 +844,7 @@ router.post('/:id/confirm', async (req, res, next) => {
 })
 
 // ── POST /api/bookings/:id/reschedule ────────────
-router.post('/:id/reschedule', async (req, res, next) => {
+router.post('/:id/reschedule', requireWrite, async (req, res, next) => {
   try {
     const { proposedSlots } = req.body
     if (!Array.isArray(proposedSlots) || proposedSlots.length === 0) {
@@ -819,7 +853,7 @@ router.post('/:id/reschedule', async (req, res, next) => {
 
     const { data: existing, error: fetchErr } = await supabase
       .from('cremation_bookings').select('*')
-      .eq('id', req.params.id).eq('funeral_home_id', req.user.id).single()
+      .eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
     if (fetchErr || !existing) return res.status(404).json({ error: 'Booking not found' })
 
     const hasShipping = Boolean(existing.shipping_partner_id)
@@ -844,7 +878,7 @@ router.post('/:id/reschedule', async (req, res, next) => {
       .from('cremation_bookings')
       .update(updates)
       .eq('id', req.params.id)
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .select()
       .single()
     if (error) throw error
@@ -923,11 +957,11 @@ router.post('/:id/reschedule', async (req, res, next) => {
 })
 
 // ── DELETE /api/bookings/:id ─────────────────────
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireWrite, async (req, res, next) => {
   try {
     const { data: existing, error: fetchErr } = await supabase
       .from('cremation_bookings').select('*')
-      .eq('id', req.params.id).eq('funeral_home_id', req.user.id).single()
+      .eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
     if (fetchErr || !existing) return res.status(404).json({ error: 'Booking not found' })
     if (existing.status === 'cancelled') return res.status(204).send()
 
@@ -935,7 +969,7 @@ router.delete('/:id', async (req, res, next) => {
       .from('cremation_bookings')
       .update({ status: 'cancelled' })
       .eq('id', req.params.id)
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
     if (error) throw error
 
     const shaped = shapeRow(existing)

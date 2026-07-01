@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { updateCrematorium, updateShippingPartner } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useUser } from '../context/UserContext.jsx'
 import { getDefaultShippingPartnerId, setDefaultShippingPartnerId } from '../lib/preferences.js'
 import { Badge } from '../components/ui/Badge'
 import { InfoField } from '../components/ui/InfoField'
@@ -10,6 +11,7 @@ import { ChevronLeft, Pencil, TriangleAlert, Star } from 'lucide-react'
 export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCase, onSave, kind = 'crematorium' }) {
   const updateFn = kind === 'shipping' ? updateShippingPartner : updateCrematorium
   const { user } = useAuth()
+  const { canWrite } = useUser()
   const [isDefault, setIsDefault] = useState(
     kind === 'shipping' && getDefaultShippingPartnerId(user?.id) === crm.id
   )
@@ -99,7 +101,7 @@ export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCas
             <Badge variant={isActive ? 'primary' : 'red'}>{isActive ? 'Active' : 'Inactive'}</Badge>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 mt-1">
-            {isEditing ? (
+            {canWrite && (isEditing ? (
               <>
                 <button onClick={handleCancel}
                   className="px-3 py-1.5 rounded-lg border border-line font-sans text-xs text-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer">
@@ -115,7 +117,7 @@ export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCas
                 className="w-8 h-8 flex items-center justify-center rounded-lg border border-line text-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer">
                 <Pencil size={14} />
               </button>
-            )}
+            ))}
           </div>
         </div>
         {error && <p className="font-sans text-xs text-danger mt-2">{error}</p>}
@@ -240,19 +242,21 @@ export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCas
                   </button>
                 </div>
               )}
-              <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-danger/30 bg-danger-tint/40">
-                <TriangleAlert size={14} className="text-danger flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-sans text-[12.5px] font-medium text-danger">Remove Partner</p>
-                  <p className="font-sans text-[11px] text-danger/70 mt-0.5">This will disconnect the partner from your account.</p>
+              {canWrite && (
+                <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-danger/30 bg-danger-tint/40">
+                  <TriangleAlert size={14} className="text-danger flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-sans text-[12.5px] font-medium text-danger">Remove Partner</p>
+                    <p className="font-sans text-[11px] text-danger/70 mt-0.5">This will disconnect the partner from your account.</p>
+                  </div>
+                  <button
+                    onClick={() => onRemove(crm)}
+                    className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-danger text-white font-sans text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer"
+                  >
+                    Delete
+                  </button>
                 </div>
-                <button
-                  onClick={() => onRemove(crm)}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-danger text-white font-sans text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer"
-                >
-                  Delete
-                </button>
-              </div>
+              )}
             </div>
           )}
         </div>

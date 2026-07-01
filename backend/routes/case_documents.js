@@ -33,6 +33,10 @@ function shapeRow(row) {
 // GET /api/cases/:caseId/documents/structured
 router.get('/structured', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { data, error } = await supabase
       .from('case_documents')
       .select(DOC_SELECT)
@@ -57,6 +61,10 @@ router.post('/structured', requireAuth, async (req, res, next) => {
     if (!body.fileUrl || !body.fileName) {
       return res.status(400).json({ error: 'fileUrl and fileName are required' })
     }
+
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
 
     const { data, error } = await supabase
       .from('case_documents')
@@ -112,6 +120,10 @@ router.post('/structured', requireAuth, async (req, res, next) => {
 // PATCH /api/cases/:caseId/documents/structured/:id
 router.patch('/structured/:id', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const body = req.body
     const patch = {}
     if ('documentType' in body) patch.document_type = body.documentType
@@ -144,6 +156,10 @@ router.patch('/structured/:id', requireAuth, async (req, res, next) => {
 // PATCH /api/cases/:caseId/documents/structured/:id/folder
 router.patch('/structured/:id/folder', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { folderId } = req.body
     const { data, error } = await supabase
       .from('case_documents')
@@ -163,6 +179,10 @@ router.patch('/structured/:id/folder', requireAuth, async (req, res, next) => {
 // DELETE /api/cases/:caseId/documents/structured/:id
 router.delete('/structured/:id', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { error } = await supabase
       .from('case_documents')
       .update({ deleted_at: new Date().toISOString() })
