@@ -1120,6 +1120,33 @@ function FieldGroup({ label, children }) {
   )
 }
 
+function SegCtrl({ options, value, onChange }) {
+  return (
+    <div className="flex bg-canvas rounded-lg border border-line p-0.5">
+      {options.map(o => (
+        <button key={o.value} onClick={() => onChange(o.value)}
+          className={`flex-1 py-1.5 rounded-md font-sans text-[11px] cursor-pointer border-0 outline-none transition-all ${value === o.value ? 'bg-white text-ink shadow-sm font-medium' : 'text-muted hover:text-secondary'}`}
+        >{o.label}</button>
+      ))}
+    </div>
+  )
+}
+
+function Inp({ label, value, onChange, placeholder, rows }) {
+  return (
+    <div>
+      {label && <p className="font-sans text-[10px] text-muted mb-1">{label}</p>}
+      {rows ? (
+        <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} placeholder={placeholder}
+          className="w-full px-2.5 py-2 font-sans text-[12px] text-ink border border-line rounded-lg outline-none focus:border-ink/30 transition bg-white resize-none leading-relaxed" />
+      ) : (
+        <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+          className="w-full px-2.5 py-1.5 font-sans text-[12px] text-ink border border-line rounded-lg outline-none focus:border-ink/30 transition bg-white" />
+      )}
+    </div>
+  )
+}
+
 export function TemplateEditor({ template, customization, onSave, onBack, logoUrl, caseData }) {
   const [openPanels, setOpenPanels] = useState(new Set(['body']))
   const [sections, setSections] = useState(
@@ -1181,33 +1208,6 @@ export function TemplateEditor({ template, customization, onSave, onBack, logoUr
     setFooterName(SAMPLE.funeralHome); setFooterTagline(SAMPLE.tagline)
     setFooterAddress('123 Memorial Lane · San Francisco · (415) 555-0100')
     setFooterCopyright(`© 2024 ${SAMPLE.funeralHome} · Unsubscribe`)
-  }
-
-  function SegCtrl({ options, value, onChange }) {
-    return (
-      <div className="flex bg-canvas rounded-lg border border-line p-0.5">
-        {options.map(o => (
-          <button key={o.value} onClick={() => onChange(o.value)}
-            className={`flex-1 py-1.5 rounded-md font-sans text-[11px] cursor-pointer border-0 outline-none transition-all ${value === o.value ? 'bg-white text-ink shadow-sm font-medium' : 'text-muted hover:text-secondary'}`}
-          >{o.label}</button>
-        ))}
-      </div>
-    )
-  }
-
-  function Inp({ label, value, onChange, placeholder, rows }) {
-    return (
-      <div>
-        {label && <p className="font-sans text-[10px] text-muted mb-1">{label}</p>}
-        {rows ? (
-          <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows} placeholder={placeholder}
-            className="w-full px-2.5 py-2 font-sans text-[12px] text-ink border border-line rounded-lg outline-none focus:border-ink/30 transition bg-white resize-none leading-relaxed" />
-        ) : (
-          <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-            className="w-full px-2.5 py-1.5 font-sans text-[12px] text-ink border border-line rounded-lg outline-none focus:border-ink/30 transition bg-white" />
-        )}
-      </div>
-    )
   }
 
   const progressEnabled = sections.find(s => s.id === 'progress')?.enabled

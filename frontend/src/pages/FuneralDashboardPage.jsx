@@ -182,6 +182,16 @@ export function FuneralDashboardPage() {
         <ShippingPartnersPage cases={cases} onViewCase={viewCase} />
       ) : view === 'family-portal' ? (
         <EmailEditorPage cases={cases} />
+      ) : view === 'new-case' ? (
+        <div className="flex-1 overflow-auto bg-white px-8 py-7">
+          <NewCasePage
+            onBack={() => navigate('cases')}
+            onComplete={newCase => {
+              handleNewCase(newCase)
+              navigate('cases')
+            }}
+          />
+        </div>
       ) : (
       <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
 
@@ -192,17 +202,6 @@ export function FuneralDashboardPage() {
             onViewCase={viewCase}
             onNewCase={() => setView('new-case')}
             onViewInbox={(itemId) => { setInitialInboxId(itemId); setView('inbox') }}
-          />
-        )}
-
-        {/* ── New case ── */}
-        {view === 'new-case' && (
-          <NewCasePage
-            onBack={() => navigate('cases')}
-            onComplete={newCase => {
-              handleNewCase(newCase)
-              navigate('cases')
-            }}
           />
         )}
 
