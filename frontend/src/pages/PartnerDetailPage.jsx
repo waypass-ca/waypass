@@ -1,12 +1,124 @@
-import { useState } from 'react'
-import { updateCrematorium, updateShippingPartner } from '../lib/api.js'
+import { useState, useRef } from 'react'
+import { updateCrematorium, updateShippingPartner, generateCrematoriumLogo } from '../lib/api.js'
+import { uploadToCloudinary } from '../lib/cloudinary.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { getDefaultShippingPartnerId, setDefaultShippingPartnerId } from '../lib/preferences.js'
 import { Badge } from '../components/ui/Badge'
 import { InfoField } from '../components/ui/InfoField'
 import { InfoSection } from '../components/ui/InfoSection'
-import { ChevronLeft, Pencil, TriangleAlert, Star } from 'lucide-react'
+import { ChevronLeft, Pencil, TriangleAlert, Star, ImageIcon, Sparkles, Upload } from 'lucide-react'
+
+function LogoSlot({ crm, canWrite, onUpdated }) {
+  const [mode, setMode] = useState(null) // null | 'picker' | 'working'
+  const [logoError, setLogoError] = useState(null)
+  const fileRef = useRef(null)
+
+  async function handleGenerate() {
+    setMode('working')
+    setLogoError(null)
+    try {
+      const updated = await generateCrematoriumLogo(crm.id)
+      onUpdated(updated)
+    } catch (err) {
+      setLogoError(err.message)
+    } finally {
+      setMode(null)
+    }
+  }
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setMode('working')
+    setLogoError(null)
+    try {
+      const logoUrl = await uploadToCloudinary(file)
+      const updated = await updateCrematorium(crm.id, { logoUrl })
+      onUpdated(updated)
+    } catch (err) {
+      setLogoError(err.message)
+    } finally {
+      setMode(null)
+      e.target.value = ''
+    }
+  }
+
+  const isWorking = mode === 'working'
+
+  const picker = mode === 'picker' && (
+    <div className="absolute top-full left-0 mt-1.5 z-20 bg-white border border-line rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.10)] p-2 w-52">
+      {crm.website && (
+        <button
+          onClick={handleGenerate}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left hover:bg-canvas transition-colors group"
+        >
+          <Sparkles size={13} className="text-primary flex-shrink-0" />
+          <div>
+            <p className="font-sans text-[12.5px] font-medium text-ink">Generate from website</p>
+            <p className="font-sans text-[11px] text-muted">Pull logo from {(() => { try { return new URL(crm.website.startsWith('http') ? crm.website : `https://${crm.website}`).hostname.replace(/^www\./, '') } catch { return crm.website } })()}</p>
+          </div>
+        </button>
+      )}
+      <button
+        onClick={() => fileRef.current?.click()}
+        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left hover:bg-canvas transition-colors"
+      >
+        <Upload size={13} className="text-muted flex-shrink-0" />
+        <div>
+          <p className="font-sans text-[12.5px] font-medium text-ink">Upload image</p>
+          <p className="font-sans text-[11px] text-muted">PNG, JPG, SVG up to 2 MB</p>
+        </div>
+      </button>
+      {logoError && <p className="font-sans text-[11px] text-danger px-3 pb-1 mt-1">{logoError}</p>}
+    </div>
+  )
+
+  if (crm.logoUrl) {
+    return (
+      <div className="relative flex-shrink-0" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setMode(null) }} tabIndex={-1}>
+        <div className="relative group">
+          <img
+            src={crm.logoUrl}
+            alt=""
+            className="w-14 h-14 rounded-xl object-contain border border-line bg-white"
+          />
+          {canWrite && (
+            <button
+              onClick={() => setMode(m => m === 'picker' ? null : 'picker')}
+              className={`absolute inset-0 rounded-xl bg-black/40 flex items-center justify-center cursor-pointer border-0 outline-none transition-opacity ${isWorking ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+            >
+              {isWorking
+                ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                : <Pencil size={14} className="text-white" />
+              }
+            </button>
+          )}
+        </div>
+        {picker}
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      </div>
+    )
+  }
+
+  if (!canWrite) return null
+
+  return (
+    <div className="relative flex-shrink-0" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setMode(null) }} tabIndex={-1}>
+      <button
+        onClick={() => setMode(m => m === 'picker' ? null : 'picker')}
+        className="w-14 h-14 rounded-xl border-2 border-dashed border-line flex flex-col items-center justify-center gap-0.5 text-muted hover:border-ink/30 hover:text-ink/50 transition-colors cursor-pointer bg-transparent outline-none"
+      >
+        {isWorking
+          ? <div className="w-4 h-4 border-2 border-muted border-t-transparent rounded-full animate-spin" />
+          : <ImageIcon size={16} />
+        }
+      </button>
+      {picker}
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+    </div>
+  )
+}
 
 export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCase, onSave, kind = 'crematorium' }) {
   const updateFn = kind === 'shipping' ? updateShippingPartner : updateCrematorium
@@ -89,6 +201,9 @@ export function PartnerDetailPage({ crm, cases = [], onBack, onRemove, onViewCas
         </button>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
+            {kind === 'crematorium' && (
+              <LogoSlot crm={crm} canWrite={canWrite} onUpdated={onSave} />
+            )}
             {isEditing ? (
               <input
                 value={form.name}

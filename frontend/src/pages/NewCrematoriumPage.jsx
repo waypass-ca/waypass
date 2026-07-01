@@ -77,7 +77,7 @@ function ConfirmRow({ label, value }) {
 
 export function NewCrematoriumPage({ onBack, onComplete }) {
   const [step, setStep] = useState(0)
-  const [details, setDetails] = useState({ name: '', location: '', distance: '' })
+  const [details, setDetails] = useState({ name: '', location: '', distance: '', website: '' })
   const [contact, setContact] = useState({ name: '', phone: '', avgTurnaround: '', avgFee: '' })
   const [isComplete, setIsComplete] = useState(false)
   const [submitError, setSubmitError] = useState(null)
@@ -88,6 +88,7 @@ export function NewCrematoriumPage({ onBack, onComplete }) {
       name: details.name,
       location: details.location,
       distance: details.distance || null,
+      website: details.website || null,
       contact: contact.name || null,
       phone: contact.phone || null,
       avg_turnaround: contact.avgTurnaround || null,
@@ -144,6 +145,7 @@ export function NewCrematoriumPage({ onBack, onComplete }) {
             <InputField label="Crematorium Name" placeholder="e.g. Westlake Cremation Services" value={details.name} onChange={v => setDetails(p => ({ ...p, name: v }))} />
             <InputField label="Location" placeholder="e.g. San Francisco, CA" value={details.location} onChange={v => setDetails(p => ({ ...p, location: v }))} />
             <InputField label="Distance" placeholder="e.g. 12 miles" value={details.distance} onChange={v => setDetails(p => ({ ...p, distance: v }))} />
+            <InputField label="Website" placeholder="e.g. https://westlakecremation.com" value={details.website} onChange={v => setDetails(p => ({ ...p, website: v }))} />
           </div>
         )}
 
@@ -165,6 +167,7 @@ export function NewCrematoriumPage({ onBack, onComplete }) {
               <ConfirmRow label="Name" value={details.name} />
               <ConfirmRow label="Location" value={details.location} />
               <ConfirmRow label="Distance" value={details.distance} />
+              <ConfirmRow label="Website" value={details.website} />
             </div>
             <div>
               <p className="font-sans text-xs text-muted uppercase tracking-wide mb-2">Contact</p>

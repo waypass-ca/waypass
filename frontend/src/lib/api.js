@@ -100,6 +100,8 @@ export const connectCrematorium = (id) =>
   mutate(`/api/crematoriums/${id}/connect`, { method: 'POST' })
 export const disconnectCrematorium = (id) =>
   mutate(`/api/crematoriums/${id}/connect`, { method: 'DELETE' })
+export const generateCrematoriumLogo = (id) =>
+  mutate(`/api/crematoriums/${id}/generate-logo`, { method: 'POST' })
 
 const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
