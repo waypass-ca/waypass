@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthContext.jsx'
 import { fetchCurrentUser } from '../lib/api.js'
@@ -10,6 +11,7 @@ export function UserProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [profileError, setProfileError] = useState(false)
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!session) {
       setProfile(null)

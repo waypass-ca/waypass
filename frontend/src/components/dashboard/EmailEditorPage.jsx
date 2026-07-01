@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, useRef } from 'react'
 import { Star, Check, X, Eye, GripVertical, ChevronLeft, ChevronRight, Pencil, RotateCcw, PanelTop, AlignLeft, PanelBottom, Search } from 'lucide-react'
 import { PageTitle } from '../layout/PageTitle'
@@ -707,13 +708,6 @@ export function EmailPreview({ t, logoUrl }) {
 function TemplateThumbnail({ t }) {
   const stepIdx = STATUS_ORDER.indexOf(SAMPLE.status)
 
-  const isLight = (hex) => {
-    const r = parseInt(hex.slice(1, 3), 16)
-    const g = parseInt(hex.slice(3, 5), 16)
-    const b = parseInt(hex.slice(5, 7), 16)
-    return (r * 299 + g * 587 + b * 114) / 1000 > 128
-  }
-
   return (
     <div className="rounded-lg overflow-hidden w-full" style={{ backgroundColor: t.bg }}>
       {/* Header */}
@@ -1132,6 +1126,7 @@ function SegCtrl({ options, value, onChange }) {
     </div>
   )
 }
+
 
 function Inp({ label, value, onChange, placeholder, rows }) {
   return (
@@ -1571,14 +1566,14 @@ function FavouritesRow({ templates, favouriteIds, activeId, onSetActive, onToggl
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export function EmailEditorPage({ cases = [] }) {
+export function EmailEditorPage({ cases = [], initialEmailTemplate, initialPortalSettings }) {
   const { canWrite } = useUser()
   // ── Global state ──
-  const [globalActiveId, setGlobalActiveId] = useState('classic')
-  const [favouriteIds, setFavouriteIds] = useState([])
-  const [globalCustomizations, setGlobalCustomizations] = useState({})
-  const [logoUrl, setLogoUrl] = useState('')
-  const [loading, setLoading] = useState(true)
+  const [globalActiveId, setGlobalActiveId] = useState(initialEmailTemplate?.activeTemplateId ?? 'classic')
+  const [favouriteIds, setFavouriteIds] = useState(initialEmailTemplate?.favouriteIds ?? [])
+  const [globalCustomizations, setGlobalCustomizations] = useState(initialEmailTemplate?.customizations ?? {})
+  const [logoUrl, setLogoUrl] = useState(initialPortalSettings?.logoUrl ?? '')
+  const [loading, setLoading] = useState(!initialEmailTemplate && !initialPortalSettings)
 
   // ── Case search state ──
   const [search, setSearch] = useState('')
@@ -1600,8 +1595,9 @@ export function EmailEditorPage({ cases = [] }) {
   const effectiveActiveId = caseMode ? (caseActiveId ?? globalActiveId) : null
   const effectiveCustomizations = caseMode ? caseCustomizations : globalCustomizations
 
-  // ── Load global settings + logo ──
+  // ── Load global settings + logo (only if not pre-fetched) ──
   useEffect(() => {
+    if (initialEmailTemplate && initialPortalSettings) return
     Promise.all([
       fetchEmailTemplate().catch(() => null),
       fetchPortalSettings().catch(() => null),
@@ -1616,6 +1612,7 @@ export function EmailEditorPage({ cases = [] }) {
   }, [])
 
   // ── Load case override when a case is selected ──
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (!selectedCase) { setCaseOverrideLoaded(false); return }
     setCaseOverrideLoaded(false)
@@ -1631,6 +1628,7 @@ export function EmailEditorPage({ cases = [] }) {
       })
       .catch(() => { setCaseActiveId(null); setCaseCustomizations({}) })
       .finally(() => setCaseOverrideLoaded(true))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCase?.id])
 
   // ── Close dropdown on outside click ──
@@ -1754,14 +1752,7 @@ export function EmailEditorPage({ cases = [] }) {
       : SAMPLE.documents,
   } : null
 
-  // ── Loading ──
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <p className="font-sans text-sm text-muted">Loading email settings…</p>
-      </div>
-    )
-  }
+  if (loading) return null
 
   // ── Editor view ──
   if (editingId) {

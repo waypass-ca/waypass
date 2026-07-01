@@ -11,13 +11,12 @@ import { PartnerDetailPage } from './PartnerDetailPage'
 import { PartnersList } from '../components/partners/PartnersList'
 import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
-export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }) {
+export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase, initialCrematoriums }) {
   const { user } = useAuth()
   const { canWrite } = useUser()
   const [tab, setTab] = useState('partners')
-  const [crematoriums, setCrematoriums] = useState([])
+  const [crematoriums, setCrematoriums] = useState(initialCrematoriums ?? [])
   const [nearby, setNearby] = useState([])
-  const [loading, setLoading] = useState(true)
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [userLocation, setUserLocation] = useState(null)
@@ -27,7 +26,8 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }
   const [selectedPartner, setSelectedPartner] = useState(null)
 
   useEffect(() => {
-    fetchCrematoriums().then(setCrematoriums).catch(console.error).finally(() => setLoading(false))
+    if (initialCrematoriums) return
+    fetchCrematoriums().then(setCrematoriums).catch(console.error)
   }, [])
 
   useEffect(() => {
@@ -81,11 +81,6 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }
     setAddingCrm(null)
   }
 
-  if (loading) return (
-    <div className="flex-1 flex items-center justify-center">
-      <p className="font-sans text-sm text-muted">Loading…</p>
-    </div>
-  )
 
   if (selectedPartner) {
     return (

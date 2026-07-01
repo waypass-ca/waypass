@@ -84,7 +84,6 @@ export function CasesGridView({ cases, userFolders, folderCounts, gridFolderView
     ? cases.filter(c => c.folderId === gridFolderView)
     : cases.filter(c => !c.folderId)
 
-  const hasFolders = !gridFolderView && userFolders.length > 0
   const hasUnfiled = !gridFolderView && displayCases.length > 0
 
   return (

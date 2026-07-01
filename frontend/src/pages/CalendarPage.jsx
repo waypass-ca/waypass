@@ -167,24 +167,21 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onReschedule,
 }
 
 
-export function CalendarPage({ cases = [] }) {
+export function CalendarPage({ cases = [], initialBookings }) {
   const { canWrite } = useUser()
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [viewMode, setViewMode] = useState('week') // 'month' | 'week'
   const [weekStart, setWeekStart] = useState(() => getSundayOf(today))
-  const [bookings, setBookings] = useState([])
+  const [bookings, setBookings] = useState(initialBookings ?? [])
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const [cancelTarget, setCancelTarget] = useState(null)
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchBookings()
-      .then(setBookings)
-      .catch(() => {})
-      .finally(() => setLoading(false))
+    if (initialBookings) return
+    fetchBookings().then(setBookings).catch(() => {})
   }, [])
 
   async function handleConfirm(bookingId, slot) {
@@ -219,7 +216,6 @@ export function CalendarPage({ cases = [] }) {
 
   const cells = buildMonthGrid(year, month)
   const todayStr = today.toISOString().slice(0, 10)
-
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-surface">
 
@@ -278,11 +274,7 @@ export function CalendarPage({ cases = [] }) {
       </div>
 
       {/* ── Body ── */}
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="font-sans text-[13px] text-muted">Loading…</p>
-        </div>
-      ) : viewMode === 'week' ? (() => {
+      {viewMode === 'week' ? (() => {
         const slotMap = {}
         bookings
           .filter(b => b.status === 'confirmed' && b.confirmedSlot)

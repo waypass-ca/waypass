@@ -376,10 +376,10 @@ function shapeFromDb(row) {
   })
 }
 
-export function InboxPage({ initialActiveId, onViewCase }) {
+export function InboxPage({ initialActiveId, onViewCase, initialItems }) {
   const { user } = useAuth()
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [items, setItems] = useState(() => initialItems ? initialItems.map(shapeItem) : [])
+  const [loading, setLoading] = useState(!initialItems)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [filters, setFilters] = useState({ types: new Set(), datePreset: '', readStatus: '' })
@@ -416,6 +416,7 @@ export function InboxPage({ initialActiveId, onViewCase }) {
   }, [panelWidth, panelFull])
 
   useEffect(() => {
+    if (initialItems) return
     fetchInbox({ limit: PAGE_SIZE })
       .then(data => {
         setItems(data.map(shapeItem))
@@ -608,13 +609,7 @@ export function InboxPage({ initialActiveId, onViewCase }) {
     ? (containerRef.current?.offsetWidth ?? 0) - panelWidth - 1
     : Infinity
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-muted font-sans text-[13px]">
-        Loading…
-      </div>
-    )
-  }
+  if (loading) return null
 
   return (
     <div className="flex-1 flex min-h-0 overflow-hidden bg-white text-ink">

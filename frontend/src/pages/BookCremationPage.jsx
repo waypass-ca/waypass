@@ -139,18 +139,28 @@ function BookingPanelRow({ booking, onConfirm, onCancel, onReschedule }) {
   )
 }
 
-export function BookCremationPage({ cases, preselectedCase }) {
+export function BookCremationPage({ cases, preselectedCase, initialCrematoriums, initialShippingPartners, initialBookings }) {
   const { user } = useAuth()
   const { canWrite } = useUser()
-  const [crematoriums, setCrematoriums] = useState([])
-  const [shippingPartners, setShippingPartners] = useState([])
-  const [existingBookings, setExistingBookings] = useState([])
+  const defaultShippingId = getDefaultShippingPartnerId(user?.id)
+
+  const [crematoriums, setCrematoriums] = useState(initialCrematoriums ?? [])
+  const [shippingPartners, setShippingPartners] = useState(initialShippingPartners ?? [])
+  const [existingBookings, setExistingBookings] = useState(initialBookings ?? [])
 
   const [query, setQuery] = useState(preselectedCase?.deceased ?? preselectedCase?.id ?? '')
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedCase, setSelectedCase] = useState(preselectedCase ?? null)
-  const [matchedCrem, setMatchedCrem] = useState(null)
-  const [selectedShipping, setSelectedShipping] = useState(null)
+  const [matchedCrem, setMatchedCrem] = useState(() =>
+    initialCrematoriums && preselectedCase?.crematoriumId
+      ? initialCrematoriums.find(cr => cr.id === preselectedCase.crematoriumId) ?? null
+      : null
+  )
+  const [selectedShipping, setSelectedShipping] = useState(() =>
+    initialShippingPartners && defaultShippingId
+      ? initialShippingPartners.find(p => p.id === defaultShippingId) ?? null
+      : null
+  )
   const searchRef = useRef(null)
 
   const [weekStart, setWeekStart] = useState(() => getSundayOf(new Date()))
@@ -168,21 +178,24 @@ export function BookCremationPage({ cases, preselectedCase }) {
   const pendingSlots = useRef(null)
 
   useEffect(() => {
-    fetchCrematoriums().then(list => {
-      setCrematoriums(list)
-      if (preselectedCase?.crematoriumId) {
-        setMatchedCrem(list.find(cr => cr.id === preselectedCase.crematoriumId) ?? null)
-      }
-    }).catch(() => {})
-    fetchShippingPartners().then(list => {
-      setShippingPartners(list)
-      const defaultId = getDefaultShippingPartnerId(user?.id)
-      if (defaultId) {
-        const defaultPartner = list.find(p => p.id === defaultId)
-        if (defaultPartner) setSelectedShipping(defaultPartner)
-      }
-    }).catch(() => {})
-    fetchBookings().then(setExistingBookings).catch(() => {})
+    if (initialCrematoriums && initialShippingPartners && initialBookings) return
+    Promise.allSettled([
+      !initialCrematoriums && fetchCrematoriums().then(list => {
+        setCrematoriums(list)
+        if (preselectedCase?.crematoriumId) {
+          setMatchedCrem(list.find(cr => cr.id === preselectedCase.crematoriumId) ?? null)
+        }
+      }),
+      !initialShippingPartners && fetchShippingPartners().then(list => {
+        setShippingPartners(list)
+        const defaultId = getDefaultShippingPartnerId(user?.id)
+        if (defaultId) {
+          const defaultPartner = list.find(p => p.id === defaultId)
+          if (defaultPartner) setSelectedShipping(defaultPartner)
+        }
+      }),
+      !initialBookings && fetchBookings().then(setExistingBookings),
+    ].filter(Boolean))
   }, [])
 
   useEffect(() => {

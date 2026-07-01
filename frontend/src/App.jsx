@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import { UserProvider, useUser } from './context/UserContext.jsx'
 import { DarkModeProvider } from './context/DarkModeContext.jsx'
@@ -6,10 +7,15 @@ import { FuneralDashboardPage } from './pages/FuneralDashboardPage'
 import { CrematoriumResponsePage } from './pages/CrematoriumResponsePage.jsx'
 import { ShippingResponsePage } from './pages/ShippingResponsePage.jsx'
 import { AcceptInvitePage } from './pages/AcceptInvitePage.jsx'
+import { AppSkeleton } from './components/skeletons/AppSkeleton'
+import { useDelayedLoading } from './hooks/useDelayedLoading'
 
 function AppInner() {
   const { session } = useAuth()
   const { profile, loading: profileLoading, profileError } = useUser()
+
+  const authLoading = session === undefined || (!!session && (profileLoading || (!profile && !profileError)))
+  const showSkeleton = useDelayedLoading(authLoading)
 
   if (window.location.pathname.startsWith('/respond-shipping/')) {
     const token = window.location.pathname.split('/respond-shipping/')[1]
@@ -25,16 +31,12 @@ function AppInner() {
     return <AcceptInvitePage />
   }
 
-  // Auth state still unknown
-  if (session === undefined) return null
+  if (authLoading) return showSkeleton ? <AppSkeleton /> : null
 
-  // No session → login immediately, no need to wait for profile
+  // No session → login
   if (!session) return <LoginScreen />
 
-  // Have a session but profile is still loading
-  if (profileLoading || (!profile && !profileError)) return null
-
-  // Signed in but profile fetch failed (e.g. account not fully set up)
+  // Profile fetch failed
   if (!profile) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-canvas">
