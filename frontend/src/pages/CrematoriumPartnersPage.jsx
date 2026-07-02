@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { fetchCrematoriums, createCrematorium, fetchNearbyCrematoriums } from '../lib/api.js'
-import { useAuth } from '../context/AuthContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { PageTitle } from '../components/layout/PageTitle'
 import { Button } from '../components/ui/Button'
@@ -12,7 +11,6 @@ import { PartnersList } from '../components/partners/PartnersList'
 import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
 export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase, initialCrematoriums }) {
-  const { user } = useAuth()
   const { canWrite } = useUser()
   const [tab, setTab] = useState('partners')
   const [crematoriums, setCrematoriums] = useState(initialCrematoriums ?? [])
@@ -39,6 +37,7 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase, 
 
   useEffect(() => {
     if (!userLocation) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- toggle loading state around the discovery fetch
     setNearbyLoading(true)
     fetchNearbyCrematoriums(userLocation.lat, userLocation.lng)
       .then(setNearby).catch(console.error).finally(() => setNearbyLoading(false))
@@ -47,6 +46,7 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase, 
   useEffect(() => {
     if (!selectedPartner) return
     const updated = crematoriums.find(c => c.id === selectedPartner.id)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- keep the open detail view in sync with refreshed list data
     if (updated) setSelectedPartner(updated)
   }, [crematoriums])
 

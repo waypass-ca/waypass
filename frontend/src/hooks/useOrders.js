@@ -6,6 +6,7 @@ export function useOrders(initialOrders) {
 
   // Sync when parent provides fetched data
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: adopt freshly fetched orders from the parent
     if (initialOrders.length > 0) setOrders(initialOrders)
   }, [initialOrders])
 

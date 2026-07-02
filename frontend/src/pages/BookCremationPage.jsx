@@ -4,7 +4,7 @@ import { fetchCrematoriums, fetchShippingPartners, fetchBookings, createBooking,
 import { useAuth } from '../context/AuthContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { getDefaultShippingPartnerId } from '../lib/preferences.js'
-import { getSundayOf, slotToObj, objToKey, slotKey, slotToLabel, formatWeekRange } from '../lib/slotUtils.js'
+import { getSundayOf, slotToObj, objToKey, slotToLabel, formatWeekRange } from '../lib/slotUtils.js'
 import { Button } from '../components/ui/Button.jsx'
 import { WeekGrid } from '../components/booking/WeekGrid.jsx'
 import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
@@ -475,7 +475,7 @@ export function BookCremationPage({ cases, preselectedCase, initialCrematoriums,
           className={`select-none bg-white ${disabled ? 'opacity-50' : ''}`}
           onMouseUp={commitDrag}
           onMouseLeave={commitDrag}
-          renderCell={(key, date, hour, isToday) => {
+          renderCell={(key, date, hour) => {
             const isSelected = selectedSlots.has(key)
             const busyLabel = busySlots.get(key)
             const isBusy = busyLabel !== undefined

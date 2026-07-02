@@ -2,8 +2,12 @@ import { Router } from 'express'
 import { randomUUID } from 'crypto'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { requireWrite } from '../middleware/requireRole.js'
 
 const router = Router()
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MAX_HTML_BYTES = 200 * 1024
 
 function shapeRow(row) {
   return {
@@ -30,7 +34,7 @@ router.get('/', requireAuth, async (req, res, next) => {
 })
 
 // PUT /api/email-template — authenticated, upserts full state
-router.put('/', requireAuth, async (req, res, next) => {
+router.put('/', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const body = req.body
     const { data, error } = await supabase
@@ -75,7 +79,7 @@ router.get('/overrides/:caseId', requireAuth, async (req, res, next) => {
   }
 })
 
-router.put('/overrides/:caseId', requireAuth, async (req, res, next) => {
+router.put('/overrides/:caseId', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const { data: _case, error: caseErr } = await supabase
       .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
@@ -104,7 +108,7 @@ router.put('/overrides/:caseId', requireAuth, async (req, res, next) => {
   }
 })
 
-router.delete('/overrides/:caseId', requireAuth, async (req, res, next) => {
+router.delete('/overrides/:caseId', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const { data: _case, error: caseErr } = await supabase
       .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
@@ -121,12 +125,46 @@ router.delete('/overrides/:caseId', requireAuth, async (req, res, next) => {
   }
 })
 
-// POST /api/email-template/send-family — send a family email via Resend
-router.post('/send-family', requireAuth, async (req, res, next) => {
+// POST /api/email-template/send-family — send a family email via Resend.
+// Scoped to a case the caller's funeral home owns, and the recipient must be a
+// known contact on that case. This prevents the endpoint from being abused as an
+// open relay to send arbitrary HTML from the Waypass sending domain.
+router.post('/send-family', requireAuth, requireWrite, async (req, res, next) => {
   try {
-    const { to, subject, html, attachments = [] } = req.body
-    if (!to || !subject || !html) {
-      return res.status(400).json({ error: 'to, subject, and html are required' })
+    const { to, subject, html, caseId, attachments = [] } = req.body
+    if (!to || !subject || !html || !caseId) {
+      return res.status(400).json({ error: 'caseId, to, subject, and html are required' })
+    }
+    if (!EMAIL_RE.test(String(to))) {
+      return res.status(400).json({ error: 'to must be a valid email address' })
+    }
+    if (Buffer.byteLength(String(html), 'utf8') > MAX_HTML_BYTES) {
+      return res.status(413).json({ error: 'html exceeds maximum size' })
+    }
+
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases')
+      .select('id, contact_email')
+      .eq('id', caseId)
+      .eq('funeral_home_id', req.user.funeralHomeId)
+      .maybeSingle()
+    if (caseErr) throw caseErr
+    if (!_case) return res.status(404).json({ error: 'Case not found' })
+
+    const { data: contacts, error: contactsErr } = await supabase
+      .from('case_contacts')
+      .select('email')
+      .eq('case_id', caseId)
+      .is('deleted_at', null)
+    if (contactsErr) throw contactsErr
+
+    const allowed = new Set(
+      [_case.contact_email, ...(contacts ?? []).map(c => c.email)]
+        .filter(Boolean)
+        .map(e => e.trim().toLowerCase())
+    )
+    if (!allowed.has(String(to).trim().toLowerCase())) {
+      return res.status(403).json({ error: 'Recipient is not a contact on this case' })
     }
 
     // Download each document from Supabase storage and attach to email

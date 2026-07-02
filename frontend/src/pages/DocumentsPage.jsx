@@ -13,8 +13,8 @@ import {
   DocsSelectionBar, DocsStatusFooter,
 } from '../components/documents/docsShared'
 
-export function DocumentsPage({ cases = [], onCasesChange }) {
-  const [category, setCategory]       = useState('all')
+export function DocumentsPage({ cases = [] }) {
+  const [category]                    = useState('all')
   const [search, setSearch]           = useState('')
   const [view, setView]               = useState('list')
   const [sortBy, setSortBy]           = useState('date')
@@ -84,6 +84,7 @@ export function DocumentsPage({ cases = [], onCasesChange }) {
 
   const allDocs = useMemo(() => casesToDocs(cases), [cases])
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- manual memo kept intentionally
   const allDocsWithFolders = useMemo(() =>
     allDocs
       .filter(d => !localDeletedDocIds.has(d.id))
@@ -179,13 +180,7 @@ export function DocumentsPage({ cases = [], onCasesChange }) {
     setSelected(s => s.size === paginated.length ? new Set() : new Set(paginated.map(d => d.id)))
   }
 
-  const counts = useMemo(() => ({
-    all:         allDocsWithFolders.length,
-    pending:     allDocsWithFolders.filter(d => d.status === 'pending').length,
-    in_progress: allDocsWithFolders.filter(d => d.status === 'in_progress').length,
-    complete:    allDocsWithFolders.filter(d => d.status === 'complete').length,
-  }), [allDocsWithFolders])
-
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reset to first page when filters change
   useEffect(() => { setPage(1) }, [category, search, filters, sortBy])
 
   const handlePreview = async (doc) => {

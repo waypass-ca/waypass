@@ -5,6 +5,16 @@ import { requireWrite } from '../middleware/requireRole.js'
 
 const router = Router()
 
+// Columns a client may set. Prevents mass-assignment of funeral_home_id or
+// arbitrary/unknown columns.
+const INSERT_COLS = new Set(['id', 'name', 'description', 'price', 'sort_order'])
+const UPDATE_COLS = new Set(['name', 'description', 'price', 'sort_order'])
+const pick = (body, allowed) => {
+  const out = {}
+  for (const [k, v] of Object.entries(body ?? {})) if (allowed.has(k)) out[k] = v
+  return out
+}
+
 router.get('/', requireAuth, async (req, res, next) => {
   try {
     const { data, error } = await supabase
@@ -23,7 +33,7 @@ router.post('/', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('addons')
-      .insert({ ...req.body, funeral_home_id: req.user.funeralHomeId })
+      .insert({ ...pick(req.body, INSERT_COLS), funeral_home_id: req.user.funeralHomeId })
       .select()
       .single()
     if (error) throw error
@@ -37,7 +47,7 @@ router.patch('/:id', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('addons')
-      .update(req.body)
+      .update(pick(req.body, UPDATE_COLS))
       .eq('id', req.params.id)
       .eq('funeral_home_id', req.user.funeralHomeId)
       .select()

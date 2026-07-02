@@ -261,7 +261,7 @@ export function NewCasePage({ onBack, onComplete }) {
           const attachments = Object.values(documents)
             .filter(v => v.status === 'done' && v.path)
             .map(v => ({ name: v.name || 'document.pdf', storagePath: v.path }))
-          await sendFamilyEmail({ to: firstCall.nokEmail.trim(), subject, html, attachments })
+          await sendFamilyEmail({ to: firstCall.nokEmail.trim(), subject, html, caseId: newCase.id, attachments })
           toastSuccess(`Confirmation email sent to ${firstCall.nokEmail.trim()}`)
         } catch {
           toastError('Case created, but the confirmation email could not be sent.')

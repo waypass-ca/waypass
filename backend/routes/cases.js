@@ -1,8 +1,14 @@
 import { Router } from 'express'
+import { randomBytes } from 'node:crypto'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireWrite } from '../middleware/requireRole.js'
 import { createInboxItem } from '../lib/notifications.js'
+
+// Case IDs are shown to staff, so keep the recognizable PSG-YEAR-XXXXXX shape,
+// but use a random suffix (not a slice of Date.now()) so IDs can't be enumerated.
+const newCaseId = () =>
+  `PSG-${new Date().getFullYear()}-${randomBytes(3).toString('hex').toUpperCase()}`
 
 const lastName = (name) => {
   if (!name) return null
@@ -105,7 +111,7 @@ router.get('/:id', requireAuth, async (req, res, next) => {
 router.post('/', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const body = req.body
-    const id = `PSG-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`
+    const id = newCaseId()
 
     // 1. Create deceased record
     let deceasedId = null
@@ -290,13 +296,17 @@ router.post('/:id/addons', requireAuth, requireWrite, async (req, res, next) => 
     const { addonId } = req.body
     if (!addonId) return res.status(400).json({ error: 'addonId is required' })
 
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { error } = await supabase
       .from('case_addons')
       .insert({ case_id: req.params.id, addon_id: addonId })
     if (error) throw error
 
     const { data, error: fetchErr } = await supabase
-      .from('cases').select(CASE_SELECT).eq('id', req.params.id).single()
+      .from('cases').select(CASE_SELECT).eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
     if (fetchErr) throw fetchErr
     res.status(201).json(shapeRow(data))
   } catch (err) {
@@ -307,6 +317,10 @@ router.post('/:id/addons', requireAuth, requireWrite, async (req, res, next) => 
 // ── DELETE /api/cases/:id/addons/:addonId ───────
 router.delete('/:id/addons/:addonId', requireAuth, requireWrite, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { error } = await supabase
       .from('case_addons')
       .delete()
@@ -315,7 +329,7 @@ router.delete('/:id/addons/:addonId', requireAuth, requireWrite, async (req, res
     if (error) throw error
 
     const { data, error: fetchErr } = await supabase
-      .from('cases').select(CASE_SELECT).eq('id', req.params.id).single()
+      .from('cases').select(CASE_SELECT).eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
     if (fetchErr) throw fetchErr
     res.json(shapeRow(data))
   } catch (err) {

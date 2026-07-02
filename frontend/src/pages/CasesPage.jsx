@@ -8,12 +8,12 @@ import { CasesColumnsView } from '../components/cases/CasesColumnsView'
 import { CasePreviewPanel } from '../components/cases/CasePreviewPanel'
 import { SelectionBar, StatusFooter, SMART_FOLDER_IDS } from '../components/cases/caseShared'
 
-export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, onCasesChange }) {
+export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) {
   const [folder, setFolder] = useState('all')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
   const [activeId, setActiveId] = useState(null)
-  const [starredIds, setStarredIds] = useState(new Set())
+  const [starredIds] = useState(new Set())
   const [filters, setFilters] = useState({ packages: new Set(), statuses: new Set(), crematoriums: new Set(), datePreset: '', hasDocs: false, starredOnly: false })
   const [viewMode, setViewMode] = useState(() => {
     try { return localStorage.getItem('cases-view-mode') || 'list' } catch { return 'list' }
@@ -42,9 +42,10 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, on
   }, [cases, shippingPartners])
 
   useEffect(() => {
-    try { localStorage.setItem('cases-view-mode', viewMode) } catch { }
+    try { localStorage.setItem('cases-view-mode', viewMode) } catch { /* ignore */ }
   }, [viewMode])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reset to first page when filters change
   useEffect(() => { setPage(1) }, [folder, search, filters, sortBy])
 
   const isStarred = (id) => starredIds.has(id)
@@ -108,6 +109,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, on
 
   const isUserFolder = (id) => !SMART_FOLDER_IDS.has(id) && userFolders.some(f => f.id === id)
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- deps are listed explicitly; the isUserFolder helper is stable
   const filtered = useMemo(() => {
     let rows = enrichedCases.filter(c => !localDeletedCaseIds.has(c.id))
 
