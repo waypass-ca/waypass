@@ -13,7 +13,7 @@ import {
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { TYPE_CONFIG, formatScheduledFor } from '../components/notifications/notificationConfig.js'
-import { PageLoadingBar } from '../components/ui/PageLoadingBar.jsx'
+
 
 const PAGE_SIZE = 50
 
@@ -608,11 +608,7 @@ export function InboxPage({ initialActiveId, onViewCase }) {
     ? (containerRef.current?.offsetWidth ?? 0) - panelWidth - 1
     : Infinity
 
-  if (loading) return (
-    <div className="flex-1 relative bg-surface">
-      <PageLoadingBar />
-    </div>
-  )
+  if (loading) return null
 
   return (
     <div className="flex-1 flex min-h-0 overflow-hidden bg-white text-ink">

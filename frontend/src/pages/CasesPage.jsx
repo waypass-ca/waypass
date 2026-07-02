@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { fetchCases, fetchFolders, createFolder, deleteFolder, fetchShippingPartners } from '../lib/api.js'
-import { PageLoadingBar } from '../components/ui/PageLoadingBar.jsx'
+
 import { FolderDeleteModal } from '../components/ui/FolderDeleteModal.jsx'
 import { CasesTopBar } from '../components/cases/CasesTopBar'
 import { CasesListView } from '../components/cases/CasesListView'
@@ -203,9 +203,10 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, on
     [...new Set(cases.map(c => c.crematorium).filter(Boolean))].sort()
   , [cases])
 
+  if (loading) return null
+
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white text-ink relative">
-      {loading && <PageLoadingBar />}
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white text-ink">
       <CasesTopBar
         search={search} setSearch={setSearch}
         view={viewMode} setView={setViewMode}

@@ -6,7 +6,7 @@ import { objToKey, slotToLabel, getSundayOf, formatWeekRange } from '../lib/slot
 import { WeekGrid } from '../components/booking/WeekGrid.jsx'
 import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
 import { ConfirmModal } from '../components/ui/ConfirmModal.jsx'
-import { PageLoadingBar } from '../components/ui/PageLoadingBar.jsx'
+
 
 const STATUS_STYLES = {
   pending:   { chip: 'bg-amber-100 text-amber-800', dot: 'bg-amber-400' },
@@ -218,9 +218,11 @@ export function CalendarPage({ cases = [] }) {
 
   const cells = buildMonthGrid(year, month)
   const todayStr = today.toISOString().slice(0, 10)
+
+  if (loading) return null
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-surface relative">
-      {loading && <PageLoadingBar />}
+    <div className="flex-1 flex flex-col overflow-hidden bg-surface">
 
       {/* ── Page header ── */}
       <div className="flex-shrink-0 border-b border-line">

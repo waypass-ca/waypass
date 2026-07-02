@@ -4,7 +4,7 @@ import { Star, Check, X, Eye, GripVertical, ChevronLeft, ChevronRight, Pencil, R
 import { PageTitle } from '../layout/PageTitle'
 import { fetchPortalSettings, fetchEmailTemplate, saveEmailTemplate, fetchEmailOverride, saveEmailOverride } from '../../lib/api.js'
 import { useUser } from '../../context/UserContext.jsx'
-import { PageLoadingBar } from '../ui/PageLoadingBar.jsx'
+
 
 // ─── Sample data ──────────────────────────────────────────────────────────────
 
@@ -1766,11 +1766,7 @@ export function EmailEditorPage({ cases = [] }) {
       : SAMPLE.documents,
   } : null
 
-  if (loading) return (
-    <div className="flex-1 relative bg-surface">
-      <PageLoadingBar />
-    </div>
-  )
+  if (loading) return null
 
   // ── Editor view ──
   if (editingId) {

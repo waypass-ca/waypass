@@ -3,7 +3,7 @@ import { fetchShippingPartners, createShippingPartner, fetchNearbyShippingPartne
 import { useUser } from '../context/UserContext.jsx'
 import { PageTitle } from '../components/layout/PageTitle'
 import { Button } from '../components/ui/Button'
-import { PageLoadingBar } from '../components/ui/PageLoadingBar.jsx'
+
 import { Search } from 'lucide-react'
 import { AddPartnerModal } from '../components/partners/AddPartnerModal'
 import { DisconnectModal } from '../components/partners/DisconnectModal'
@@ -102,9 +102,10 @@ export function ShippingPartnersPage({ cases = [], onViewCase }) {
     )
   }
 
+  if (loading) return null
+
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-white relative">
-      {loading && <PageLoadingBar />}
+    <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {disconnecting && (
         <DisconnectModal crm={disconnecting} kind="shipping" onConfirm={handleDisconnected} onClose={() => setDisconnecting(null)} />
       )}

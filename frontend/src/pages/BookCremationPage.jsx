@@ -4,7 +4,7 @@ import { fetchCrematoriums, fetchShippingPartners, fetchBookings, createBooking,
 import { useAuth } from '../context/AuthContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { getDefaultShippingPartnerId } from '../lib/preferences.js'
-import { PageLoadingBar } from '../components/ui/PageLoadingBar.jsx'
+
 import { getSundayOf, slotToObj, objToKey, slotToLabel, formatWeekRange } from '../lib/slotUtils.js'
 import { Button } from '../components/ui/Button.jsx'
 import { WeekGrid } from '../components/booking/WeekGrid.jsx'
@@ -330,9 +330,10 @@ export function BookCremationPage({ cases, preselectedCase }) {
   const canSend = selectedCase && matchedCrem && selectedSlots.size > 0 && !caseHasActiveBooking
   const disabled = !selectedCase || !matchedCrem || !!caseHasActiveBooking
 
+  if (loading) return null
+
   return (
-    <div className="flex-1 flex overflow-hidden bg-surface relative">
-      {loading && <PageLoadingBar />}
+    <div className="flex-1 flex overflow-hidden bg-surface">
 
       {/* ── Main column ── */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
