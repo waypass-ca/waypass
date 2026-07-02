@@ -284,16 +284,16 @@ export function CalendarPage({ cases = [], initialBookings }) {
             weekStart={weekStart}
             className="border-l border-line bg-white"
             renderCell={(key, date, hour, isToday) => (
-              <div key={key} className={`border-r border-b border-line last:border-r-0 p-0.5 ${isToday ? 'bg-primary/5' : ''}`}>
+              <div key={key} className={`border-r border-b border-line last:border-r-0 p-0.5 overflow-hidden min-w-0 ${isToday ? 'bg-primary/5' : ''}`}>
                 {slotMap[key] && (
                   <button
                     onClick={() => setSelectedBooking(slotMap[key])}
-                    className="w-full h-full rounded px-1.5 flex flex-col justify-center bg-emerald-100 hover:bg-emerald-200 transition-colors text-left overflow-hidden"
+                    className="w-full h-full rounded px-1.5 flex flex-col justify-center bg-emerald-100 hover:bg-emerald-200 transition-colors text-left overflow-hidden min-w-0"
                   >
-                    <span className="font-sans text-[10px] font-semibold text-emerald-800 truncate leading-tight">
+                    <span className="font-sans text-[10px] font-semibold text-emerald-800 truncate leading-tight w-full min-w-0">
                       {cases.find(c => c.id === slotMap[key].caseId)?.deceased ?? slotMap[key].caseId}
                     </span>
-                    <span className="font-sans text-[9px] text-emerald-600 truncate leading-tight">
+                    <span className="font-sans text-[9px] text-emerald-600 truncate leading-tight w-full min-w-0">
                       {slotMap[key].crematoriumName}
                     </span>
                   </button>
@@ -318,7 +318,7 @@ export function CalendarPage({ cases = [], initialBookings }) {
           <div className="grid grid-cols-7 flex-1">
             {cells.map((date, idx) => {
               if (!date) return (
-                <div key={`empty-${idx}`} className="border-b border-r border-line last:border-r-0 min-h-[100px] bg-canvas/40" />
+                <div key={`empty-${idx}`} className="border-b border-r border-line last:border-r-0 min-h-[100px] bg-canvas/40 overflow-hidden min-w-0" />
               )
               const dateStr = date.toISOString().slice(0, 10)
               const dayBookings = bookingsByDate[dateStr] ?? []
@@ -328,7 +328,7 @@ export function CalendarPage({ cases = [], initialBookings }) {
               return (
                 <div
                   key={dateStr}
-                  className={`border-b border-r border-line last:border-r-0 min-h-[100px] p-2 ${isPast ? 'bg-canvas/40' : ''}`}
+                  className={`border-b border-r border-line last:border-r-0 min-h-[100px] p-2 overflow-hidden min-w-0 ${isPast ? 'bg-canvas/40' : ''}`}
                 >
                   <div className={`font-sans text-[12px] font-medium mb-1.5 w-6 h-6 flex items-center justify-center rounded-full ${
                     isToday ? 'bg-primary text-surface' : isPast ? 'text-muted' : 'text-ink'
