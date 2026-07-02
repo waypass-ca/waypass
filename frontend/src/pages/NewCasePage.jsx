@@ -7,7 +7,7 @@ import { TEMPLATES, EmailPreview as EmailPreviewComponent, PreviewModal, Templat
 import { Star, Check, Eye, X, Pencil, ChevronDown, MapPin } from 'lucide-react'
 import { generateEmailHtml, buildSubject, buildEmailConfig } from '../lib/emailHtml.jsx'
 import { sendFamilyEmail } from '../lib/api.js'
-import { toastError } from '../lib/toast.js'
+import { toastError, toastSuccess } from '../lib/toast.js'
 
 const STEPS = ['First Call', 'Removal Log', 'Documents', 'Package', 'Crematorium', 'Email Template', 'Confirm']
 
@@ -257,6 +257,7 @@ export function NewCasePage({ onBack, onComplete }) {
           const html = generateEmailHtml(chosenTemplate, sections, config, newCaseData, logoUrl)
           const subject = buildSubject('pending', config.footerName)
           await sendFamilyEmail({ to: firstCall.nokEmail.trim(), subject, html })
+          toastSuccess(`Confirmation email sent to ${firstCall.nokEmail.trim()}`)
         } catch {
           toastError('Case created, but the confirmation email could not be sent.')
         }

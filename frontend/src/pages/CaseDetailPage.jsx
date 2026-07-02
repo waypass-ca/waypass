@@ -168,7 +168,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
     const html = generateEmailHtml(effectiveTemplate, effectiveSections, effectiveConfig, emailCaseData, logoUrl)
     const subject = buildSubject(newStatus, effectiveConfig.footerName)
     await sendFamilyEmail({ to: recipientEmail, subject, html })
-    toastSuccess('Status update sent to the family.')
+    toastSuccess(`Status update sent to ${recipientEmail}`)
     setPendingEmailStatus(null)
   }
 
