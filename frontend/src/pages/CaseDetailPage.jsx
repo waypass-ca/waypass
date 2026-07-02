@@ -5,7 +5,7 @@ import {
   fetchCaseActivity, fetchCase,
   updateCase, updateCaseDeceased, updateCaseFinancials,
   fetchCaseContacts, updateCaseContact, addCaseAddon, removeCaseAddon,
-  fetchEmailTemplate, fetchEmailOverride, fetchPortalSettings, sendFamilyEmail,
+  fetchEmailTemplate, fetchEmailOverride, fetchPortalSettingsAuth, sendFamilyEmail,
 } from '../lib/api.js'
 import { toastError, toastSuccess, toastInfo } from '../lib/toast.js'
 import { TEMPLATES, DEFAULT_SECTIONS, DEFAULT_PROGRESS_LABELS, SAMPLE } from '../components/dashboard/EmailEditorPage'
@@ -120,7 +120,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
       refetchContacts(),
       fetchEmailTemplate().then(setEmailTemplateSettings).catch(() => {}),
       fetchEmailOverride(caseData.id).then(setEmailOverride).catch(() => {}),
-      fetchPortalSettings().then(d => { if (d?.logoUrl) setLogoUrl(d.logoUrl) }).catch(() => {}),
+      fetchPortalSettingsAuth().then(d => { if (d?.logoUrl) setLogoUrl(d.logoUrl) }).catch(() => {}),
     ])
   }, [caseData.id, refetchDocuments, refetchActivity, refetchContacts])
 

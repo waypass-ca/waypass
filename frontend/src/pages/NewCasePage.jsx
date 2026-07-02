@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { fetchPackages, fetchCrematoriums, createCase, fetchEmailTemplate, fetchPortalSettings, saveEmailOverride } from '../lib/api.js'
+import { fetchPackages, fetchCrematoriums, createCase, fetchEmailTemplate, fetchPortalSettingsAuth, saveEmailOverride } from '../lib/api.js'
 import { supabase } from '../lib/supabase.js'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
@@ -190,7 +190,7 @@ export function NewCasePage({ onBack, onComplete }) {
       if (d?.activeTemplateId) setGlobalTemplateId(d.activeTemplateId)
       if (d?.favouriteIds) setFavouriteTemplateIds(d.favouriteIds)
     }).catch(() => {})
-    fetchPortalSettings().then(d => { if (d?.logoUrl) setLogoUrl(d.logoUrl) }).catch(() => {})
+    fetchPortalSettingsAuth().then(d => { if (d?.logoUrl) setLogoUrl(d.logoUrl) }).catch(() => {})
   }, [])
 
   function setFC(key, val) { setFirstCall(p => ({ ...p, [key]: val })) }
