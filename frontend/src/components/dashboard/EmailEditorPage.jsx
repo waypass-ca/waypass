@@ -147,20 +147,16 @@ export const TEMPLATES = [
 // ─── Progress tracker variants ────────────────────────────────────────────────
 
 function ProgressDots({ t, stepIdx, steps = STEPS }) {
-  const n = steps.length
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', position: 'relative' }}>
-      {/* inactive track */}
-      <div style={{ position: 'absolute', top: 11, left: `${50/n}%`, right: `${50/n}%`, height: 2, backgroundColor: '#D0D0D0' }} />
-      {/* active track */}
-      {stepIdx > 0 && (
-        <div style={{ position: 'absolute', top: 11, left: `${50/n}%`, width: `${stepIdx * 100/n}%`, height: 2, backgroundColor: t.progressActive }} />
-      )}
+    <div style={{ display: 'flex', alignItems: 'center' }}>
       {steps.map((s, i) => {
         const done = i <= stepIdx
         const active = i === stepIdx
         return (
-          <div key={s.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+          <div key={s.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+            {i < steps.length - 1 && (
+              <div style={{ position: 'absolute', top: 12, left: '50%', width: '100%', height: 2, backgroundColor: i < stepIdx ? t.progressActive : '#D0D0D0' }} />
+            )}
             <div style={{ position: 'relative', zIndex: 1, width: 24, height: 24, borderRadius: '50%', border: `2px solid ${done ? t.progressActive : '#D0D0D0'}`, backgroundColor: done ? t.progressActive : t.cardBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {done && !active && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>}
               {active && <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: 'white' }} />}

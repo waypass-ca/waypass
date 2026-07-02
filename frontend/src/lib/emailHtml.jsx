@@ -78,7 +78,7 @@ function progressDots(t, stepIdx, labels) {
       : ''
     const lineColor = i < stepIdx ? t.progressActive : '#D0D0D0'
     return [
-      `<td align="center" valign="top" width="30">`,
+      `<td align="center" valign="top">`,
       `  <div style="width:24px;height:24px;border-radius:50%;border:2px solid ${border};background-color:${bg};margin:0 auto">`,
       `    <table cellpadding="0" cellspacing="0" width="24" height="24" style="border-collapse:collapse">`,
       `      <tr><td align="center" valign="middle">${inner}</td></tr>`,
@@ -86,7 +86,7 @@ function progressDots(t, stepIdx, labels) {
       `  </div>`,
       `  <div style="font-size:10px;color:${textColor};margin-top:6px;text-align:center;line-height:1.3;font-family:${t.font}">${esc(label)}</div>`,
       `</td>`,
-      i < n - 1 ? `<td valign="middle" style="padding:0 0 16px 0"><table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse"><tr><td height="2" style="height:2px;background-color:${lineColor};font-size:0;line-height:0"></td></tr></table></td>` : '',
+      i < n - 1 ? `<td valign="top" style="padding-top:11px"><div style="height:2px;background-color:${lineColor};font-size:0;line-height:0">&nbsp;</div></td>` : '',
     ].join('\n')
   }).join('\n')
   return `<table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse"><tr>${tds}</tr></table>`
