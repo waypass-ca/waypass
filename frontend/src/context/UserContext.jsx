@@ -11,8 +11,8 @@ export function UserProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [profileError, setProfileError] = useState(false)
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- intentional: this effect syncs local auth/profile state to the current session */
     if (!session) {
       setProfile(null)
       setProfileError(false)
@@ -28,6 +28,7 @@ export function UserProvider({ children }) {
       .then(data => { setProfile(data); setProfileError(false) })
       .catch(() => { setProfile(null); setProfileError(true) })
       .finally(() => setLoading(false))
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [session?.user?.id])
 
   const isAdmin = profile?.role === 'admin'

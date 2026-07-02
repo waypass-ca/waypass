@@ -551,7 +551,6 @@ export function InboxPage({ initialActiveId, onViewCase, initialItems }) {
   }, [selected])
 
   const markSelectedRead = useCallback(() => {
-    const toMark = [...selected]
     setItems(prev => {
       const unreadIds = prev.filter(i => selected.has(i.id) && !i.read).map(i => i.id)
       unreadIds.forEach(id => markInboxItemRead(id).catch(console.error))

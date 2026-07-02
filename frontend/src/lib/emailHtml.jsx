@@ -68,7 +68,6 @@ function progressDots(t, stepIdx, labels) {
   const n = labels.length
   const tds = labels.map((label, i) => {
     const done = i <= stepIdx
-    const active = i === stepIdx
     const bg = done ? t.progressActive : (t.cardBg || '#FFFFFF')
     const border = done ? t.progressActive : '#D0D0D0'
     const textColor = done ? t.text : t.muted

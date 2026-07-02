@@ -78,7 +78,8 @@ describe('GET /api/users/me', () => {
   it('returns 200 with current user profile', async () => {
     const res = await request(app).get('/api/users/me').set(authHeader)
     expect(res.status).toBe(200)
-    expect(res.body).toEqual(shapedUser)
+    // /me augments the base user shape with the joined funeral home name
+    expect(res.body).toEqual({ ...shapedUser, funeralHomeName: null })
   })
 })
 
