@@ -159,11 +159,12 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
     const recipientEmail = caseRow.contactEmail
     if (!recipientEmail || !newStatus) return
     const emailCaseData = {
-      deceased: caseRow.deceased,
-      family:   caseRow.family ?? caseRow.contactName,
-      status:   newStatus,
-      package:  caseRow.package,
-      date:     caseRow.date,
+      deceased:  caseRow.deceased,
+      family:    caseRow.family ?? caseRow.contactName,
+      status:    newStatus,
+      package:   caseRow.package,
+      date:      caseRow.date,
+      documents: documents.map(d => ({ name: d.fileName || 'Document', url: d.fileUrl || null })),
     }
     const html = generateEmailHtml(effectiveTemplate, effectiveSections, effectiveConfig, emailCaseData, logoUrl)
     const subject = buildSubject(newStatus, effectiveConfig.footerName)
@@ -502,11 +503,12 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
           sections={effectiveSections}
           config={effectiveConfig}
           caseData={{
-            deceased: caseRow.deceased,
-            family:   caseRow.family ?? caseRow.contactName,
-            status:   pendingEmailStatus,
-            package:  caseRow.package,
-            date:     caseRow.date,
+            deceased:  caseRow.deceased,
+            family:    caseRow.family ?? caseRow.contactName,
+            status:    pendingEmailStatus,
+            package:   caseRow.package,
+            date:      caseRow.date,
+            documents: documents.map(d => ({ name: d.fileName || 'Document', url: d.fileUrl || null })),
           }}
           logoUrl={logoUrl}
           onSend={() => handleSendStatusEmail(pendingEmailStatus)}

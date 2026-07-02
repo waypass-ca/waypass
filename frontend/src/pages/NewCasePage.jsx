@@ -276,7 +276,12 @@ export function NewCasePage({ onBack, onComplete }) {
     status: 'pending',
     package: selectedPackage?.name ? `${selectedPackage.name} Package` : undefined,
     date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    documents: Object.entries(documents).filter(([, v]) => v.status === 'done').map(([, v]) => v.name || 'Document'),
+    documents: Object.entries(documents)
+      .filter(([, v]) => v.status === 'done')
+      .map(([, v]) => ({
+        name: v.name || 'Document',
+        url: v.path ? (supabase.storage.from('case-documents').getPublicUrl(v.path).data?.publicUrl || null) : null,
+      })),
   }
 
   if (step === 5 && editingTemplateId) {
