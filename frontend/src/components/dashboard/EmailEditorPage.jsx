@@ -1015,15 +1015,18 @@ export function EditableEmailPreview({ template, sections, config, logoUrl, case
         return (
           <div key={s.id} style={cs}>
             {s.heading && <div style={headingStyle}>{s.heading}</div>}
-            {d.documents.map(doc => (
-              <div key={doc} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', backgroundColor: t.bg, borderRadius: Math.min(cr, 6), marginBottom: 6 }}>
-                <div style={{ width: 26, height: 30, borderRadius: 4, backgroundColor: t.accent + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: 8, fontWeight: 700, color: t.accent }}>PDF</span>
+            {d.documents.map((doc, i) => {
+              const docName = typeof doc === 'string' ? doc : (doc?.name || 'Document')
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', backgroundColor: t.bg, borderRadius: Math.min(cr, 6), marginBottom: 6 }}>
+                  <div style={{ width: 26, height: 30, borderRadius: 4, backgroundColor: t.accent + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: 8, fontWeight: 700, color: t.accent }}>PDF</span>
+                  </div>
+                  <span style={{ fontSize: c.fontSize - 1, color: t.text, flex: 1 }}>{docName}</span>
+                  <span style={{ fontSize: c.fontSize - 2, color: t.accent, fontWeight: 500 }}>View</span>
                 </div>
-                <span style={{ fontSize: c.fontSize - 1, color: t.text, flex: 1 }}>{doc}</span>
-                <span style={{ fontSize: c.fontSize - 2, color: t.accent, fontWeight: 500 }}>View</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )
       case 'coordinator':
