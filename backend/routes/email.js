@@ -120,4 +120,32 @@ router.delete('/overrides/:caseId', requireAuth, async (req, res, next) => {
   }
 })
 
+// POST /api/email-template/send-family — send a family email via Resend
+router.post('/send-family', requireAuth, async (req, res, next) => {
+  try {
+    const { to, subject, html } = req.body
+    if (!to || !subject || !html) {
+      return res.status(400).json({ error: 'to, subject, and html are required' })
+    }
+
+    if (process.env.ENABLE_RESEND !== 'false') {
+      const apiKey = process.env.RESEND_API_KEY
+      if (apiKey) {
+        const { Resend } = await import('resend')
+        const resend = new Resend(apiKey)
+        await resend.emails.send({
+          from: process.env.RESEND_FROM ?? 'noreply@waypass.ca',
+          to,
+          subject,
+          html,
+        })
+      }
+    }
+
+    res.json({ sent: true })
+  } catch (err) {
+    next(err)
+  }
+})
+
 export default router

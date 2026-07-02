@@ -5,6 +5,9 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { TEMPLATES, EmailPreview as EmailPreviewComponent, PreviewModal, TemplateEditor, EditableEmailPreview, DEFAULT_SECTIONS, DEFAULT_PROGRESS_LABELS, SAMPLE } from '../components/dashboard/EmailEditorPage'
 import { Star, Check, Eye, X, Pencil, ChevronDown, MapPin } from 'lucide-react'
+import { generateEmailHtml, buildSubject, buildEmailConfig } from '../lib/emailHtml.jsx'
+import { sendFamilyEmail } from '../lib/api.js'
+import { toastError } from '../lib/toast.js'
 
 const STEPS = ['First Call', 'Removal Log', 'Documents', 'Package', 'Crematorium', 'Email Template', 'Confirm']
 
@@ -244,6 +247,21 @@ export function NewCasePage({ onBack, onComplete }) {
       if (selectedTemplateId || Object.keys(caseCustomizations).length > 0) {
         saveEmailOverride(newCase.id, { activeTemplateId: selectedTemplateId || globalTemplateId, customizations: caseCustomizations }).catch(() => {})
       }
+
+      // Send initial confirmation email to family
+      if (firstCall.nokEmail?.trim()) {
+        try {
+          const cust = caseCustomizations[chosenTemplateId]
+          const config = buildEmailConfig(cust, chosenTemplate)
+          const sections = cust?.sections || DEFAULT_SECTIONS
+          const html = generateEmailHtml(chosenTemplate, sections, config, newCaseData, logoUrl)
+          const subject = buildSubject('pending', config.footerName)
+          await sendFamilyEmail({ to: firstCall.nokEmail.trim(), subject, html })
+        } catch {
+          toastError('Case created, but the confirmation email could not be sent.')
+        }
+      }
+
       setIsComplete(true)
       onComplete?.(newCase)
     } catch (err) {
@@ -820,8 +838,12 @@ export function NewCasePage({ onBack, onComplete }) {
               <div>
                 <p className="font-sans font-semibold text-[15px] text-ink">Confirm Initial Email</p>
                 <p className="font-sans text-xs text-muted mt-0.5">
-                  This is the email <span className="text-ink font-medium">{firstCall.nokName || 'the family'}</span> will receive using the <span className="text-ink font-medium">{chosenTemplate.name}</span> template
+                  Sending to <span className="font-medium text-ink">{firstCall.nokEmail || 'no email provided'}</span>
+                  {' '}using the <span className="font-medium text-ink">{chosenTemplate.name}</span> template
                 </p>
+                {!firstCall.nokEmail && (
+                  <p className="font-sans text-[11px] text-warning mt-0.5">No email address — case will be created but no email will be sent.</p>
+                )}
               </div>
               <button
                 onClick={() => setShowEmailConfirm(false)}

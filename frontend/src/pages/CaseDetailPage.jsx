@@ -5,8 +5,12 @@ import {
   fetchCaseActivity, fetchCase,
   updateCase, updateCaseDeceased, updateCaseFinancials,
   fetchCaseContacts, updateCaseContact, addCaseAddon, removeCaseAddon,
+  fetchEmailTemplate, fetchEmailOverride, fetchPortalSettings, sendFamilyEmail,
 } from '../lib/api.js'
-import { toastError, toastSuccess } from '../lib/toast.js'
+import { toastError, toastSuccess, toastInfo } from '../lib/toast.js'
+import { TEMPLATES, DEFAULT_SECTIONS, DEFAULT_PROGRESS_LABELS, SAMPLE } from '../components/dashboard/EmailEditorPage'
+import { generateEmailHtml, buildSubject, buildEmailConfig } from '../lib/emailHtml.jsx'
+import { StatusEmailModal } from '../components/cases/modals/StatusEmailModal.jsx'
 import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
 import { ConfirmModal } from '../components/ui/ConfirmModal.jsx'
 import { slotToLabel, objToKey } from '../lib/slotUtils.js'
@@ -60,6 +64,12 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
   const activityScrollRef = useRef(null)
   const uploadInputRef = useRef(null)
 
+  // Email connectivity state
+  const [emailTemplateSettings, setEmailTemplateSettings] = useState(null)
+  const [emailOverride, setEmailOverride] = useState(null)
+  const [logoUrl, setLogoUrl] = useState('')
+  const [pendingEmailStatus, setPendingEmailStatus] = useState(null)
+
   const refetchCase = useCallback(async () => {
     try {
       const fresh = await fetchCase(caseData.id)
@@ -108,23 +118,74 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
       refetchDocuments(),
       refetchActivity(),
       refetchContacts(),
+      fetchEmailTemplate().then(setEmailTemplateSettings).catch(() => {}),
+      fetchEmailOverride(caseData.id).then(setEmailOverride).catch(() => {}),
+      fetchPortalSettings().then(d => { if (d?.logoUrl) setLogoUrl(d.logoUrl) }).catch(() => {}),
     ])
   }, [caseData.id, refetchDocuments, refetchActivity, refetchContacts])
 
   const lastCompletedIdx = custody.reduce((acc, e, i) => e.completed ? i : acc, -1)
   const nextCustodyIdx = lastCompletedIdx + 1
 
+  // Resolve the effective email template + config for this case
+  const effectiveTemplate = useMemo(() => {
+    const overrideTemplateId = emailOverride?.overrides?.activeTemplateId
+    const globalTemplateId = emailTemplateSettings?.activeTemplateId ?? 'classic'
+    const templateId = overrideTemplateId ?? globalTemplateId
+    const base = TEMPLATES.find(t => t.id === templateId) ?? TEMPLATES[0]
+    const colorOverrides = emailOverride?.overrides?.customizations?.[templateId]?.colors
+      ?? emailTemplateSettings?.customizations?.[templateId]?.colors
+      ?? {}
+    const fontOverride = emailOverride?.overrides?.customizations?.[templateId]?.font
+      ?? emailTemplateSettings?.customizations?.[templateId]?.font
+      ?? null
+    return { ...base, ...colorOverrides, font: fontOverride ?? base.font }
+  }, [emailTemplateSettings, emailOverride])
+
+  const effectiveSections = useMemo(() => (
+    emailOverride?.overrides?.customizations?.[effectiveTemplate.id]?.sections
+    ?? emailTemplateSettings?.customizations?.[effectiveTemplate.id]?.sections
+    ?? DEFAULT_SECTIONS
+  ), [emailTemplateSettings, emailOverride, effectiveTemplate])
+
+  const effectiveConfig = useMemo(() => {
+    const cust = emailOverride?.overrides?.customizations?.[effectiveTemplate.id]
+      ?? emailTemplateSettings?.customizations?.[effectiveTemplate.id]
+      ?? {}
+    return buildEmailConfig(cust, effectiveTemplate)
+  }, [emailTemplateSettings, emailOverride, effectiveTemplate])
+
+  async function handleSendStatusEmail(newStatus) {
+    const recipientEmail = caseRow.contactEmail
+    if (!recipientEmail || !newStatus) return
+    const emailCaseData = {
+      deceased: caseRow.deceased,
+      family:   caseRow.family ?? caseRow.contactName,
+      status:   newStatus,
+      package:  caseRow.package,
+      date:     caseRow.date,
+    }
+    const html = generateEmailHtml(effectiveTemplate, effectiveSections, effectiveConfig, emailCaseData, logoUrl)
+    const subject = buildSubject(newStatus, effectiveConfig.footerName)
+    await sendFamilyEmail({ to: recipientEmail, subject, html })
+    toastSuccess('Status update sent to the family.')
+    setPendingEmailStatus(null)
+  }
+
   async function handleCustodyUpdate(stageIdx, payload) {
     const saved = await updateCustodyStage(caseData.id, stageIdx, payload)
     const next = custody.map((e, i) => i === stageIdx ? { ...e, ...saved } : e)
     setCustody(next)
     setAuthPending(!next[2]?.completed)
+    setShowLogModal(false)
+
     if (payload.completed && CUSTODY_STATUS_MILESTONES[stageIdx]) {
       const nextStatus = CUSTODY_STATUS_MILESTONES[stageIdx]
       setStatus(nextStatus)
       onStatusChange?.(caseData.id, nextStatus)
+      setPendingEmailStatus(nextStatus)
     }
-    setShowLogModal(false)
+
     refetchActivity()
   }
 
@@ -431,6 +492,25 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
           primaryContact={contacts.find(c => c.isPrimary) ?? contacts[0] ?? null}
           onSubmit={handleSubmitEdit}
           onClose={() => setShowEditModal(false)}
+        />
+      )}
+      {pendingEmailStatus && (
+        <StatusEmailModal
+          status={pendingEmailStatus}
+          recipientEmail={caseRow.contactEmail ?? null}
+          template={effectiveTemplate}
+          sections={effectiveSections}
+          config={effectiveConfig}
+          caseData={{
+            deceased: caseRow.deceased,
+            family:   caseRow.family ?? caseRow.contactName,
+            status:   pendingEmailStatus,
+            package:  caseRow.package,
+            date:     caseRow.date,
+          }}
+          logoUrl={logoUrl}
+          onSend={() => handleSendStatusEmail(pendingEmailStatus)}
+          onSkip={() => { toastInfo('Status update email skipped.'); setPendingEmailStatus(null) }}
         />
       )}
     </div>

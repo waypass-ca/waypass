@@ -264,6 +264,8 @@ export const saveEmailOverride = (caseId, overrides, logoStoragePath = null) =>
   })
 export const deleteEmailOverride = (caseId) =>
   mutate(`/api/email-template/overrides/${caseId}`, { method: 'DELETE' })
+export const sendFamilyEmail = (payload) =>
+  mutate('/api/email-template/send-family', { method: 'POST', body: JSON.stringify(payload) })
 
 // ── Folders ───────────────────────────────────────────
 export const fetchFolders = (type) => mutate(`/api/folders?type=${type}`)
