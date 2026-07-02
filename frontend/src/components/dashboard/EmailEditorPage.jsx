@@ -4,6 +4,7 @@ import { Star, Check, X, Eye, GripVertical, ChevronLeft, ChevronRight, Pencil, R
 import { PageTitle } from '../layout/PageTitle'
 import { fetchPortalSettings, fetchEmailTemplate, saveEmailTemplate, fetchEmailOverride, saveEmailOverride } from '../../lib/api.js'
 import { useUser } from '../../context/UserContext.jsx'
+import { PageLoadingBar } from '../ui/PageLoadingBar.jsx'
 
 // ─── Sample data ──────────────────────────────────────────────────────────────
 
@@ -1579,15 +1580,15 @@ function FavouritesRow({ templates, favouriteIds, activeId, onSetActive, onToggl
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export function EmailEditorPage({ cases = [], initialEmailTemplate, initialPortalSettings }) {
+export function EmailEditorPage({ cases = [] }) {
   const { canWrite, profile } = useUser()
   const funeralHomeName = profile?.funeralHomeName || SAMPLE.funeralHome
   // ── Global state ──
-  const [globalActiveId, setGlobalActiveId] = useState(initialEmailTemplate?.activeTemplateId ?? 'classic')
-  const [favouriteIds, setFavouriteIds] = useState(initialEmailTemplate?.favouriteIds ?? [])
-  const [globalCustomizations, setGlobalCustomizations] = useState(initialEmailTemplate?.customizations ?? {})
-  const [logoUrl, setLogoUrl] = useState(initialPortalSettings?.logoUrl ?? '')
-  const [loading, setLoading] = useState(!initialEmailTemplate && !initialPortalSettings)
+  const [globalActiveId, setGlobalActiveId] = useState('classic')
+  const [favouriteIds, setFavouriteIds] = useState([])
+  const [globalCustomizations, setGlobalCustomizations] = useState({})
+  const [logoUrl, setLogoUrl] = useState('')
+  const [loading, setLoading] = useState(true)
 
   // ── Case search state ──
   const [search, setSearch] = useState('')
@@ -1609,9 +1610,8 @@ export function EmailEditorPage({ cases = [], initialEmailTemplate, initialPorta
   const effectiveActiveId = caseMode ? (caseActiveId ?? globalActiveId) : null
   const effectiveCustomizations = caseMode ? caseCustomizations : globalCustomizations
 
-  // ── Load global settings + logo (only if not pre-fetched) ──
+  // ── Load global settings + logo ──
   useEffect(() => {
-    if (initialEmailTemplate && initialPortalSettings) return
     Promise.all([
       fetchEmailTemplate().catch(() => null),
       fetchPortalSettings().catch(() => null),
@@ -1766,7 +1766,11 @@ export function EmailEditorPage({ cases = [], initialEmailTemplate, initialPorta
       : SAMPLE.documents,
   } : null
 
-  if (loading) return null
+  if (loading) return (
+    <div className="flex-1 relative bg-surface">
+      <PageLoadingBar />
+    </div>
+  )
 
   // ── Editor view ──
   if (editingId) {

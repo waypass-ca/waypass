@@ -6,6 +6,7 @@ import { objToKey, slotToLabel, getSundayOf, formatWeekRange } from '../lib/slot
 import { WeekGrid } from '../components/booking/WeekGrid.jsx'
 import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
 import { ConfirmModal } from '../components/ui/ConfirmModal.jsx'
+import { PageLoadingBar } from '../components/ui/PageLoadingBar.jsx'
 
 const STATUS_STYLES = {
   pending:   { chip: 'bg-amber-100 text-amber-800', dot: 'bg-amber-400' },
@@ -167,21 +168,22 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onReschedule,
 }
 
 
-export function CalendarPage({ cases = [], initialBookings }) {
+export function CalendarPage({ cases = [] }) {
   const { canWrite } = useUser()
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [viewMode, setViewMode] = useState('week') // 'month' | 'week'
   const [weekStart, setWeekStart] = useState(() => getSundayOf(today))
-  const [bookings, setBookings] = useState(initialBookings ?? [])
+  const [bookings, setBookings] = useState([])
+  const [loading, setLoading] = useState(true)
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const [cancelTarget, setCancelTarget] = useState(null)
 
   useEffect(() => {
-    if (initialBookings) return
-    fetchBookings().then(setBookings).catch(() => {})
+    setLoading(true)
+    fetchBookings().then(setBookings).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   async function handleConfirm(bookingId, slot) {
@@ -217,7 +219,8 @@ export function CalendarPage({ cases = [], initialBookings }) {
   const cells = buildMonthGrid(year, month)
   const todayStr = today.toISOString().slice(0, 10)
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-surface">
+    <div className="flex-1 flex flex-col overflow-hidden bg-surface relative">
+      {loading && <PageLoadingBar />}
 
       {/* ── Page header ── */}
       <div className="flex-shrink-0 border-b border-line">
