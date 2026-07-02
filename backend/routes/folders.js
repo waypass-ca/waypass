@@ -92,6 +92,19 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
     const { type, withContents } = req.query
     const deleteContents = withContents === 'true'
 
+    // Verify the folder belongs to the caller's funeral home BEFORE cascading into
+    // its contents. Otherwise a foreign folder id would soft-delete another tenant's
+    // cases/documents even though the folder soft-delete itself no-ops.
+    const { data: folder, error: folderErr } = await supabase
+      .from('folders')
+      .select('id')
+      .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
+      .is('deleted_at', null)
+      .maybeSingle()
+    if (folderErr) throw folderErr
+    if (!folder) return res.status(404).json({ error: 'Folder not found' })
+
     if (type === 'documents') {
       const { error } = deleteContents
         ? await supabase.from('case_documents')
@@ -109,6 +122,7 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
       const { error } = await supabase.from('cases')
         .update(update)
         .eq('folder_id', req.params.id)
+        .eq('funeral_home_id', req.user.funeralHomeId)
         .is('deleted_at', null)
       if (error) throw error
     }

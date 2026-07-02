@@ -339,6 +339,47 @@ describe('POST /api/cases/:id/notes', () => {
   })
 })
 
+describe('POST & DELETE /api/cases/:id/addons', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    chain.insert.mockReturnThis()
+    chain.delete.mockReturnThis()
+    chain.select.mockReturnThis()
+    chain.eq.mockReturnThis()
+    chain.single.mockResolvedValue({ data: dbCase, error: null })
+  })
+
+  it('POST returns 404 when the case is not in the caller\'s funeral home', async () => {
+    chain.single.mockResolvedValue({ data: null, error: null })
+    const res = await request(app)
+      .post('/api/cases/PSG-2024-0001/addons')
+      .set(authHeader)
+      .send({ addonId: 'addon-1' })
+    expect(res.status).toBe(404)
+    expect(chain.insert).not.toHaveBeenCalled()
+  })
+
+  it('POST scopes the ownership check by funeral_home_id', async () => {
+    const res = await request(app)
+      .post('/api/cases/PSG-2024-0001/addons')
+      .set(authHeader)
+      .send({ addonId: 'addon-1' })
+    expect(res.status).toBe(201)
+    expect(chain.eq).toHaveBeenCalledWith('funeral_home_id', 'fh-uuid-1')
+  })
+
+  it('DELETE returns 404 when the case is not in the caller\'s funeral home', async () => {
+    chain.single.mockResolvedValue({ data: null, error: null })
+    const res = await request(app)
+      .delete('/api/cases/PSG-2024-0001/addons/addon-1')
+      .set(authHeader)
+    expect(res.status).toBe(404)
+    expect(chain.delete).not.toHaveBeenCalled()
+  })
+})
+
 describe('GET /api/cases/:id/custody', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -346,6 +387,9 @@ describe('GET /api/cases/:id/custody', () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
+    // Case ownership lookup (vi.clearAllMocks does not reset implementations, so
+    // set this explicitly rather than relying on state leaked from prior blocks)
+    chain.single.mockResolvedValue({ data: { id: 'PSG-2024-0001' }, error: null })
     chain.order.mockResolvedValue({
       data: [
         { stage: 0, completed: true, staff_label: 'Dr. Jones', staff: null, timestamp: '2024-03-15T09:00:00Z' },

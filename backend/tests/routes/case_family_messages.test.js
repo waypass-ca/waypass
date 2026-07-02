@@ -40,6 +40,8 @@ describe('GET /api/cases/:caseId/messages', () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
+    // callerOwnsCase() ownership lookup on the cases table
+    chain.maybeSingle.mockResolvedValue({ data: { id: CASE_ID }, error: null })
     chain.order.mockResolvedValue({ data: [dbMessage], error: null })
   })
 
@@ -63,49 +65,57 @@ describe('GET /api/cases/:caseId/messages', () => {
 })
 
 describe('POST /api/cases/:caseId/messages', () => {
+  const staffMessage = { ...dbMessage, sender_type: 'staff', sender_id: 'test-user-id', sender_name: 'admin@acme.com' }
+
   beforeEach(() => {
     vi.clearAllMocks()
     resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.insert.mockReturnThis()
     chain.select.mockReturnThis()
-    chain.single.mockResolvedValue({ data: dbMessage, error: null })
+    // callerOwnsCase() ownership lookup on the cases table
+    chain.maybeSingle.mockResolvedValue({ data: { id: CASE_ID }, error: null })
+    chain.single.mockResolvedValue({ data: staffMessage, error: null })
+  })
+
+  it('returns 401 without auth', async () => {
+    supabase.auth.getUser.mockResolvedValue(badToken)
+    const res = await request(app)
+      .post(`/api/cases/${CASE_ID}/messages`)
+      .send({ body: 'Hello' })
+    expect(res.status).toBe(401)
   })
 
   it('returns 400 when body is missing', async () => {
     const res = await request(app)
       .post(`/api/cases/${CASE_ID}/messages`)
-      .send({ senderType: 'family', body: '   ' })
+      .set(authHeader)
+      .send({ body: '   ' })
     expect(res.status).toBe(400)
     expect(res.body.error).toBe('body is required')
   })
 
-  it('ignores caller-supplied senderType and always stores family', async () => {
-    const res = await request(app)
-      .post(`/api/cases/${CASE_ID}/messages`)
-      .send({ senderType: 'admin', body: 'Hello' })
-    expect(res.status).toBe(201)
-    expect(res.body.senderType).toBe('family')
-  })
-
-  it('returns 201 — family can post without auth', async () => {
-    const res = await request(app)
-      .post(`/api/cases/${CASE_ID}/messages`)
-      .send({ senderType: 'family', senderName: 'Linda Chen', body: 'When will the ashes be ready?' })
-    expect(res.status).toBe(201)
-    expect(res.body).toEqual(shapedMessage)
-  })
-
-  it('returns 201 — staff can also post', async () => {
-    supabase.auth.getUser.mockResolvedValue(authedUser)
-    const staffMessage = { ...dbMessage, sender_type: 'staff', sender_id: 'user-uuid-1', sender_name: 'Alice' }
-    chain.single.mockResolvedValue({ data: staffMessage, error: null })
-
+  it('returns 404 when the case is not in the caller\'s funeral home', async () => {
+    chain.maybeSingle.mockResolvedValue({ data: null, error: null })
     const res = await request(app)
       .post(`/api/cases/${CASE_ID}/messages`)
       .set(authHeader)
-      .send({ senderType: 'staff', senderId: 'user-uuid-1', senderName: 'Alice', body: 'We expect tomorrow.' })
+      .send({ body: 'Hello' })
+    expect(res.status).toBe(404)
+  })
+
+  it('derives sender from the token, ignoring body-supplied identity', async () => {
+    const res = await request(app)
+      .post(`/api/cases/${CASE_ID}/messages`)
+      .set(authHeader)
+      .send({ senderType: 'family', senderId: 'spoofed', senderName: 'Spoofed', body: 'We expect tomorrow.' })
     expect(res.status).toBe(201)
     expect(res.body.senderType).toBe('staff')
+    // Body-supplied sender_id/sender_name must not be persisted
+    const inserted = chain.insert.mock.calls.at(-1)[0]
+    expect(inserted.sender_id).toBe('test-user-id')
+    expect(inserted.sender_name).toBe('admin@acme.com')
+    expect(inserted.sender_type).toBe('staff')
   })
 })
 
@@ -116,6 +126,8 @@ describe('PATCH /api/cases/:caseId/messages/:id/read', () => {
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.select.mockReturnThis()
+    // callerOwnsCase() ownership lookup on the cases table
+    chain.maybeSingle.mockResolvedValue({ data: { id: CASE_ID }, error: null })
   })
 
   it('returns 401 without auth', async () => {

@@ -145,6 +145,8 @@ describe('DELETE /api/folders/:id', () => {
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.is.mockReturnThis()
+    // Folder ownership lookup that gates the content cascade
+    chain.maybeSingle.mockResolvedValue({ data: { id: 'folder-uuid-1' }, error: null })
   })
 
   it('returns 401 without auth', async () => {
@@ -158,5 +160,16 @@ describe('DELETE /api/folders/:id', () => {
     const res = await request(app).delete('/api/folders/folder-uuid-1').set(authHeader)
     expect(res.status).toBe(204)
     expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ deleted_at: expect.any(String) }))
+  })
+
+  it('returns 404 without cascading when the folder belongs to another tenant', async () => {
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    chain.maybeSingle.mockResolvedValue({ data: null, error: null })
+    const res = await request(app)
+      .delete('/api/folders/foreign-folder?type=cases&withContents=true')
+      .set(authHeader)
+    expect(res.status).toBe(404)
+    // No content cascade or folder soft-delete should have run
+    expect(chain.update).not.toHaveBeenCalled()
   })
 })

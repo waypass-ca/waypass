@@ -7,6 +7,9 @@ const router = Router()
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => HTML_ESCAPES[c])
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MIN_PASSWORD_LENGTH = 6
+
 async function sendInviteEmail({ to, funeralHomeName, inviteUrl, role }) {
   if (process.env.ENABLE_RESEND === 'false') return
   const apiKey = process.env.RESEND_API_KEY
@@ -49,6 +52,12 @@ router.post('/signup', async (req, res, next) => {
 
     if (!email || !password || !funeralHomeName) {
       return res.status(400).json({ error: 'email, password, and funeralHomeName are required' })
+    }
+    if (!EMAIL_RE.test(String(email))) {
+      return res.status(400).json({ error: 'A valid email is required' })
+    }
+    if (String(password).length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` })
     }
 
     // Create auth user
@@ -132,6 +141,9 @@ router.post('/accept-invite', async (req, res, next) => {
 
     if (!token || !password) {
       return res.status(400).json({ error: 'token and password are required' })
+    }
+    if (String(password).length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` })
     }
 
     const { data: invite, error: invErr } = await supabase

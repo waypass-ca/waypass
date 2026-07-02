@@ -171,7 +171,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
     const attachments = documents
       .filter(d => d.storagePath)
       .map(d => ({ name: d.fileName || 'document.pdf', storagePath: d.storagePath }))
-    await sendFamilyEmail({ to: recipientEmail, subject, html, attachments })
+    await sendFamilyEmail({ to: recipientEmail, subject, html, caseId: caseData.id, attachments })
     toastSuccess(`Status update sent to ${recipientEmail}`)
     setPendingEmailStatus(null)
   }

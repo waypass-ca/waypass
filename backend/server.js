@@ -25,7 +25,18 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 app.use(cors({ origin: process.env.ALLOWED_ORIGIN ?? 'http://localhost:5173' }))
-app.use(express.json())
+app.use(express.json({ limit: '1mb' }))
+
+// Baseline security headers (dependency-free; covers the essentials that a JSON
+// API needs without pulling in a full helmet dependency).
+app.use((_req, res, next) => {
+  res.set('X-Content-Type-Options', 'nosniff')
+  res.set('X-Frame-Options', 'DENY')
+  res.set('Referrer-Policy', 'no-referrer')
+  res.set('Cross-Origin-Resource-Policy', 'same-site')
+  next()
+})
+
 app.use(requestLogger)
 
 app.use('/api/auth', authRouter)
