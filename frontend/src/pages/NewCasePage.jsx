@@ -256,7 +256,10 @@ export function NewCasePage({ onBack, onComplete }) {
           const sections = cust?.sections || DEFAULT_SECTIONS
           const html = generateEmailHtml(chosenTemplate, sections, config, newCaseData, logoUrl)
           const subject = buildSubject('pending', config.footerName)
-          await sendFamilyEmail({ to: firstCall.nokEmail.trim(), subject, html })
+          const attachments = Object.values(documents)
+            .filter(v => v.status === 'done' && v.path)
+            .map(v => ({ name: v.name || 'document.pdf', storagePath: v.path }))
+          await sendFamilyEmail({ to: firstCall.nokEmail.trim(), subject, html, attachments })
           toastSuccess(`Confirmation email sent to ${firstCall.nokEmail.trim()}`)
         } catch {
           toastError('Case created, but the confirmation email could not be sent.')
@@ -276,12 +279,9 @@ export function NewCasePage({ onBack, onComplete }) {
     status: 'pending',
     package: selectedPackage?.name ? `${selectedPackage.name} Package` : undefined,
     date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-    documents: Object.entries(documents)
-      .filter(([, v]) => v.status === 'done')
-      .map(([, v]) => ({
-        name: v.name || 'Document',
-        url: v.path ? (supabase.storage.from('case-documents').getPublicUrl(v.path).data?.publicUrl || null) : null,
-      })),
+    documents: Object.values(documents)
+      .filter(v => v.status === 'done')
+      .map(v => v.name || 'Document'),
   }
 
   if (step === 5 && editingTemplateId) {

@@ -42,13 +42,14 @@ function esc(s) {
 const CHECK_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E`
 const CHECK_SVG_SM = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E`
 
-function logo(logoUrl, t, size = 44, shape = 'rounded') {
+function logo(logoUrl, t, size = 44, shape = 'rounded', centered = false) {
+  const margin = centered ? 'display:block;margin:0 auto' : 'display:block'
   if (logoUrl) {
     const r = shape === 'circle' ? '50%' : '4px'
-    return `<img src="${esc(logoUrl)}" alt="${esc(t.font ? '' : 'Logo')}" width="${size}" height="${size}" style="display:block;width:${size}px;height:${size}px;object-fit:contain;border-radius:${r}" />`
+    return `<img src="${esc(logoUrl)}" alt="" width="${size}" height="${size}" style="${margin};width:${size}px;height:${size}px;object-fit:contain;border-radius:${r}" />`
   }
   const r = shape === 'circle' ? '50%' : '8px'
-  return `<div style="width:${size}px;height:${size}px;border-radius:${r};background-color:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.3)"><table cellpadding="0" cellspacing="0" width="${size}" height="${size}" style="border-collapse:collapse"><tr><td align="center" valign="middle" style="font-size:13px;font-weight:700;color:${t.headerText || '#fff'};font-family:${t.font}">EG</td></tr></table></div>`
+  return `<div style="width:${size}px;height:${size}px;border-radius:${r};background-color:rgba(255,255,255,0.2);border:2px solid rgba(255,255,255,0.3);${centered ? 'margin:0 auto' : ''}"><table cellpadding="0" cellspacing="0" width="${size}" height="${size}" style="border-collapse:collapse"><tr><td align="center" valign="middle" style="font-size:13px;font-weight:700;color:${t.headerText || '#fff'};font-family:${t.font}">EG</td></tr></table></div>`
 }
 
 function hr(color, margin = '20px 0') {
@@ -165,36 +166,21 @@ function sectionDetails(t, c, d) {
   ).join('')
 }
 
-// Accepts documents as strings OR {name, url} objects.
-// When a URL is present, the PDF icon + filename + "View →" are all clickable.
+// Documents are sent as email attachments — just show the filenames in the email body.
 function sectionDocuments(t, c, d) {
   if (!d.documents || d.documents.length === 0) return ''
   return d.documents.map(doc => {
-    const name = typeof doc === 'string' ? doc : (doc.name || 'Document')
-    const url  = typeof doc === 'object' ? (doc.url || null) : null
-
-    const icon = `<div style="width:26px;height:30px;border-radius:4px;background-color:${t.accent}33">
+    const name = typeof doc === 'string' ? doc : (doc?.name || 'Document')
+    return `<table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin-bottom:6px"><tr>
+       <td valign="middle" width="36">
+         <div style="width:26px;height:30px;border-radius:4px;background-color:${t.accent}33">
            <table cellpadding="0" cellspacing="0" width="26" height="30" style="border-collapse:collapse">
              <tr><td align="center" valign="middle" style="font-size:8px;font-weight:700;color:${t.accent};font-family:${t.font}">PDF</td></tr>
            </table>
-         </div>`
-
-    const iconCell = url
-      ? `<a href="${esc(url)}" style="text-decoration:none">${icon}</a>`
-      : icon
-
-    const nameCell = url
-      ? `<a href="${esc(url)}" style="color:${t.text};text-decoration:none;font-size:${c.fontSize - 1}px;font-family:${t.font}">${esc(name)}</a>`
-      : `<span style="font-size:${c.fontSize - 1}px;color:${t.text};font-family:${t.font}">${esc(name)}</span>`
-
-    const viewCell = url
-      ? `<td align="right" valign="middle" style="padding-left:8px;white-space:nowrap"><a href="${esc(url)}" style="font-size:${c.fontSize - 2}px;color:${t.accent};font-weight:600;text-decoration:none;font-family:${t.font}">View →</a></td>`
-      : ''
-
-    return `<table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin-bottom:6px"><tr>
-       <td valign="middle" width="36">${iconCell}</td>
-       <td style="padding-left:10px;font-family:${t.font}">${nameCell}</td>
-       ${viewCell}
+         </div>
+       </td>
+       <td style="padding-left:10px"><span style="font-size:${c.fontSize - 1}px;color:${t.text};font-family:${t.font}">${esc(name)}</span></td>
+       <td align="right" valign="middle" style="padding-left:8px;white-space:nowrap"><span style="font-size:${c.fontSize - 2}px;color:${t.muted};font-family:${t.font}">Attached</span></td>
      </tr></table>`
   }).join('')
 }
@@ -282,7 +268,7 @@ function renderHeader(t, c, logoUrl) {
   if (t.layout === 'classic') {
     return `
       <tr><td align="center" style="background-color:${t.headerBg};padding:28px 40px;border-radius:8px 8px 0 0">
-        <div style="margin-bottom:10px;text-align:center">${logo(logoUrl, t, 44, 'circle')}</div>
+        <div style="margin-bottom:10px;text-align:center">${logo(logoUrl, t, 44, 'circle', true)}</div>
         <div style="color:${t.headerText};font-size:18px;font-weight:400;letter-spacing:0.04em;margin-bottom:4px;font-family:${t.font};text-align:center">${esc(c.footerName)}</div>
         <div style="color:${t.headerText}80;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-family:${t.font};text-align:center">${esc(c.footerTagline)}</div>
       </td></tr>
@@ -385,8 +371,8 @@ export function generateEmailHtml(template, sections, config, caseData, logoUrl)
 <title>${esc(c.footerName)}</title>
 <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 </head>
-<body style="margin:0;padding:0;background-color:#e8e8e8">
-<table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;background-color:#e8e8e8">
+<body style="margin:0;padding:0;background-color:#e8e8e8;font-family:${esc(t.font)}">
+<table cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;background-color:#e8e8e8;font-family:${esc(t.font)}">
 <tr><td align="center" style="padding:24px 12px">
 <table cellpadding="0" cellspacing="0" width="600" style="border-collapse:collapse;max-width:600px;width:100%;border-radius:8px;overflow:hidden">
 

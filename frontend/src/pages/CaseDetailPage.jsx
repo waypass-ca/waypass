@@ -164,11 +164,14 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
       status:    newStatus,
       package:   caseRow.package,
       date:      caseRow.date,
-      documents: documents.map(d => ({ name: d.fileName || 'Document', url: d.fileUrl || null })),
+      documents: documents.map(d => d.fileName || 'Document'),
     }
     const html = generateEmailHtml(effectiveTemplate, effectiveSections, effectiveConfig, emailCaseData, logoUrl)
     const subject = buildSubject(newStatus, effectiveConfig.footerName)
-    await sendFamilyEmail({ to: recipientEmail, subject, html })
+    const attachments = documents
+      .filter(d => d.storagePath)
+      .map(d => ({ name: d.fileName || 'document.pdf', storagePath: d.storagePath }))
+    await sendFamilyEmail({ to: recipientEmail, subject, html, attachments })
     toastSuccess(`Status update sent to ${recipientEmail}`)
     setPendingEmailStatus(null)
   }
@@ -508,7 +511,7 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
             status:    pendingEmailStatus,
             package:   caseRow.package,
             date:      caseRow.date,
-            documents: documents.map(d => ({ name: d.fileName || 'Document', url: d.fileUrl || null })),
+            documents: documents.map(d => d.fileName || 'Document'),
           }}
           logoUrl={logoUrl}
           onSend={() => handleSendStatusEmail(pendingEmailStatus)}

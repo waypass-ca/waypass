@@ -123,9 +123,25 @@ router.delete('/overrides/:caseId', requireAuth, async (req, res, next) => {
 // POST /api/email-template/send-family — send a family email via Resend
 router.post('/send-family', requireAuth, async (req, res, next) => {
   try {
-    const { to, subject, html } = req.body
+    const { to, subject, html, attachments = [] } = req.body
     if (!to || !subject || !html) {
       return res.status(400).json({ error: 'to, subject, and html are required' })
+    }
+
+    // Download each document from Supabase storage and attach to email
+    const emailAttachments = []
+    for (const att of attachments) {
+      if (!att.storagePath) continue
+      try {
+        const { data, error } = await supabase.storage
+          .from('case-documents')
+          .download(att.storagePath)
+        if (error || !data) continue
+        const buffer = Buffer.from(await data.arrayBuffer())
+        emailAttachments.push({ filename: att.name || 'document.pdf', content: buffer })
+      } catch {
+        // skip failed attachment — don't block the whole email
+      }
     }
 
     if (process.env.ENABLE_RESEND !== 'false') {
@@ -138,6 +154,7 @@ router.post('/send-family', requireAuth, async (req, res, next) => {
           to,
           subject,
           html,
+          attachments: emailAttachments,
         })
       }
     }
