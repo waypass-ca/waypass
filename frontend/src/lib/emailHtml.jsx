@@ -14,8 +14,9 @@ export function buildSubject(status, funeralHomeName) {
   return funeralHomeName ? `${base} — ${funeralHomeName}` : base
 }
 
-export function buildEmailConfig(customizations, template) {
+export function buildEmailConfig(customizations, template, funeralHomeName = '') {
   const c = customizations ?? {}
+  const homeName = c.footerName || funeralHomeName || SAMPLE.funeralHome
   return {
     fontSize:        c.fontSize        ?? 13,
     headingSize:     c.headingSize     ?? 22,
@@ -26,10 +27,10 @@ export function buildEmailConfig(customizations, template) {
     buttonLabel:     c.buttonLabel     ?? 'Contact',
     buttonRadius:    8,
     cardRadius:      10,
-    footerName:      c.footerName      ?? SAMPLE.funeralHome,
+    footerName:      homeName,
     footerTagline:   c.footerTagline   ?? SAMPLE.tagline,
     footerAddress:   c.footerAddress   ?? '123 Memorial Lane · San Francisco · (415) 555-0100',
-    footerCopyright: c.footerCopyright ?? `© 2024 ${SAMPLE.funeralHome} · Unsubscribe`,
+    footerCopyright: c.footerCopyright ?? `© ${new Date().getFullYear()} ${homeName} · Unsubscribe`,
   }
 }
 

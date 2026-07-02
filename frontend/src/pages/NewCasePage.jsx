@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useUser } from '../context/UserContext.jsx'
 import { fetchPackages, fetchCrematoriums, createCase, fetchEmailTemplate, fetchPortalSettingsAuth, saveEmailOverride } from '../lib/api.js'
 import { supabase } from '../lib/supabase.js'
 import { Badge } from '../components/ui/Badge'
@@ -157,6 +158,7 @@ function DocumentSlot({ label, doc, onUpload }) {
 export function NewCasePage({ onBack, onComplete }) {
   const [step, setStep] = useState(0)
   const { packages, crematoriums } = useData()
+  const { profile } = useUser()
   const sessionId = useRef(crypto.randomUUID()).current
 
   const [firstCall, setFirstCall] = useState({
@@ -252,7 +254,7 @@ export function NewCasePage({ onBack, onComplete }) {
       if (firstCall.nokEmail?.trim()) {
         try {
           const cust = caseCustomizations[chosenTemplateId]
-          const config = buildEmailConfig(cust, chosenTemplate)
+          const config = buildEmailConfig(cust, chosenTemplate, profile?.funeralHomeName)
           const sections = cust?.sections || DEFAULT_SECTIONS
           const html = generateEmailHtml(chosenTemplate, sections, config, newCaseData, logoUrl)
           const subject = buildSubject('pending', config.footerName)
@@ -874,10 +876,10 @@ export function NewCasePage({ onBack, onComplete }) {
                       buttonLabel: caseCustomizations[chosenTemplateId]?.buttonLabel || 'Contact',
                       buttonRadius: 8,
                       cardRadius: 10,
-                      footerName: caseCustomizations[chosenTemplateId]?.footerName || SAMPLE.funeralHome,
+                      footerName: caseCustomizations[chosenTemplateId]?.footerName || profile?.funeralHomeName || SAMPLE.funeralHome,
                       footerTagline: caseCustomizations[chosenTemplateId]?.footerTagline || SAMPLE.tagline,
                       footerAddress: caseCustomizations[chosenTemplateId]?.footerAddress || '123 Memorial Lane · San Francisco · (415) 555-0100',
-                      footerCopyright: caseCustomizations[chosenTemplateId]?.footerCopyright || `© 2024 ${SAMPLE.funeralHome} · Unsubscribe`,
+                      footerCopyright: caseCustomizations[chosenTemplateId]?.footerCopyright || `© ${new Date().getFullYear()} ${caseCustomizations[chosenTemplateId]?.footerName || profile?.funeralHomeName || SAMPLE.funeralHome} · Unsubscribe`,
                     }}
                     logoUrl={logoUrl}
                     caseData={newCaseData}

@@ -43,11 +43,11 @@ router.get('/me', requireAuth, async (req, res, next) => {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select('*, funeral_homes(name)')
       .eq('id', req.user.id)
       .single()
     if (error) throw error
-    res.json(shapeRow(data))
+    res.json({ ...shapeRow(data), funeralHomeName: data.funeral_homes?.name ?? null })
   } catch (err) {
     next(err)
   }

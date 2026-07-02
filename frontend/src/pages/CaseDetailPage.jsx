@@ -29,7 +29,7 @@ import { EditCaseModal } from '../components/cases/modals/EditCaseModal'
 import { useUser } from '../context/UserContext.jsx'
 
 export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule }) {
-  const { canWrite } = useUser()
+  const { canWrite, profile } = useUser()
   const [caseRow, setCaseRow] = useState(caseData)
   const [status, setStatus] = useState(caseData.status)
   const [documents, setDocuments] = useState([])
@@ -152,8 +152,8 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
     const cust = emailOverride?.overrides?.customizations?.[effectiveTemplate.id]
       ?? emailTemplateSettings?.customizations?.[effectiveTemplate.id]
       ?? {}
-    return buildEmailConfig(cust, effectiveTemplate)
-  }, [emailTemplateSettings, emailOverride, effectiveTemplate])
+    return buildEmailConfig(cust, effectiveTemplate, profile?.funeralHomeName)
+  }, [emailTemplateSettings, emailOverride, effectiveTemplate, profile?.funeralHomeName])
 
   async function handleSendStatusEmail(newStatus) {
     const recipientEmail = caseRow.contactEmail

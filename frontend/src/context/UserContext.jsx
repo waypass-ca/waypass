@@ -28,7 +28,7 @@ export function UserProvider({ children }) {
       .then(data => { setProfile(data); setProfileError(false) })
       .catch(() => { setProfile(null); setProfileError(true) })
       .finally(() => setLoading(false))
-  }, [session])
+  }, [session?.user?.id])
 
   const isAdmin = profile?.role === 'admin'
   const canWrite = profile?.role !== 'read_only'
