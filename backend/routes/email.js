@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { randomUUID } from 'crypto'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 
@@ -149,12 +150,16 @@ router.post('/send-family', requireAuth, async (req, res, next) => {
       if (apiKey) {
         const { Resend } = await import('resend')
         const resend = new Resend(apiKey)
+        const fromDomain = (process.env.RESEND_FROM ?? 'noreply@waypass.ca').split('@')[1] || 'waypass.ca'
         await resend.emails.send({
           from: process.env.RESEND_FROM ?? 'noreply@waypass.ca',
           to,
           subject,
           html,
           attachments: emailAttachments,
+          headers: {
+            'Message-ID': `<${randomUUID()}@${fromDomain}>`,
+          },
         })
       }
     }
