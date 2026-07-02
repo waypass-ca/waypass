@@ -72,9 +72,7 @@ function progressDots(t, stepIdx, labels) {
     const bg = done ? t.progressActive : (t.cardBg || '#FFFFFF')
     const border = done ? t.progressActive : '#D0D0D0'
     const textColor = done ? t.text : t.muted
-    const inner = (done && !active)
-      ? `<img src="${CHECK_SVG}" width="10" height="10" alt="" style="display:block;margin:0 auto" />`
-      : active
+    const inner = done
       ? `<div style="width:7px;height:7px;border-radius:50%;background-color:white;margin:0 auto"></div>`
       : ''
     const lineColor = i < stepIdx ? t.progressActive : '#D0D0D0'

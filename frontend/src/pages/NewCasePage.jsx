@@ -339,6 +339,7 @@ export function NewCasePage({ onBack, onComplete }) {
           caseMode={true}
           customization={caseCustomizations[previewTemplate.id] || null}
           caseData={newCaseData}
+          funeralHomeName={profile?.funeralHomeName || SAMPLE.funeralHome}
         />
       )}
 

@@ -147,26 +147,24 @@ export const TEMPLATES = [
 // ─── Progress tracker variants ────────────────────────────────────────────────
 
 function ProgressDots({ t, stepIdx, steps = STEPS }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center' }}>
-      {steps.map((s, i) => {
-        const done = i <= stepIdx
-        const active = i === stepIdx
-        return (
-          <div key={s.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-            {i < steps.length - 1 && (
-              <div style={{ position: 'absolute', top: 12, left: '50%', width: '100%', height: 2, backgroundColor: i < stepIdx ? t.progressActive : '#D0D0D0' }} />
-            )}
-            <div style={{ position: 'relative', zIndex: 1, width: 24, height: 24, borderRadius: '50%', border: `2px solid ${done ? t.progressActive : '#D0D0D0'}`, backgroundColor: done ? t.progressActive : t.cardBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {done && !active && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>}
-              {active && <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: 'white' }} />}
-            </div>
-            <div style={{ fontSize: 10, color: done ? t.text : t.muted, marginTop: 6, textAlign: 'center', lineHeight: 1.3, padding: '0 2px' }}>{s.label}</div>
-          </div>
-        )
-      })}
-    </div>
-  )
+  const items = []
+  steps.forEach((s, i) => {
+    const done = i <= stepIdx
+    items.push(
+      <div key={`dot-${s.key}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ width: 24, height: 24, borderRadius: '50%', border: `2px solid ${done ? t.progressActive : '#D0D0D0'}`, backgroundColor: done ? t.progressActive : (t.cardBg || '#fff'), display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {done && <div style={{ width: 7, height: 7, borderRadius: '50%', backgroundColor: 'white' }} />}
+        </div>
+        <div style={{ fontSize: 10, color: done ? t.text : t.muted, marginTop: 6, textAlign: 'center', lineHeight: 1.3 }}>{s.label}</div>
+      </div>
+    )
+    if (i < steps.length - 1) {
+      items.push(
+        <div key={`line-${s.key}`} style={{ flex: 1, alignSelf: 'flex-start', marginTop: 12, height: 2, backgroundColor: i < stepIdx ? t.progressActive : '#D0D0D0' }} />
+      )
+    }
+  })
+  return <div style={{ display: 'flex', alignItems: 'flex-start' }}>{items}</div>
 }
 
 function ProgressBar({ t, stepIdx, steps = STEPS }) {
@@ -1147,7 +1145,8 @@ function Inp({ label, value, onChange, placeholder, rows }) {
 }
 
 export function TemplateEditor({ template, customization, onSave, onBack, logoUrl, caseData }) {
-  const { canWrite } = useUser()
+  const { canWrite, profile } = useUser()
+  const realName = profile?.funeralHomeName || SAMPLE.funeralHome
   const [openPanels, setOpenPanels] = useState(new Set(['body']))
   const [sections, setSections] = useState(
     customization?.sections || DEFAULT_SECTIONS.map(s => ({ ...s }))
@@ -1169,10 +1168,18 @@ export function TemplateEditor({ template, customization, onSave, onBack, logoUr
     customization?.progressLabels || [...DEFAULT_PROGRESS_LABELS]
   )
   const [buttonLabel, setButtonLabel] = useState(customization?.buttonLabel || 'Contact')
-  const [footerName, setFooterName] = useState(customization?.footerName || SAMPLE.funeralHome)
+  const savedName = customization?.footerName
+  const [footerName, setFooterName] = useState(
+    (!savedName || savedName === SAMPLE.funeralHome) ? realName : savedName
+  )
   const [footerTagline, setFooterTagline] = useState(customization?.footerTagline || SAMPLE.tagline)
   const [footerAddress, setFooterAddress] = useState(customization?.footerAddress || '123 Memorial Lane · San Francisco · (415) 555-0100')
-  const [footerCopyright, setFooterCopyright] = useState(customization?.footerCopyright || `© 2024 ${SAMPLE.funeralHome} · Unsubscribe`)
+  const savedCopyright = customization?.footerCopyright
+  const [footerCopyright, setFooterCopyright] = useState(
+    (!savedCopyright || savedCopyright.includes(SAMPLE.funeralHome))
+      ? `© ${new Date().getFullYear()} ${realName} · Unsubscribe`
+      : savedCopyright
+  )
   const [saveState, setSaveState] = useState('idle')
 
   const merged = { ...template, ...colors, font }
@@ -1205,9 +1212,9 @@ export function TemplateEditor({ template, customization, onSave, onBack, logoUr
     setColors({ headerBg: template.headerBg, headerText: template.headerText, bg: template.bg, cardBg: template.cardBg, accent: template.accent, text: template.text, muted: template.muted, progressActive: template.progressActive, border: template.border, footerBg: template.footerBg, footerText: template.footerText })
     setFont(template.font); setFontSize(13); setHeadingSize(22); setHeadingColor(template.text)
     setMessage(SAMPLE.message); setGreeting(''); setProgressLabels([...DEFAULT_PROGRESS_LABELS]); setButtonLabel('Contact')
-    setFooterName(SAMPLE.funeralHome); setFooterTagline(SAMPLE.tagline)
+    setFooterName(realName); setFooterTagline(SAMPLE.tagline)
     setFooterAddress('123 Memorial Lane · San Francisco · (415) 555-0100')
-    setFooterCopyright(`© 2024 ${SAMPLE.funeralHome} · Unsubscribe`)
+    setFooterCopyright(`© ${new Date().getFullYear()} ${realName} · Unsubscribe`)
   }
 
   const progressEnabled = sections.find(s => s.id === 'progress')?.enabled
@@ -1436,7 +1443,7 @@ function TemplateCard({ t, isActive, isFavourite, onSetActive, onToggleFavourite
 
 // ─── Preview modal ────────────────────────────────────────────────────────────
 
-export function PreviewModal({ t, isActive, isFavourite, onSetActive, onToggleFavourite, onClose, onEdit, logoUrl, caseMode, customization, caseData }) {
+export function PreviewModal({ t, isActive, isFavourite, onSetActive, onToggleFavourite, onClose, onEdit, logoUrl, caseMode, customization, caseData, funeralHomeName }) {
   useEffect(() => {
     const h = e => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', h)
@@ -1446,6 +1453,7 @@ export function PreviewModal({ t, isActive, isFavourite, onSetActive, onToggleFa
   const c = customization || {}
   const hasCustomization = !!customization
   const merged = { ...t, ...(c.colors || {}), font: c.font || t.font }
+  const realName = funeralHomeName || SAMPLE.funeralHome
   const previewConfig = {
     fontSize: c.fontSize || 13,
     headingSize: c.headingSize || 22,
@@ -1456,10 +1464,12 @@ export function PreviewModal({ t, isActive, isFavourite, onSetActive, onToggleFa
     buttonLabel: c.buttonLabel || 'Contact',
     buttonRadius: 8,
     cardRadius: 10,
-    footerName: c.footerName || SAMPLE.funeralHome,
+    footerName: (!c.footerName || c.footerName === SAMPLE.funeralHome) ? realName : c.footerName,
     footerTagline: c.footerTagline || SAMPLE.tagline,
     footerAddress: c.footerAddress || '123 Memorial Lane · San Francisco · (415) 555-0100',
-    footerCopyright: c.footerCopyright || `© 2024 ${SAMPLE.funeralHome} · Unsubscribe`,
+    footerCopyright: (!c.footerCopyright || c.footerCopyright.includes(SAMPLE.funeralHome))
+      ? `© ${new Date().getFullYear()} ${realName} · Unsubscribe`
+      : c.footerCopyright,
   }
   const sections = c.sections || DEFAULT_SECTIONS
 
@@ -1570,7 +1580,8 @@ function FavouritesRow({ templates, favouriteIds, activeId, onSetActive, onToggl
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function EmailEditorPage({ cases = [], initialEmailTemplate, initialPortalSettings }) {
-  const { canWrite } = useUser()
+  const { canWrite, profile } = useUser()
+  const funeralHomeName = profile?.funeralHomeName || SAMPLE.funeralHome
   // ── Global state ──
   const [globalActiveId, setGlobalActiveId] = useState(initialEmailTemplate?.activeTemplateId ?? 'classic')
   const [favouriteIds, setFavouriteIds] = useState(initialEmailTemplate?.favouriteIds ?? [])
@@ -1787,6 +1798,7 @@ export function EmailEditorPage({ cases = [], initialEmailTemplate, initialPorta
           caseMode={caseMode}
           customization={effectiveCustomizations[previewTemplate.id] || null}
           caseData={activeCaseData}
+          funeralHomeName={funeralHomeName}
         />
       )}
 
