@@ -3,6 +3,7 @@ import { fetchCrematoriums, createCrematorium, fetchNearbyCrematoriums } from '.
 import { useUser } from '../context/UserContext.jsx'
 import { PageTitle } from '../components/layout/PageTitle'
 import { Button } from '../components/ui/Button'
+
 import { Search } from 'lucide-react'
 import { AddPartnerModal } from '../components/partners/AddPartnerModal'
 import { DisconnectModal } from '../components/partners/DisconnectModal'
@@ -10,10 +11,11 @@ import { PartnerDetailPage } from './PartnerDetailPage'
 import { PartnersList } from '../components/partners/PartnersList'
 import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
-export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase, initialCrematoriums }) {
+export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }) {
   const { canWrite } = useUser()
   const [tab, setTab] = useState('partners')
-  const [crematoriums, setCrematoriums] = useState(initialCrematoriums ?? [])
+  const [crematoriums, setCrematoriums] = useState([])
+  const [loading, setLoading] = useState(true)
   const [nearby, setNearby] = useState([])
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -24,8 +26,7 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase, 
   const [selectedPartner, setSelectedPartner] = useState(null)
 
   useEffect(() => {
-    if (initialCrematoriums) return
-    fetchCrematoriums().then(setCrematoriums).catch(console.error)
+    fetchCrematoriums().then(setCrematoriums).catch(console.error).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -99,6 +100,8 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase, 
       </>
     )
   }
+
+  if (loading) return null
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">

@@ -4,6 +4,7 @@ import { fetchCrematoriums, fetchShippingPartners, fetchBookings, createBooking,
 import { useAuth } from '../context/AuthContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { getDefaultShippingPartnerId } from '../lib/preferences.js'
+
 import { getSundayOf, slotToObj, objToKey, slotToLabel, formatWeekRange } from '../lib/slotUtils.js'
 import { Button } from '../components/ui/Button.jsx'
 import { WeekGrid } from '../components/booking/WeekGrid.jsx'
@@ -139,28 +140,21 @@ function BookingPanelRow({ booking, onConfirm, onCancel, onReschedule }) {
   )
 }
 
-export function BookCremationPage({ cases, preselectedCase, initialCrematoriums, initialShippingPartners, initialBookings }) {
+export function BookCremationPage({ cases, preselectedCase }) {
   const { user } = useAuth()
   const { canWrite } = useUser()
   const defaultShippingId = getDefaultShippingPartnerId(user?.id)
 
-  const [crematoriums, setCrematoriums] = useState(initialCrematoriums ?? [])
-  const [shippingPartners, setShippingPartners] = useState(initialShippingPartners ?? [])
-  const [existingBookings, setExistingBookings] = useState(initialBookings ?? [])
+  const [crematoriums, setCrematoriums] = useState([])
+  const [shippingPartners, setShippingPartners] = useState([])
+  const [existingBookings, setExistingBookings] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const [query, setQuery] = useState(preselectedCase?.deceased ?? preselectedCase?.id ?? '')
   const [showDropdown, setShowDropdown] = useState(false)
   const [selectedCase, setSelectedCase] = useState(preselectedCase ?? null)
-  const [matchedCrem, setMatchedCrem] = useState(() =>
-    initialCrematoriums && preselectedCase?.crematoriumId
-      ? initialCrematoriums.find(cr => cr.id === preselectedCase.crematoriumId) ?? null
-      : null
-  )
-  const [selectedShipping, setSelectedShipping] = useState(() =>
-    initialShippingPartners && defaultShippingId
-      ? initialShippingPartners.find(p => p.id === defaultShippingId) ?? null
-      : null
-  )
+  const [matchedCrem, setMatchedCrem] = useState(null)
+  const [selectedShipping, setSelectedShipping] = useState(null)
   const searchRef = useRef(null)
 
   const [weekStart, setWeekStart] = useState(() => getSundayOf(new Date()))
@@ -178,15 +172,14 @@ export function BookCremationPage({ cases, preselectedCase, initialCrematoriums,
   const pendingSlots = useRef(null)
 
   useEffect(() => {
-    if (initialCrematoriums && initialShippingPartners && initialBookings) return
     Promise.allSettled([
-      !initialCrematoriums && fetchCrematoriums().then(list => {
+      fetchCrematoriums().then(list => {
         setCrematoriums(list)
         if (preselectedCase?.crematoriumId) {
           setMatchedCrem(list.find(cr => cr.id === preselectedCase.crematoriumId) ?? null)
         }
       }),
-      !initialShippingPartners && fetchShippingPartners().then(list => {
+      fetchShippingPartners().then(list => {
         setShippingPartners(list)
         const defaultId = getDefaultShippingPartnerId(user?.id)
         if (defaultId) {
@@ -194,8 +187,8 @@ export function BookCremationPage({ cases, preselectedCase, initialCrematoriums,
           if (defaultPartner) setSelectedShipping(defaultPartner)
         }
       }),
-      !initialBookings && fetchBookings().then(setExistingBookings),
-    ].filter(Boolean))
+      fetchBookings().then(setExistingBookings),
+    ]).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -336,6 +329,8 @@ export function BookCremationPage({ cases, preselectedCase, initialCrematoriums,
     : null
   const canSend = selectedCase && matchedCrem && selectedSlots.size > 0 && !caseHasActiveBooking
   const disabled = !selectedCase || !matchedCrem || !!caseHasActiveBooking
+
+  if (loading) return null
 
   return (
     <div className="flex-1 flex overflow-hidden bg-surface">

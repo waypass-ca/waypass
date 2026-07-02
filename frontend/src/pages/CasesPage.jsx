@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
-import { fetchFolders, createFolder, deleteFolder, fetchShippingPartners } from '../lib/api.js'
+import { fetchCases, fetchFolders, createFolder, deleteFolder, fetchShippingPartners } from '../lib/api.js'
+
 import { FolderDeleteModal } from '../components/ui/FolderDeleteModal.jsx'
 import { CasesTopBar } from '../components/cases/CasesTopBar'
 import { CasesListView } from '../components/cases/CasesListView'
@@ -8,7 +9,7 @@ import { CasesColumnsView } from '../components/cases/CasesColumnsView'
 import { CasePreviewPanel } from '../components/cases/CasePreviewPanel'
 import { SelectionBar, StatusFooter, SMART_FOLDER_IDS } from '../components/cases/caseShared'
 
-export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) {
+export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, onCasesChange }) {
   const [folder, setFolder] = useState('all')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
@@ -27,8 +28,10 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
   const [gridFolderView, setGridFolderView] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [localDeletedCaseIds, setLocalDeletedCaseIds] = useState(new Set())
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    fetchCases().then(data => onCasesChange?.(data)).catch(() => {}).finally(() => setLoading(false))
     fetchFolders('cases').then(setUserFolders).catch(() => {})
     fetchShippingPartners().then(setShippingPartners).catch(() => {})
   }, [])
@@ -199,6 +202,8 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign }) 
   const crematoriumOptions = useMemo(() =>
     [...new Set(cases.map(c => c.crematorium).filter(Boolean))].sort()
   , [cases])
+
+  if (loading) return null
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white text-ink">

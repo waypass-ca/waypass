@@ -14,6 +14,7 @@ import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { TYPE_CONFIG, formatScheduledFor } from '../components/notifications/notificationConfig.js'
 
+
 const PAGE_SIZE = 50
 
 function formatTime(iso) {
@@ -376,10 +377,10 @@ function shapeFromDb(row) {
   })
 }
 
-export function InboxPage({ initialActiveId, onViewCase, initialItems }) {
+export function InboxPage({ initialActiveId, onViewCase }) {
   const { user } = useAuth()
-  const [items, setItems] = useState(() => initialItems ? initialItems.map(shapeItem) : [])
-  const [loading, setLoading] = useState(!initialItems)
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
   const [filters, setFilters] = useState({ types: new Set(), datePreset: '', readStatus: '' })
@@ -416,7 +417,6 @@ export function InboxPage({ initialActiveId, onViewCase, initialItems }) {
   }, [panelWidth, panelFull])
 
   useEffect(() => {
-    if (initialItems) return
     fetchInbox({ limit: PAGE_SIZE })
       .then(data => {
         setItems(data.map(shapeItem))
