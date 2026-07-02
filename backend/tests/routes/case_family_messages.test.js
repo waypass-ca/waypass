@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
-import { makeSupabaseMock, authedUser, badToken, authHeader , resetDispatch } from '../setup.js'
+import { makeSupabaseMock, makeChain, authedUser, badToken, authHeader , resetDispatch } from '../setup.js'
 
 const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
@@ -40,6 +40,8 @@ describe('GET /api/cases/:caseId/messages', () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
+    // Ownership check (cases table) resolves to a matching case
+    chain.single.mockResolvedValue({ data: { id: CASE_ID }, error: null })
     chain.order.mockResolvedValue({ data: [dbMessage], error: null })
   })
 
@@ -47,6 +49,13 @@ describe('GET /api/cases/:caseId/messages', () => {
     supabase.auth.getUser.mockResolvedValue(badToken)
     const res = await request(app).get(`/api/cases/${CASE_ID}/messages`)
     expect(res.status).toBe(401)
+  })
+
+  it('returns 404 when case not owned by caller', async () => {
+    chain.single.mockResolvedValue({ data: null, error: null })
+    const res = await request(app).get(`/api/cases/${CASE_ID}/messages`).set(authHeader)
+    expect(res.status).toBe(404)
+    expect(res.body.error).toBe('Case not found')
   })
 
   it('returns 200 with shaped messages', async () => {
@@ -139,6 +148,15 @@ describe('PATCH /api/cases/:caseId/messages/:id/read', () => {
 
   it('returns 404 when message not found', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
+    // Ownership check passes (cases), but the message update returns null.
+    const casesChain = makeChain()
+    casesChain.single.mockResolvedValue({ data: { id: CASE_ID }, error: null })
+    supabase.from.mockImplementation(table => {
+      if (table === 'users') return usersChain
+      if (table === 'cases') return casesChain
+      return chain
+    })
+    chain.single.mockReset()
     chain.single.mockResolvedValue({ data: null, error: null })
     const res = await request(app)
       .patch(`/api/cases/${CASE_ID}/messages/nope/read`)

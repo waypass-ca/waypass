@@ -21,6 +21,10 @@ function shapeRow(row) {
 // GET /api/cases/:caseId/messages
 router.get('/', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { data, error } = await supabase
       .from('case_family_messages')
       .select('*')
@@ -67,6 +71,10 @@ router.post('/', async (req, res, next) => {
 // PATCH /api/cases/:caseId/messages/:id/read
 router.patch('/:id/read', requireAuth, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.caseId).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { readByStaff, readByFamily } = req.body
     const { data, error } = await supabase
       .from('case_family_messages')

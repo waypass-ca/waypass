@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import crypto from 'crypto'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireWrite } from '../middleware/requireRole.js'

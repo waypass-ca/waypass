@@ -92,6 +92,20 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
     const { type, withContents } = req.query
     const deleteContents = withContents === 'true'
 
+    // Verify the folder belongs to the caller's funeral home BEFORE touching any
+    // of its contents. Without this, a caller could pass another tenant's folder
+    // id and the cascade below (which matches on folder_id alone) would
+    // soft-delete or detach that tenant's cases and documents.
+    const { data: folder, error: ownErr } = await supabase
+      .from('folders')
+      .select('id')
+      .eq('id', req.params.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
+      .is('deleted_at', null)
+      .maybeSingle()
+    if (ownErr) throw ownErr
+    if (!folder) return res.status(404).json({ error: 'Folder not found' })
+
     if (type === 'documents') {
       const { error } = deleteContents
         ? await supabase.from('case_documents')

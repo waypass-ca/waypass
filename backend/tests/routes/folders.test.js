@@ -145,12 +145,21 @@ describe('DELETE /api/folders/:id', () => {
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.is.mockReturnThis()
+    // Ownership pre-check resolves to a folder the caller owns
+    chain.maybeSingle.mockResolvedValue({ data: dbFolder, error: null })
   })
 
   it('returns 401 without auth', async () => {
     supabase.auth.getUser.mockResolvedValue(badToken)
     const res = await request(app).delete('/api/folders/folder-uuid-1')
     expect(res.status).toBe(401)
+  })
+
+  it('returns 404 when folder not owned by caller', async () => {
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    chain.maybeSingle.mockResolvedValue({ data: null, error: null })
+    const res = await request(app).delete('/api/folders/folder-uuid-1').set(authHeader)
+    expect(res.status).toBe(404)
   })
 
   it('returns 204 — soft deletes via deleted_at', async () => {

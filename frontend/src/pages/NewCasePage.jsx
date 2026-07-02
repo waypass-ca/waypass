@@ -256,7 +256,7 @@ export function NewCasePage({ onBack, onComplete }) {
           const sections = cust?.sections || DEFAULT_SECTIONS
           const html = generateEmailHtml(chosenTemplate, sections, config, newCaseData, logoUrl)
           const subject = buildSubject('pending', config.footerName)
-          await sendFamilyEmail({ to: firstCall.nokEmail.trim(), subject, html })
+          await sendFamilyEmail({ caseId: newCase.id, to: firstCall.nokEmail.trim(), subject, html })
           toastSuccess(`Confirmation email sent to ${firstCall.nokEmail.trim()}`)
         } catch {
           toastError('Case created, but the confirmation email could not be sent.')

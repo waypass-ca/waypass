@@ -1,8 +1,15 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { requireAdminKey } from '../middleware/requireAdminKey.js'
 
 const router = Router()
+
+// Strip characters that carry meaning inside a PostgREST `.or()` filter string
+// (comma separates conditions, parens group them, `*` is the ilike wildcard).
+function sanitizeFilterTerm(value) {
+  return String(value ?? '').replace(/[,()*\\]/g, '').trim()
+}
 
 function shapeRow(row) {
   return {
@@ -63,8 +70,9 @@ router.get('/nearby', requireAuth, async (req, res, next) => {
       .is('deleted_at', null)
       .not('connected_funeral_home_ids', 'cs', `{${req.user.funeralHomeId}}`)
 
-    if (query) {
-      dbQuery = dbQuery.or(`name.ilike.%${query}%,location.ilike.%${query}%,city.ilike.%${query}%`)
+    const term = sanitizeFilterTerm(query)
+    if (term) {
+      dbQuery = dbQuery.or(`name.ilike.%${term}%,location.ilike.%${term}%,city.ilike.%${term}%`)
     }
 
     const { data: dbRows, error: dbError } = await dbQuery.order('name')
@@ -283,11 +291,8 @@ router.get('/db/:id', async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
-router.patch('/db/:id/network', async (req, res, next) => {
+router.patch('/db/:id/network', requireAdminKey, async (req, res, next) => {
   try {
-    if (req.headers['x-admin-key'] !== process.env.ADMIN_API_KEY) {
-      return res.status(401).json({ error: 'Unauthorized' })
-    }
     const { is_waypass_network, waypass_tier } = req.body
     const { data, error } = await supabase
       .from('shipping_partners_db')

@@ -290,13 +290,17 @@ router.post('/:id/addons', requireAuth, requireWrite, async (req, res, next) => 
     const { addonId } = req.body
     if (!addonId) return res.status(400).json({ error: 'addonId is required' })
 
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { error } = await supabase
       .from('case_addons')
       .insert({ case_id: req.params.id, addon_id: addonId })
     if (error) throw error
 
     const { data, error: fetchErr } = await supabase
-      .from('cases').select(CASE_SELECT).eq('id', req.params.id).single()
+      .from('cases').select(CASE_SELECT).eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
     if (fetchErr) throw fetchErr
     res.status(201).json(shapeRow(data))
   } catch (err) {
@@ -307,6 +311,10 @@ router.post('/:id/addons', requireAuth, requireWrite, async (req, res, next) => 
 // ── DELETE /api/cases/:id/addons/:addonId ───────
 router.delete('/:id/addons/:addonId', requireAuth, requireWrite, async (req, res, next) => {
   try {
+    const { data: _case, error: caseErr } = await supabase
+      .from('cases').select('id').eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
+    if (caseErr || !_case) return res.status(404).json({ error: 'Case not found' })
+
     const { error } = await supabase
       .from('case_addons')
       .delete()
@@ -315,7 +323,7 @@ router.delete('/:id/addons/:addonId', requireAuth, requireWrite, async (req, res
     if (error) throw error
 
     const { data, error: fetchErr } = await supabase
-      .from('cases').select(CASE_SELECT).eq('id', req.params.id).single()
+      .from('cases').select(CASE_SELECT).eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
     if (fetchErr) throw fetchErr
     res.json(shapeRow(data))
   } catch (err) {

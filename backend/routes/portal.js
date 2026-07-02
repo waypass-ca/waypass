@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { requireWrite } from '../middleware/requireRole.js'
 
 const router = Router()
 
@@ -50,7 +51,7 @@ router.get('/', async (req, res, next) => {
 })
 
 // PUT /api/portal-settings — requires auth, scoped to funeral home
-router.put('/', requireAuth, async (req, res, next) => {
+router.put('/', requireAuth, requireWrite, async (req, res, next) => {
   try {
     const body = req.body
     const { data, error } = await supabase
