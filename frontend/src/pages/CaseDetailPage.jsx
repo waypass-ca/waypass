@@ -431,9 +431,9 @@ export function CaseDetailPage() {
               />
             </div>
           )}
-          {caseBookings.length > 0 && (
+          {caseBookings.filter(b => b.status !== 'cancelled').length > 0 && (
             <div className="shrink-0 border-t border-line bg-white px-8 py-4 flex flex-col gap-2">
-              {caseBookings.map(b => (
+              {caseBookings.filter(b => b.status !== 'cancelled').map(b => (
                 <BookingCard
                   key={b.id}
                   booking={b}
