@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import { useUser } from '../context/UserContext.jsx'
 import { fetchPackages, fetchCrematoriums, createCase, fetchEmailTemplate, fetchPortalSettingsAuth, saveEmailOverride } from '../lib/api.js'
 import { supabase } from '../lib/supabase.js'
@@ -155,7 +156,11 @@ function DocumentSlot({ label, doc, onUpload }) {
 }
 
 
-export function NewCasePage({ onBack, onComplete }) {
+export function NewCasePage() {
+  const navigate = useNavigate()
+  const { setCases } = useOutletContext()
+  const onBack = () => navigate('/cases')
+  const onComplete = (newCase) => { setCases(prev => [newCase, ...prev]); navigate('/cases') }
   const [step, setStep] = useState(0)
   const { packages, crematoriums } = useData()
   const { profile } = useUser()
@@ -324,6 +329,7 @@ export function NewCasePage({ onBack, onComplete }) {
   }
 
   return (
+    <div className="flex-1 overflow-auto bg-white px-8 py-7">
     <div>
       {/* Template preview modal — top level so it always reads fresh caseCustomizations */}
       {previewTemplate && step === 5 && (
@@ -905,6 +911,7 @@ export function NewCasePage({ onBack, onComplete }) {
           </div>
         </div>
       )}
+    </div>
     </div>
   )
 }

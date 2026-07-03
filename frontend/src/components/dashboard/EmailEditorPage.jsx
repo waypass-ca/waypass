@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, useRef } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { Star, Check, X, Eye, GripVertical, ChevronLeft, ChevronRight, Pencil, RotateCcw, PanelTop, AlignLeft, PanelBottom, Search } from 'lucide-react'
 import { PageTitle } from '../layout/PageTitle'
 import { fetchPortalSettings, fetchEmailTemplate, saveEmailTemplate, fetchEmailOverride, saveEmailOverride } from '../../lib/api.js'
@@ -1580,7 +1581,8 @@ function FavouritesRow({ templates, favouriteIds, activeId, onSetActive, onToggl
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export function EmailEditorPage({ cases = [] }) {
+export function EmailEditorPage() {
+  const { cases = [] } = useOutletContext()
   const { canWrite, profile } = useUser()
   const funeralHomeName = profile?.funeralHomeName || SAMPLE.funeralHome
   // ── Global state ──

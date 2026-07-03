@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useParams, useNavigate, useOutletContext } from 'react-router-dom'
 import {
   addCaseNote, fetchCustody, updateCustodyStage, fetchBookings, cancelBooking,
   fetchCaseDocuments, createCaseDocument, deleteCaseDocument, updateCaseDocument,
@@ -28,10 +29,17 @@ import { ActivityDetailDrawer } from '../components/cases/ActivityDetailDrawer'
 import { EditCaseModal } from '../components/cases/modals/EditCaseModal'
 import { useUser } from '../context/UserContext.jsx'
 
-export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule }) {
+export function CaseDetailPage() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const { cases, setCases } = useOutletContext()
+  const caseData = cases.find(c => c.id === id)
+  const onBack = () => navigate('/cases')
+  const onStatusChange = (caseId, newStatus) => setCases(prev => prev.map(c => c.id === caseId ? { ...c, status: newStatus } : c))
+  const onSchedule = () => navigate('/book', { state: { preselectedCase: caseData } })
   const { canWrite, profile } = useUser()
-  const [caseRow, setCaseRow] = useState(caseData)
-  const [status, setStatus] = useState(caseData.status)
+  const [caseRow, setCaseRow] = useState(caseData ?? null)
+  const [status, setStatus] = useState(caseData?.status ?? null)
   const [documents, setDocuments] = useState([])
   const [uploading, setUploading] = useState(false)
   const [custody, setCustody] = useState(EMPTY_CUSTODY)
@@ -309,6 +317,8 @@ export function CaseDetailPage({ caseData, onBack, onStatusChange, onSchedule })
 
   const docsActionNeeded = authPending && !authorizationComplete
   const authBlocksTransport = nextCustodyIdx === 2 && authPending && !authorizationComplete
+
+  if (!caseData) return null
 
   return (
     <div className="flex-1 flex overflow-hidden">

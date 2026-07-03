@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { DocumentPreviewModal } from '../components/ui/DocumentPreviewModal'
 import { FolderDeleteModal } from '../components/ui/FolderDeleteModal.jsx'
@@ -13,7 +14,8 @@ import {
   DocsSelectionBar, DocsStatusFooter,
 } from '../components/documents/docsShared'
 
-export function DocumentsPage({ cases = [] }) {
+export function DocumentsPage() {
+  const { cases = [] } = useOutletContext()
   const [category]                    = useState('all')
   const [search, setSearch]           = useState('')
   const [view, setView]               = useState('list')

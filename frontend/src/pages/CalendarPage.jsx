@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { fetchBookings, confirmBooking, cancelBooking } from '../lib/api.js'
 import { useUser } from '../context/UserContext.jsx'
@@ -167,20 +168,20 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onReschedule,
 }
 
 
-export function CalendarPage({ cases = [], initialBookings }) {
+export function CalendarPage() {
+  const { cases = [] } = useOutletContext()
   const { canWrite } = useUser()
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [viewMode, setViewMode] = useState('week') // 'month' | 'week'
   const [weekStart, setWeekStart] = useState(() => getSundayOf(today))
-  const [bookings, setBookings] = useState(initialBookings ?? [])
+  const [bookings, setBookings] = useState([])
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const [cancelTarget, setCancelTarget] = useState(null)
 
   useEffect(() => {
-    if (initialBookings) return
     fetchBookings().then(setBookings).catch(() => {})
   }, [])
 

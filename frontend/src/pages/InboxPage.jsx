@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Star, Search,
   Check, Archive, X, Mail, MailOpen, Clock, CheckCheck,
@@ -377,7 +378,11 @@ function shapeFromDb(row) {
   })
 }
 
-export function InboxPage({ initialActiveId, onViewCase }) {
+export function InboxPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const initialActiveId = location.state?.activeId ?? null
+  const onViewCase = (caseId) => navigate('/cases/' + caseId)
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
