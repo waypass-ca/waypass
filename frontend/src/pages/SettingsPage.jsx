@@ -35,6 +35,7 @@ export function SettingsPage() {
   const Content = SECTIONS[visibleId]
 
   return (
+    <div className="flex-1 px-8 py-7 bg-canvas overflow-auto">
     <div className="flex gap-12 min-h-0">
       <aside className="w-44 flex-shrink-0">
         <PageTitle className="mb-6">Settings</PageTitle>
@@ -58,6 +59,7 @@ export function SettingsPage() {
       <main className="flex-1 min-w-0 pt-15 pb-16 max-w-3xl">
         <Content />
       </main>
+    </div>
     </div>
   )
 }

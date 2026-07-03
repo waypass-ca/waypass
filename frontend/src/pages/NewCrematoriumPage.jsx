@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { createCrematorium } from '../lib/api.js'
 import { Button } from '../components/ui/Button'
 import { PageTitle } from '../components/layout/PageTitle'
@@ -75,7 +76,10 @@ function ConfirmRow({ label, value }) {
   )
 }
 
-export function NewCrematoriumPage({ onBack, onComplete }) {
+export function NewCrematoriumPage() {
+  const navigate = useNavigate()
+  const onBack = () => navigate('/crematoriums')
+  const onComplete = () => navigate('/crematoriums')
   const [step, setStep] = useState(0)
   const [details, setDetails] = useState({ name: '', location: '', distance: '', website: '' })
   const [contact, setContact] = useState({ name: '', phone: '', avgTurnaround: '', avgFee: '' })
@@ -123,6 +127,7 @@ export function NewCrematoriumPage({ onBack, onComplete }) {
   }
 
   return (
+    <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
     <div className="max-w-lg mx-auto py-8">
       <div className="mb-8">
         <button onClick={onBack} className="flex items-center gap-1.5 font-sans text-sm text-muted hover:text-ink transition-colors mb-6">
@@ -197,5 +202,6 @@ export function NewCrematoriumPage({ onBack, onComplete }) {
         </div>
       </div>
     </div>
+    </main>
   )
 }

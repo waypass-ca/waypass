@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
-import { fetchCases, fetchFolders, createFolder, deleteFolder, fetchShippingPartners } from '../lib/api.js'
+import { useNavigate, useOutletContext } from 'react-router-dom'
+import { fetchCases, fetchFolders, createFolder, deleteFolder, fetchShippingPartners, assignCaseFolder } from '../lib/api.js'
 
 import { FolderDeleteModal } from '../components/ui/FolderDeleteModal.jsx'
 import { CasesTopBar } from '../components/cases/CasesTopBar'
@@ -9,7 +10,16 @@ import { CasesColumnsView } from '../components/cases/CasesColumnsView'
 import { CasePreviewPanel } from '../components/cases/CasePreviewPanel'
 import { SelectionBar, StatusFooter, SMART_FOLDER_IDS } from '../components/cases/caseShared'
 
-export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, onCasesChange }) {
+export function CasesPage() {
+  const navigate = useNavigate()
+  const { cases, setCases } = useOutletContext()
+  const onViewCase = (id) => navigate('/cases/' + id)
+  const onNewCase = () => navigate('/cases/new')
+  const onCasesChange = setCases
+  const onCaseFolderAssign = async (caseId, folderId) => {
+    await assignCaseFolder(caseId, folderId)
+    setCases(prev => prev.map(c => c.id === caseId ? { ...c, folderId } : c))
+  }
   const [folder, setFolder] = useState('all')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(new Set())
@@ -31,7 +41,7 @@ export function CasesPage({ cases, onViewCase, onNewCase, onCaseFolderAssign, on
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchCases().then(data => onCasesChange?.(data)).catch(() => {}).finally(() => setLoading(false))
+    fetchCases().then(data => { onCasesChange(data) }).catch(() => {}).finally(() => setLoading(false))
     fetchFolders('cases').then(setUserFolders).catch(() => {})
     fetchShippingPartners().then(setShippingPartners).catch(() => {})
   }, [])

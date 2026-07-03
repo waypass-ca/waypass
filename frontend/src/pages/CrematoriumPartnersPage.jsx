@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import { fetchCrematoriums, createCrematorium, fetchNearbyCrematoriums } from '../lib/api.js'
 import { useUser } from '../context/UserContext.jsx'
 import { PageTitle } from '../components/layout/PageTitle'
@@ -11,7 +12,11 @@ import { PartnerDetailPage } from './PartnerDetailPage'
 import { PartnersList } from '../components/partners/PartnersList'
 import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
-export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }) {
+export function CrematoriumPartnersPage() {
+  const navigate = useNavigate()
+  const { cases = [] } = useOutletContext()
+  const onAddPartner = () => navigate('/partners/new')
+  const onViewCase = (id) => navigate('/cases/' + id)
   const { canWrite } = useUser()
   const [tab, setTab] = useState('partners')
   const [crematoriums, setCrematoriums] = useState([])

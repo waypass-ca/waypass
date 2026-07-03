@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useLocation, useOutletContext } from 'react-router-dom'
 import { Search, X, CheckCircle2, Send, ChevronLeft, ChevronRight, Info, CalendarCheck } from 'lucide-react'
 import { fetchCrematoriums, fetchShippingPartners, fetchBookings, createBooking, confirmBooking, cancelBooking } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -140,7 +141,10 @@ function BookingPanelRow({ booking, onConfirm, onCancel, onReschedule }) {
   )
 }
 
-export function BookCremationPage({ cases, preselectedCase }) {
+export function BookCremationPage() {
+  const location = useLocation()
+  const { cases } = useOutletContext()
+  const preselectedCase = location.state?.preselectedCase ?? null
   const { user } = useAuth()
   const { canWrite } = useUser()
   const defaultShippingId = getDefaultShippingPartnerId(user?.id)

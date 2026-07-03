@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import { fetchShippingPartners, createShippingPartner, fetchNearbyShippingPartners } from '../lib/api.js'
 import { useUser } from '../context/UserContext.jsx'
 import { PageTitle } from '../components/layout/PageTitle'
@@ -11,7 +12,10 @@ import { PartnerDetailPage } from './PartnerDetailPage'
 import { PartnersList } from '../components/partners/PartnersList'
 import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
-export function ShippingPartnersPage({ cases = [], onViewCase }) {
+export function ShippingPartnersPage() {
+  const navigate = useNavigate()
+  const { cases = [] } = useOutletContext()
+  const onViewCase = (id) => navigate('/cases/' + id)
   const { canWrite } = useUser()
   const [tab, setTab] = useState('partners')
   const [partners, setPartners] = useState([])
