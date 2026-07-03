@@ -8,6 +8,7 @@
     "seed": "node scripts/seed.js",
     "seed:crematoriums": "node scripts/seedCrematoriums.js",
     "refresh:crematoriums": "node scripts/refreshCrematoriums.js",
+    "seed:shippingPartners": "node scripts/seedShippingPartners.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },

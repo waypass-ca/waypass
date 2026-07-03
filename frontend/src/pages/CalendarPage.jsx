@@ -7,7 +7,6 @@ import { WeekGrid } from '../components/booking/WeekGrid.jsx'
 import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
 import { ConfirmModal } from '../components/ui/ConfirmModal.jsx'
 
-
 const STATUS_STYLES = {
   pending:   { chip: 'bg-amber-100 text-amber-800', dot: 'bg-amber-400' },
   responded: { chip: 'bg-blue-100 text-blue-800', dot: 'bg-blue-400' },
@@ -168,22 +167,21 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onReschedule,
 }
 
 
-export function CalendarPage({ cases = [] }) {
+export function CalendarPage({ cases = [], initialBookings }) {
   const { canWrite } = useUser()
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
   const [viewMode, setViewMode] = useState('week') // 'month' | 'week'
   const [weekStart, setWeekStart] = useState(() => getSundayOf(today))
-  const [bookings, setBookings] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [bookings, setBookings] = useState(initialBookings ?? [])
   const [selectedBooking, setSelectedBooking] = useState(null)
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const [cancelTarget, setCancelTarget] = useState(null)
 
   useEffect(() => {
-    setLoading(true)
-    fetchBookings().then(setBookings).catch(() => {}).finally(() => setLoading(false))
+    if (initialBookings) return
+    fetchBookings().then(setBookings).catch(() => {})
   }, [])
 
   async function handleConfirm(bookingId, slot) {
@@ -218,9 +216,6 @@ export function CalendarPage({ cases = [] }) {
 
   const cells = buildMonthGrid(year, month)
   const todayStr = today.toISOString().slice(0, 10)
-
-  if (loading) return null
-
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-surface">
 
@@ -289,16 +284,16 @@ export function CalendarPage({ cases = [] }) {
             weekStart={weekStart}
             className="border-l border-line bg-white"
             renderCell={(key, date, hour, isToday) => (
-              <div key={key} className={`border-r border-b border-line last:border-r-0 p-0.5 overflow-hidden min-w-0 ${isToday ? 'bg-primary/5' : ''}`}>
+              <div key={key} className={`border-r border-b border-line last:border-r-0 p-0.5 overflow-hidden ${isToday ? 'bg-primary/5' : ''}`}>
                 {slotMap[key] && (
                   <button
                     onClick={() => setSelectedBooking(slotMap[key])}
-                    className="w-full h-full rounded px-1.5 flex flex-col justify-center bg-emerald-100 hover:bg-emerald-200 transition-colors text-left overflow-hidden min-w-0"
+                    className="w-full h-full rounded px-1.5 flex flex-col justify-center bg-emerald-100 hover:bg-emerald-200 transition-colors text-left overflow-hidden"
                   >
-                    <span className="font-sans text-[10px] font-semibold text-emerald-800 truncate leading-tight w-full min-w-0">
+                    <span className="font-sans text-[10px] font-semibold text-emerald-800 truncate leading-tight">
                       {cases.find(c => c.id === slotMap[key].caseId)?.deceased ?? slotMap[key].caseId}
                     </span>
-                    <span className="font-sans text-[9px] text-emerald-600 truncate leading-tight w-full min-w-0">
+                    <span className="font-sans text-[9px] text-emerald-600 truncate leading-tight">
                       {slotMap[key].crematoriumName}
                     </span>
                   </button>
@@ -323,7 +318,7 @@ export function CalendarPage({ cases = [] }) {
           <div className="grid grid-cols-7 flex-1">
             {cells.map((date, idx) => {
               if (!date) return (
-                <div key={`empty-${idx}`} className="border-b border-r border-line last:border-r-0 min-h-[100px] bg-canvas/40 overflow-hidden min-w-0" />
+                <div key={`empty-${idx}`} className="border-b border-r border-line last:border-r-0 min-h-[100px] bg-canvas/40" />
               )
               const dateStr = date.toISOString().slice(0, 10)
               const dayBookings = bookingsByDate[dateStr] ?? []
@@ -333,7 +328,7 @@ export function CalendarPage({ cases = [] }) {
               return (
                 <div
                   key={dateStr}
-                  className={`border-b border-r border-line last:border-r-0 min-h-[100px] p-2 overflow-hidden min-w-0 ${isPast ? 'bg-canvas/40' : ''}`}
+                  className={`border-b border-r border-line last:border-r-0 min-h-[100px] p-2 ${isPast ? 'bg-canvas/40' : ''}`}
                 >
                   <div className={`font-sans text-[12px] font-medium mb-1.5 w-6 h-6 flex items-center justify-center rounded-full ${
                     isToday ? 'bg-primary text-surface' : isPast ? 'text-muted' : 'text-ink'
