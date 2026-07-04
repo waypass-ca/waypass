@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useOutletContext } from 'react-router-dom'
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { fetchCrematoriums, createCrematorium, fetchNearbyCrematoriums } from '../lib/api.js'
 import { useUser } from '../context/UserContext.jsx'
 import { PageTitle } from '../components/layout/PageTitle'
@@ -14,6 +14,7 @@ import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
 export function CrematoriumPartnersPage() {
   const navigate = useNavigate()
+  const { id: selectedId } = useParams()
   const { cases = [] } = useOutletContext()
   const onAddPartner = () => navigate('/partners/new')
   const onViewCase = (id) => navigate('/cases/' + id)
@@ -28,7 +29,8 @@ export function CrematoriumPartnersPage() {
   const [locationError, setLocationError] = useState(false)
   const [disconnecting, setDisconnecting] = useState(null)
   const [addingCrm, setAddingCrm] = useState(null)
-  const [selectedPartner, setSelectedPartner] = useState(null)
+
+  const selectedPartner = selectedId ? crematoriums.find(c => c.id === selectedId) : null
 
   useEffect(() => {
     fetchCrematoriums().then(setCrematoriums).catch(console.error).finally(() => setLoading(false))
@@ -50,11 +52,9 @@ export function CrematoriumPartnersPage() {
   }, [userLocation])
 
   useEffect(() => {
-    if (!selectedPartner) return
-    const updated = crematoriums.find(c => c.id === selectedPartner.id)
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- keep the open detail view in sync with refreshed list data
-    if (updated) setSelectedPartner(updated)
-  }, [crematoriums])
+    if (!selectedId || loading) return
+    if (!crematoriums.some(c => c.id === selectedId)) navigate('/crematoriums', { replace: true })
+  }, [selectedId, loading, crematoriums, navigate])
 
   function handleSaved(updated) {
     setCrematoriums(prev => prev.map(c => c.id === updated.id ? updated : c))
@@ -63,7 +63,7 @@ export function CrematoriumPartnersPage() {
   function handleDisconnected(id) {
     setCrematoriums(prev => prev.filter(c => c.id !== id))
     setDisconnecting(null)
-    if (selectedPartner?.id === id) setSelectedPartner(null)
+    if (selectedId === id) navigate('/crematoriums')
   }
 
   async function handleConfirmAdd(enriched) {
@@ -88,6 +88,8 @@ export function CrematoriumPartnersPage() {
   }
 
 
+  if (loading) return null
+
   if (selectedPartner) {
     return (
       <>
@@ -97,7 +99,7 @@ export function CrematoriumPartnersPage() {
         <PartnerDetailPage
           crm={selectedPartner}
           cases={cases}
-          onBack={() => setSelectedPartner(null)}
+          onBack={() => navigate('/crematoriums')}
           onSave={handleSaved}
           onRemove={crm => setDisconnecting(crm)}
           onViewCase={onViewCase}
@@ -105,8 +107,6 @@ export function CrematoriumPartnersPage() {
       </>
     )
   }
-
-  if (loading) return null
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
@@ -156,7 +156,7 @@ export function CrematoriumPartnersPage() {
         <PartnersList
           crematoriums={crematoriums}
           search={search}
-          onSelect={setSelectedPartner}
+          onSelect={crm => navigate('/crematoriums/' + crm.id)}
         />
       )}
 

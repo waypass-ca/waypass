@@ -20,6 +20,7 @@ import inboxRouter from './routes/inbox.js'
 import emailTemplateRouter from './routes/email.js'
 import authRouter from './routes/auth.js'
 import funeralHomesRouter from './routes/funeralHomes.js'
+import searchRouter from './routes/search.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -57,6 +58,7 @@ app.use('/api/folders', foldersRouter)
 app.use('/api/bookings', bookingsRouter)
 app.use('/api/inbox', inboxRouter)
 app.use('/api/email-template', emailTemplateRouter)
+app.use('/api/search', searchRouter)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 

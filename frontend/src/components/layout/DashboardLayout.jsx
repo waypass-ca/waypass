@@ -6,6 +6,7 @@ import { AppToastContainer } from '../ui/AppToastContainer'
 import { DashboardSkeleton } from '../skeletons/DashboardSkeleton'
 import { useDelayedLoading } from '../../hooks/useDelayedLoading'
 import { fetchCases } from '../../lib/api.js'
+import { useCommandPalette } from '../search/commandPaletteContext.js'
 
 const PATH_TO_SIDEBAR = {
   '/':           'home',
@@ -39,12 +40,15 @@ const SIDEBAR_TO_PATH = {
 
 function activeSidebarItem(pathname) {
   if (pathname.startsWith('/cases/')) return 'cases'
+  if (pathname.startsWith('/crematoriums/')) return 'partners'
+  if (pathname.startsWith('/shipping/')) return 'shipping-partners'
   return PATH_TO_SIDEBAR[pathname] ?? 'home'
 }
 
 export function DashboardLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { openPalette } = useCommandPalette()
   const [cases, setCases] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -75,6 +79,7 @@ export function DashboardLayout() {
       <Sidebar
         activeItem={activeSidebarItem(location.pathname)}
         onItemChange={id => {
+          if (id === 'search') { openPalette(); return }
           const path = SIDEBAR_TO_PATH[id]
           if (path) navigate(path)
         }}

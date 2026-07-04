@@ -3,15 +3,9 @@ import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireAdminKey } from '../middleware/requireAdminKey.js'
 import { fetchAndStoreLogo } from '../lib/logoService.js'
+import { sanitizeFilterTerm } from '../lib/searchHelpers.js'
 
 const router = Router()
-
-// Strip characters that carry meaning inside a PostgREST `.or()` filter string
-// (comma separates conditions, parens group them, `*` is the ilike wildcard).
-// Without this a crafted `query` could inject extra filter conditions.
-function sanitizeFilterTerm(value) {
-  return String(value ?? '').replace(/[,()*\\]/g, '').trim()
-}
 
 function shapeRow(row) {
   return {
