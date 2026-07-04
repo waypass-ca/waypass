@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useOutletContext } from 'react-router-dom'
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { fetchShippingPartners, createShippingPartner, fetchNearbyShippingPartners } from '../lib/api.js'
 import { useUser } from '../context/UserContext.jsx'
 import { PageTitle } from '../components/layout/PageTitle'
@@ -14,6 +14,7 @@ import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
 export function ShippingPartnersPage() {
   const navigate = useNavigate()
+  const { id: selectedId } = useParams()
   const { cases = [] } = useOutletContext()
   const onViewCase = (id) => navigate('/cases/' + id)
   const { canWrite } = useUser()
@@ -27,7 +28,8 @@ export function ShippingPartnersPage() {
   const [locationError, setLocationError] = useState(false)
   const [disconnecting, setDisconnecting] = useState(null)
   const [addingPartner, setAddingPartner] = useState(null)
-  const [selectedPartner, setSelectedPartner] = useState(null)
+
+  const selectedPartner = selectedId ? partners.find(p => p.id === selectedId) : null
 
   useEffect(() => {
     fetchShippingPartners().then(setPartners).catch(console.error).finally(() => setLoading(false))
@@ -49,11 +51,9 @@ export function ShippingPartnersPage() {
   }, [userLocation])
 
   useEffect(() => {
-    if (!selectedPartner) return
-    const updated = partners.find(c => c.id === selectedPartner.id)
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- keep the open detail view in sync with refreshed list data
-    if (updated) setSelectedPartner(updated)
-  }, [partners])
+    if (!selectedId || loading) return
+    if (!partners.some(p => p.id === selectedId)) navigate('/shipping', { replace: true })
+  }, [selectedId, loading, partners, navigate])
 
   function handleSaved(updated) {
     setPartners(prev => prev.map(c => c.id === updated.id ? updated : c))
@@ -62,7 +62,7 @@ export function ShippingPartnersPage() {
   function handleDisconnected(id) {
     setPartners(prev => prev.filter(c => c.id !== id))
     setDisconnecting(null)
-    if (selectedPartner?.id === id) setSelectedPartner(null)
+    if (selectedId === id) navigate('/shipping')
   }
 
   async function handleConfirmAdd(enriched) {
@@ -87,6 +87,8 @@ export function ShippingPartnersPage() {
   }
 
 
+  if (loading) return null
+
   if (selectedPartner) {
     return (
       <>
@@ -97,7 +99,7 @@ export function ShippingPartnersPage() {
           crm={selectedPartner}
           cases={cases}
           kind="shipping"
-          onBack={() => setSelectedPartner(null)}
+          onBack={() => navigate('/shipping')}
           onSave={handleSaved}
           onRemove={crm => setDisconnecting(crm)}
           onViewCase={onViewCase}
@@ -105,8 +107,6 @@ export function ShippingPartnersPage() {
       </>
     )
   }
-
-  if (loading) return null
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
@@ -157,7 +157,7 @@ export function ShippingPartnersPage() {
           crematoriums={partners}
           search={search}
           kind="shipping"
-          onSelect={setSelectedPartner}
+          onSelect={p => navigate('/shipping/' + p.id)}
         />
       )}
 

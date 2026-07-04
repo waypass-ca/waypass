@@ -24,6 +24,7 @@ import { DocumentsPage } from './pages/DocumentsPage.jsx'
 import { EmailEditorPage } from './components/dashboard/EmailEditorPage.jsx'
 import { RevenuePage } from './pages/RevenuePage.jsx'
 import { SettingsPage } from './pages/SettingsPage.jsx'
+import { CommandPaletteProvider } from './components/search/CommandPaletteProvider.jsx'
 
 function CrematoriumResponsePageWithToken() {
   const { token } = useParams()
@@ -37,8 +38,9 @@ function ShippingResponsePageWithToken() {
 
 function AuthenticatedRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<DashboardLayout />}>
+    <CommandPaletteProvider>
+      <Routes>
+        <Route path="/" element={<DashboardLayout />}>
         <Route index element={<HomeDashboardPage />} />
         <Route path="inbox" element={<InboxPage />} />
         <Route path="cases" element={<CasesPage />} />
@@ -46,7 +48,9 @@ function AuthenticatedRoutes() {
         <Route path="cases/:id" element={<CaseDetailPage />} />
         <Route path="crematoriums" element={<CrematoriumPartnersPage />} />
         <Route path="crematoriums/new" element={<NewCrematoriumPage />} />
+        <Route path="crematoriums/:id" element={<CrematoriumPartnersPage />} />
         <Route path="shipping" element={<ShippingPartnersPage />} />
+        <Route path="shipping/:id" element={<ShippingPartnersPage />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="book" element={<BookCremationPage />} />
         <Route path="documents" element={<DocumentsPage />} />
@@ -55,7 +59,8 @@ function AuthenticatedRoutes() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
-    </Routes>
+      </Routes>
+    </CommandPaletteProvider>
   )
 }
 
