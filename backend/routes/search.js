@@ -19,7 +19,6 @@ const EMPTY = {
   crematoriums: [],
   shippingPartners: [],
   bookings: [],
-  inbox: [],
 }
 
 // GET /api/search?q=<term>&limit=<n>
@@ -30,14 +29,13 @@ router.get('/', requireAuth, async (req, res, next) => {
 
     const limit = parseLimit(req.query.limit)
     const like = `%${term}%`
-    const { funeralHomeId, id: userId } = req.user
+    const { funeralHomeId } = req.user
 
     const [
       casesRes,
       crematoriumsRes,
       shippingRes,
       bookingsRes,
-      inboxRes,
     ] = await Promise.all([
       supabase
         .from('cases')
@@ -80,20 +78,9 @@ router.get('/', requireAuth, async (req, res, next) => {
         )
         .order('created_at', { ascending: false })
         .limit(limit),
-
-      supabase
-        .from('inbox_items')
-        .select('id, subject, preview, sender, case_id, created_at')
-        .eq('user_id', userId)
-        .is('archived_at', null)
-        .or(
-          `subject.ilike.${like},preview.ilike.${like},sender.ilike.${like}`
-        )
-        .order('created_at', { ascending: false })
-        .limit(limit),
     ])
 
-    for (const r of [casesRes, crematoriumsRes, shippingRes, bookingsRes, inboxRes]) {
+    for (const r of [casesRes, crematoriumsRes, shippingRes, bookingsRes]) {
       if (r.error) throw r.error
     }
 
@@ -121,12 +108,6 @@ router.get('/', requireAuth, async (req, res, next) => {
         label: row.crematorium_name || `Booking ${row.id}`,
         sublabel: [row.case_id, row.status].filter(Boolean).join(' · '),
         href: row.case_id ? `/cases/${row.case_id}` : '/calendar',
-      })),
-      inbox: (inboxRes.data ?? []).map(row => ({
-        id: row.id,
-        label: row.subject || row.sender || 'Inbox message',
-        sublabel: row.preview || row.sender || '',
-        href: '/inbox',
       })),
     })
   } catch (err) {

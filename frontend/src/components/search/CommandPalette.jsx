@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, CornerDownLeft } from 'lucide-react'
+import { Search, CornerDownLeft, Clock } from 'lucide-react'
 import { globalSearch } from '../../lib/api.js'
+import { getRecentSearches, addRecentSearch, clearRecentSearches } from './recentSearches.js'
 
 const TYPES = {
   case:         { label: 'Case',             resultKey: 'cases' },
   crematorium:  { label: 'Crematorium',      resultKey: 'crematoriums' },
   shipping:     { label: 'Shipping Partner', resultKey: 'shippingPartners' },
   booking:      { label: 'Booking',          resultKey: 'bookings' },
-  inbox:        { label: 'Inbox',            resultKey: 'inbox' },
 }
 
-const TYPE_ORDER = ['case', 'crematorium', 'shipping', 'booking', 'inbox']
+const TYPE_ORDER = ['case', 'crematorium', 'shipping', 'booking']
 
-const EMPTY_RESULTS = { cases: [], crematoriums: [], shippingPartners: [], bookings: [], inbox: [] }
+const EMPTY_RESULTS = { cases: [], crematoriums: [], shippingPartners: [], bookings: [] }
 
 // Higher score = better match. Falls back to 1 so backend-included rows still rank above nothing.
 function scoreRow(row, q) {
@@ -34,6 +34,7 @@ export function CommandPalette({ open, onClose }) {
   const [results, setResults] = useState(EMPTY_RESULTS)
   const [loading, setLoading] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [recents, setRecents] = useState([])
   const inputRef = useRef(null)
   const requestIdRef = useRef(0)
   const rowRefs = useRef([])
@@ -43,6 +44,7 @@ export function CommandPalette({ open, onClose }) {
     setQuery('')
     setResults(EMPTY_RESULTS)
     setActiveIndex(0)
+    setRecents(getRecentSearches())
     const t = setTimeout(() => inputRef.current?.focus(), 0)
     return () => clearTimeout(t)
   }, [open])
@@ -103,6 +105,7 @@ export function CommandPalette({ open, onClose }) {
 
   function handleSelect(row) {
     if (!row?.href) return
+    addRecentSearch(query)
     onClose()
     navigate(row.href)
   }
@@ -163,9 +166,35 @@ export function CommandPalette({ open, onClose }) {
         </div>
 
         <div className="max-h-[50vh] overflow-y-auto py-2">
-          {!trimmed && (
+          {!trimmed && recents.length === 0 && (
             <div className="px-4 py-6 text-center font-sans text-[12px] text-muted">
-              Type to search across cases, partners, bookings, and inbox.
+              Type to search across cases, partners, and bookings.
+            </div>
+          )}
+
+          {!trimmed && recents.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between px-4 pt-2 pb-1">
+                <span className="font-sans text-[10px] font-semibold uppercase tracking-wider text-muted">
+                  Recent searches
+                </span>
+                <button
+                  onClick={() => setRecents(clearRecentSearches())}
+                  className="font-sans text-[10px] text-muted hover:text-secondary cursor-pointer border-0 bg-transparent outline-none"
+                >
+                  Clear
+                </button>
+              </div>
+              {recents.map(term => (
+                <button
+                  key={term}
+                  onClick={() => { setQuery(term); inputRef.current?.focus() }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-left cursor-pointer border-0 outline-none bg-transparent hover:bg-ink/[0.04] transition-colors"
+                >
+                  <Clock size={13} className="text-muted flex-shrink-0" strokeWidth={1.8} />
+                  <span className="flex-1 min-w-0 font-sans text-[13px] text-ink truncate">{term}</span>
+                </button>
+              ))}
             </div>
           )}
 

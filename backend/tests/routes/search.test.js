@@ -8,7 +8,6 @@ vi.mock('../../lib/supabase.js', () => ({ supabase }))
 const { default: app } = await import('../../server.js')
 
 const FH_ID = 'fh-uuid-1'
-const USER_ID = authedUser.data.user.id
 
 const caseRow = {
   id: 'PSG-2026-ABC123',
@@ -45,31 +44,20 @@ const bookingRow = {
   created_at: '2026-06-05T00:00:00Z',
 }
 
-const inboxRow = {
-  id: 'inbox-1',
-  subject: 'Smith case update',
-  preview: 'A preview',
-  sender: 'Greenwood',
-  case_id: 'PSG-2026-ABC123',
-  created_at: '2026-06-06T00:00:00Z',
-}
-
-// The route runs 5 queries in parallel via Promise.all. Each terminates in .limit(),
-// so we pre-queue five resolved values in the order they're initiated:
-// cases → crematoriums → shippingPartners → bookings → inbox.
+// The route runs 4 queries in parallel via Promise.all. Each terminates in .limit(),
+// so we pre-queue four resolved values in the order they're initiated:
+// cases → crematoriums → shippingPartners → bookings.
 function queueAllTables({
   cases = [caseRow],
   crematoriums = [crematoriumRow],
   shipping = [shippingRow],
   bookings = [bookingRow],
-  inbox = [inboxRow],
 } = {}) {
   chain.limit
     .mockResolvedValueOnce({ data: cases,        error: null })
     .mockResolvedValueOnce({ data: crematoriums, error: null })
     .mockResolvedValueOnce({ data: shipping,     error: null })
     .mockResolvedValueOnce({ data: bookings,     error: null })
-    .mockResolvedValueOnce({ data: inbox,        error: null })
 }
 
 describe('GET /api/search', () => {
@@ -100,7 +88,6 @@ describe('GET /api/search', () => {
       crematoriums: [],
       shippingPartners: [],
       bookings: [],
-      inbox: [],
     })
     // Only the requireAuth users lookup should have hit the DB.
     expect(supabase.from).toHaveBeenCalledTimes(1)
@@ -144,20 +131,13 @@ describe('GET /api/search', () => {
         sublabel: 'PSG-2026-ABC123 · confirmed',
         href: '/cases/PSG-2026-ABC123',
       }],
-      inbox: [{
-        id: 'inbox-1',
-        label: 'Smith case update',
-        sublabel: 'A preview',
-        href: '/inbox',
-      }],
     })
   })
 
-  it('scopes cases and bookings by funeral_home_id, inbox by user_id', async () => {
+  it('scopes cases and bookings by funeral_home_id', async () => {
     queueAllTables()
     await request(app).get('/api/search?q=smith').set(authHeader)
     expect(chain.eq).toHaveBeenCalledWith('funeral_home_id', FH_ID)
-    expect(chain.eq).toHaveBeenCalledWith('user_id', USER_ID)
   })
 
   it('scopes crematoriums and shipping partners to connected funeral homes', async () => {
@@ -207,7 +187,6 @@ describe('GET /api/search', () => {
     chain.limit
       .mockResolvedValueOnce({ data: [caseRow], error: null })
       .mockResolvedValueOnce({ data: null, error: new Error('boom') })
-      .mockResolvedValueOnce({ data: [], error: null })
       .mockResolvedValueOnce({ data: [], error: null })
       .mockResolvedValueOnce({ data: [], error: null })
     const res = await request(app).get('/api/search?q=smith').set(authHeader)
