@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
-import { createInboxItem } from '../lib/notifications.js'
+import { notifyUser } from '../lib/notifications.js'
 
 const lastName = (name) => {
   if (!name) return null
@@ -97,8 +97,7 @@ router.post('/structured', requireAuth, async (req, res, next) => {
         .from('cases').select('deceased').eq('id', req.params.caseId).maybeSingle()
       const deceasedName = caseRow?.deceased ?? req.params.caseId
       const ln = lastName(deceasedName) ?? req.params.caseId
-      await createInboxItem({
-        userId: req.user.id,
+      await notifyUser(req.user.id, 'documentUploaded', {
         type: 'message',
         sender: 'Documents',
         subject: `${ln} · Document uploaded`,

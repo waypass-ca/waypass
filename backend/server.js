@@ -21,6 +21,7 @@ import emailTemplateRouter from './routes/email.js'
 import authRouter from './routes/auth.js'
 import funeralHomesRouter from './routes/funeralHomes.js'
 import searchRouter from './routes/search.js'
+import internalJobsRouter from './routes/internalJobs.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -59,6 +60,7 @@ app.use('/api/bookings', bookingsRouter)
 app.use('/api/inbox', inboxRouter)
 app.use('/api/email-template', emailTemplateRouter)
 app.use('/api/search', searchRouter)
+app.use('/api/internal/jobs', internalJobsRouter)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 

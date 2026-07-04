@@ -30,7 +30,7 @@ export function Field({ label, value, placeholder, type = 'text', hint, classNam
   )
 }
 
-export function Toggle({ label, description, defaultChecked = false, checked, onChange, disabled = false }) {
+export function Toggle({ label, description, defaultChecked = false, checked, onChange, disabled = false, hideLabel = false }) {
   const isControlled = checked !== undefined
   const [internal, setInternal] = useState(defaultChecked)
   const on = isControlled ? checked : internal
@@ -40,22 +40,26 @@ export function Toggle({ label, description, defaultChecked = false, checked, on
     if (!isControlled) setInternal(next)
     onChange?.(next)
   }
+  const switchBtn = (
+    <button
+      onClick={toggle}
+      disabled={disabled}
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      className={`w-9 h-5 rounded-full transition-all flex-shrink-0 relative border-0 outline-none ${on ? 'bg-primary' : 'bg-line'} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
+      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${on ? 'left-4' : 'left-0.5'}`} />
+    </button>
+  )
+  if (hideLabel) return switchBtn
   return (
     <div className="flex items-start justify-between py-4">
       <div className="pr-6">
         <p className="font-sans text-sm text-ink">{label}</p>
         {description && <p className="font-sans text-xs text-muted mt-0.5">{description}</p>}
       </div>
-      <button
-        onClick={toggle}
-        disabled={disabled}
-        role="switch"
-        aria-checked={on}
-        aria-label={label}
-        className={`w-9 h-5 rounded-full transition-all flex-shrink-0 relative border-0 outline-none ${on ? 'bg-primary' : 'bg-line'} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-      >
-        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${on ? 'left-4' : 'left-0.5'}`} />
-      </button>
+      {switchBtn}
     </div>
   )
 }

@@ -19,18 +19,33 @@ const dbNotification = {
   new_crematorium_request: true,
   weekly_revenue_summary: true,
   family_message_received: true,
+  new_case_submitted_in_app: true,
+  case_status_updated_in_app: true,
+  document_uploaded_in_app: true,
+  case_marked_complete_in_app: false,
+  weekly_revenue_summary_in_app: true,
+  family_message_received_in_app: true,
 }
 
 const shapedNotification = {
   id: 'notif-uuid-1',
   userId: USER_ID,
-  newCaseSubmitted: true,
-  caseStatusUpdated: true,
-  documentUploaded: false,
-  caseMarkedComplete: true,
-  newCrematoriumRequest: true,
-  weeklyRevenueSummary: true,
-  familyMessageReceived: true,
+  email: {
+    newCaseSubmitted: true,
+    caseStatusUpdated: true,
+    documentUploaded: false,
+    caseMarkedComplete: true,
+    weeklyRevenueSummary: true,
+    familyMessageReceived: true,
+  },
+  inApp: {
+    newCaseSubmitted: true,
+    caseStatusUpdated: true,
+    documentUploaded: true,
+    caseMarkedComplete: false,
+    weeklyRevenueSummary: true,
+    familyMessageReceived: true,
+  },
 }
 
 describe('GET /api/notifications', () => {
@@ -49,7 +64,7 @@ describe('GET /api/notifications', () => {
     expect(res.status).toBe(401)
   })
 
-  it('returns 200 with shaped notification prefs for the authed user', async () => {
+  it('returns 200 with nested email/inApp prefs for the authed user', async () => {
     const res = await request(app).get('/api/notifications').set(authHeader)
     expect(res.status).toBe(200)
     expect(res.body).toEqual(shapedNotification)
@@ -72,13 +87,22 @@ describe('GET /api/notifications', () => {
 
 describe('PUT /api/notifications', () => {
   const payload = {
-    newCaseSubmitted: true,
-    caseStatusUpdated: false,
-    documentUploaded: true,
-    caseMarkedComplete: true,
-    newCrematoriumRequest: false,
-    weeklyRevenueSummary: true,
-    familyMessageReceived: true,
+    email: {
+      newCaseSubmitted: true,
+      caseStatusUpdated: false,
+      documentUploaded: true,
+      caseMarkedComplete: true,
+      weeklyRevenueSummary: true,
+      familyMessageReceived: true,
+    },
+    inApp: {
+      newCaseSubmitted: true,
+      caseStatusUpdated: true,
+      documentUploaded: true,
+      caseMarkedComplete: false,
+      weeklyRevenueSummary: true,
+      familyMessageReceived: true,
+    },
   }
 
   beforeEach(() => {
@@ -104,7 +128,11 @@ describe('PUT /api/notifications', () => {
     expect(res.status).toBe(200)
     expect(res.body).toEqual(shapedNotification)
     expect(chain.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ user_id: USER_ID }),
+      expect.objectContaining({
+        user_id: USER_ID,
+        case_status_updated: false,
+        case_marked_complete_in_app: false,
+      }),
       expect.objectContaining({ onConflict: 'user_id' })
     )
   })

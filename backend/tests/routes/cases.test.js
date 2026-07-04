@@ -5,6 +5,9 @@ import { makeChain, makeSupabaseMock, authedUser, badToken, authHeader, resetDis
 const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
+const notifyUser = vi.fn().mockResolvedValue(null)
+vi.mock('../../lib/notifications.js', () => ({ notifyUser }))
+
 const { default: app } = await import('../../server.js')
 
 // Full DB row as returned by Supabase with joins
