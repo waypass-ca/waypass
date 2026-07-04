@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react'
 
 const Ctx = createContext()
@@ -10,7 +11,7 @@ function resolveIsDark(mode) {
 
 export function DarkModeProvider({ children }) {
   const [mode, setModeState] = useState(() => {
-    const stored = localStorage.getItem('passage-theme')
+    const stored = localStorage.getItem('waypass-theme')
     const m = stored ?? 'system'
     document.documentElement.classList.toggle('dark', resolveIsDark(m))
     return m
@@ -26,7 +27,7 @@ export function DarkModeProvider({ children }) {
   }, [mode])
 
   const setMode = (m) => {
-    localStorage.setItem('passage-theme', m)
+    localStorage.setItem('waypass-theme', m)
     setModeState(m)
   }
 

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
-import { makeSupabaseMock, authedUser, badToken, authHeader } from '../setup.js'
+import { makeSupabaseMock, authedUser, badToken, authHeader , resetDispatch } from '../setup.js'
 
-const { supabase, chain } = makeSupabaseMock()
+const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
 // .limit() and .lt() aren't in the shared mock; add them here.
@@ -51,6 +51,7 @@ const shapedRow = {
 describe('GET /api/inbox', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
@@ -102,6 +103,7 @@ describe('GET /api/inbox', () => {
 describe('GET /api/inbox/unread-count', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
@@ -127,6 +129,7 @@ describe('GET /api/inbox/unread-count', () => {
 describe('PATCH /api/inbox/mark-all-read', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
@@ -147,6 +150,7 @@ describe('PATCH /api/inbox/mark-all-read', () => {
 describe('PATCH /api/inbox/:id/read', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.update.mockReturnThis()
     chain.eq.mockImplementation(function (col, val) {
@@ -177,6 +181,7 @@ describe('PATCH /api/inbox/:id/read', () => {
 describe('PATCH /api/inbox/:id/star', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.update.mockReturnThis()
     chain.eq.mockImplementation(function (col) {
@@ -198,6 +203,7 @@ describe('PATCH /api/inbox/:id/star', () => {
 describe('DELETE /api/inbox/:id (soft archive)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.update.mockReturnThis()
     chain.eq.mockImplementation(function (col) {
@@ -220,6 +226,7 @@ describe('DELETE /api/inbox/:id (soft archive)', () => {
 describe('POST /api/inbox/:id/unarchive', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.update.mockReturnThis()
     chain.eq.mockImplementation(function (col) {

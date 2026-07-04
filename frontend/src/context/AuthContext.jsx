@@ -1,5 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { signupFuneralHome } from '../lib/api.js'
 
 const AuthContext = createContext(null)
 
@@ -19,8 +21,10 @@ export function AuthProvider({ children }) {
     if (error) throw error
   }
 
-  async function signUp(email, password) {
-    const { error } = await supabase.auth.signUp({ email, password })
+  // Creates funeral home + admin user via backend, then signs in
+  async function signUp({ email, password, firstName, lastName, funeralHomeName }) {
+    await signupFuneralHome({ email, password, firstName, lastName, funeralHomeName })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
   }
 

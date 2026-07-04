@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Star, Search,
   Check, Archive, X, Mail, MailOpen, Clock, CheckCheck,
@@ -13,6 +14,7 @@ import {
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import { TYPE_CONFIG, formatScheduledFor } from '../components/notifications/notificationConfig.js'
+
 
 const PAGE_SIZE = 50
 
@@ -376,7 +378,11 @@ function shapeFromDb(row) {
   })
 }
 
-export function InboxPage({ initialActiveId, onViewCase }) {
+export function InboxPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const initialActiveId = location.state?.activeId ?? null
+  const onViewCase = (caseId) => navigate('/cases/' + caseId)
   const { user } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -550,7 +556,6 @@ export function InboxPage({ initialActiveId, onViewCase }) {
   }, [selected])
 
   const markSelectedRead = useCallback(() => {
-    const toMark = [...selected]
     setItems(prev => {
       const unreadIds = prev.filter(i => selected.has(i.id) && !i.read).map(i => i.id)
       unreadIds.forEach(id => markInboxItemRead(id).catch(console.error))
@@ -608,13 +613,7 @@ export function InboxPage({ initialActiveId, onViewCase }) {
     ? (containerRef.current?.offsetWidth ?? 0) - panelWidth - 1
     : Infinity
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-muted font-sans text-[13px]">
-        Loading…
-      </div>
-    )
-  }
+  if (loading) return null
 
   return (
     <div className="flex-1 flex min-h-0 overflow-hidden bg-white text-ink">

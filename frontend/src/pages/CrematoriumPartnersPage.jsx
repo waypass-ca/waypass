@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { fetchCrematoriums, createCrematorium, fetchNearbyCrematoriums } from '../lib/api.js'
-import { useAuth } from '../context/AuthContext.jsx'
+import { useUser } from '../context/UserContext.jsx'
 import { PageTitle } from '../components/layout/PageTitle'
 import { Button } from '../components/ui/Button'
+
 import { Search } from 'lucide-react'
 import { AddPartnerModal } from '../components/partners/AddPartnerModal'
 import { DisconnectModal } from '../components/partners/DisconnectModal'
@@ -10,19 +12,25 @@ import { PartnerDetailPage } from './PartnerDetailPage'
 import { PartnersList } from '../components/partners/PartnersList'
 import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
-export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }) {
-  const { user } = useAuth()
+export function CrematoriumPartnersPage() {
+  const navigate = useNavigate()
+  const { id: selectedId } = useParams()
+  const { cases = [] } = useOutletContext()
+  const onAddPartner = () => navigate('/partners/new')
+  const onViewCase = (id) => navigate('/cases/' + id)
+  const { canWrite } = useUser()
   const [tab, setTab] = useState('partners')
   const [crematoriums, setCrematoriums] = useState([])
-  const [nearby, setNearby] = useState([])
   const [loading, setLoading] = useState(true)
+  const [nearby, setNearby] = useState([])
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [userLocation, setUserLocation] = useState(null)
   const [locationError, setLocationError] = useState(false)
   const [disconnecting, setDisconnecting] = useState(null)
   const [addingCrm, setAddingCrm] = useState(null)
-  const [selectedPartner, setSelectedPartner] = useState(null)
+
+  const selectedPartner = selectedId ? crematoriums.find(c => c.id === selectedId) : null
 
   useEffect(() => {
     fetchCrematoriums().then(setCrematoriums).catch(console.error).finally(() => setLoading(false))
@@ -37,16 +45,16 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }
 
   useEffect(() => {
     if (!userLocation) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- toggle loading state around the discovery fetch
     setNearbyLoading(true)
     fetchNearbyCrematoriums(userLocation.lat, userLocation.lng)
       .then(setNearby).catch(console.error).finally(() => setNearbyLoading(false))
   }, [userLocation])
 
   useEffect(() => {
-    if (!selectedPartner) return
-    const updated = crematoriums.find(c => c.id === selectedPartner.id)
-    if (updated) setSelectedPartner(updated)
-  }, [crematoriums])
+    if (!selectedId || loading) return
+    if (!crematoriums.some(c => c.id === selectedId)) navigate('/crematoriums', { replace: true })
+  }, [selectedId, loading, crematoriums, navigate])
 
   function handleSaved(updated) {
     setCrematoriums(prev => prev.map(c => c.id === updated.id ? updated : c))
@@ -55,7 +63,7 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }
   function handleDisconnected(id) {
     setCrematoriums(prev => prev.filter(c => c.id !== id))
     setDisconnecting(null)
-    if (selectedPartner?.id === id) setSelectedPartner(null)
+    if (selectedId === id) navigate('/crematoriums')
   }
 
   async function handleConfirmAdd(enriched) {
@@ -79,11 +87,8 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }
     setAddingCrm(null)
   }
 
-  if (loading) return (
-    <div className="flex-1 flex items-center justify-center">
-      <p className="font-sans text-sm text-muted">Loading…</p>
-    </div>
-  )
+
+  if (loading) return null
 
   if (selectedPartner) {
     return (
@@ -94,7 +99,7 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }
         <PartnerDetailPage
           crm={selectedPartner}
           cases={cases}
-          onBack={() => setSelectedPartner(null)}
+          onBack={() => navigate('/crematoriums')}
           onSave={handleSaved}
           onRemove={crm => setDisconnecting(crm)}
           onViewCase={onViewCase}
@@ -151,7 +156,7 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }
         <PartnersList
           crematoriums={crematoriums}
           search={search}
-          onSelect={setSelectedPartner}
+          onSelect={crm => navigate('/crematoriums/' + crm.id)}
         />
       )}
 
@@ -164,14 +169,14 @@ export function CrematoriumPartnersPage({ onAddPartner, cases = [], onViewCase }
             locationError={locationError}
             search={search}
             setSearch={setSearch}
-            onAdd={crm => setAddingCrm(crm)}
+            onAdd={canWrite ? crm => setAddingCrm(crm) : undefined}
           />
           <footer className="flex-shrink-0 bg-surface border-t border-line px-6 py-5 flex items-center justify-between gap-4">
             <div>
               <p className="font-sans text-sm font-medium text-ink">Don&rsquo;t see yours?</p>
               <p className="font-sans text-xs text-muted mt-0.5">Manually add a crematorium that isn&rsquo;t in our directory.</p>
             </div>
-            <Button variant="primary" onClick={onAddPartner}>+ Add New</Button>
+            {canWrite && <Button variant="primary" onClick={onAddPartner}>+ Add New</Button>}
           </footer>
         </div>
       )}

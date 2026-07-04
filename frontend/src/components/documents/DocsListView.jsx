@@ -1,12 +1,12 @@
 import { Check, Download } from 'lucide-react'
 import { FileIcon, DocMenu, DocsEmpty, openDoc } from './docsShared'
 
+function Th({ children, className = '' }) {
+  return <th className={`font-sans text-[10.5px] uppercase tracking-[0.08em] text-muted font-medium text-left px-3 py-2.5 ${className}`}>{children}</th>
+}
+
 export function DocsListView({ rows, selected, toggleSelect, selectAll, onPreview, docFolders, onMoveToFolder, onCreateAndMove }) {
   const allChecked = rows.length > 0 && rows.every(r => selected.has(r.id))
-
-  const Th = ({ children, className = '' }) => (
-    <th className={`font-sans text-[10.5px] uppercase tracking-[0.08em] text-muted font-medium text-left px-3 py-2.5 ${className}`}>{children}</th>
-  )
 
   return (
     <div className="bg-white">

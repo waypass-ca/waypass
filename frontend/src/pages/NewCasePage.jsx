@@ -1,11 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
-import { fetchPackages, fetchCrematoriums, createCase } from '../lib/api.js'
+import { useNavigate, useOutletContext } from 'react-router-dom'
+import { useUser } from '../context/UserContext.jsx'
+import { fetchPackages, fetchCrematoriums, createCase, fetchEmailTemplate, fetchPortalSettingsAuth, saveEmailOverride } from '../lib/api.js'
 import { supabase } from '../lib/supabase.js'
-import { PackageCard } from '../components/widget/PackageCard'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { TEMPLATES, EmailPreview as EmailPreviewComponent, PreviewModal, TemplateEditor, EditableEmailPreview, DEFAULT_SECTIONS, DEFAULT_PROGRESS_LABELS, SAMPLE } from '../components/dashboard/EmailEditorPage'
+import { Star, Check, Eye, X, Pencil, ChevronDown, MapPin } from 'lucide-react'
+import { generateEmailHtml, buildSubject, buildEmailConfig } from '../lib/emailHtml.jsx'
+import { sendFamilyEmail } from '../lib/api.js'
+import { toastError, toastSuccess } from '../lib/toast.js'
 
-const STEPS = ['First Call', 'Removal Log', 'Documents', 'Package', 'Crematorium', 'Confirm']
+const STEPS = ['First Call', 'Removal Log', 'Documents', 'Package', 'Crematorium', 'Email Template', 'Confirm']
 
 const STAFF_MEMBERS = [
   'James Whitfield',
@@ -149,47 +155,15 @@ function DocumentSlot({ label, doc, onUpload }) {
   )
 }
 
-function CrematoriumCard({ crm, selected, onSelect }) {
-  return (
-    <div
-      onClick={crm.status === 'active' ? onSelect : undefined}
-      className={`
-        rounded-xl border-2 p-5 transition-all
-        ${crm.status !== 'active' ? 'opacity-50 cursor-not-allowed border-line' :
-          selected ? 'border-ink shadow-md cursor-pointer' : 'border-line cursor-pointer hover:border-secondary/40 hover:shadow-sm'
-        }
-      `}
-    >
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="font-sans font-semibold text-sm text-ink">{crm.name}</p>
-          <p className="font-sans text-xs text-muted mt-0.5">{crm.location} · {crm.distance}</p>
-        </div>
-        <div className={`w-4 h-4 rounded-full border-2 mt-0.5 flex items-center justify-center flex-shrink-0 ${selected ? 'border-ink bg-ink' : 'border-gray-300'}`}>
-          {selected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-line">
-        <div>
-          <p className="font-sans text-[10px] text-muted uppercase tracking-wide">Turnaround</p>
-          <p className="font-sans text-xs font-medium text-ink mt-0.5">{crm.avgTurnaround}</p>
-        </div>
-        <div>
-          <p className="font-sans text-[10px] text-muted uppercase tracking-wide">Avg Fee</p>
-          <p className="font-sans text-xs font-medium text-ink mt-0.5">{crm.avgFee}</p>
-        </div>
-        <div>
-          <p className="font-sans text-[10px] text-muted uppercase tracking-wide">YTD</p>
-          <p className="font-sans text-xs font-medium text-ink mt-0.5">{crm.completedYTD} orders</p>
-        </div>
-      </div>
-    </div>
-  )
-}
 
-export function NewCasePage({ onBack, onComplete }) {
+export function NewCasePage() {
+  const navigate = useNavigate()
+  const { setCases } = useOutletContext()
+  const onBack = () => navigate('/cases')
+  const onComplete = (newCase) => { setCases(prev => [newCase, ...prev]); navigate('/cases') }
   const [step, setStep] = useState(0)
   const { packages, crematoriums } = useData()
+  const { profile } = useUser()
   const sessionId = useRef(crypto.randomUUID()).current
 
   const [firstCall, setFirstCall] = useState({
@@ -203,9 +177,28 @@ export function NewCasePage({ onBack, onComplete }) {
   })
   const [documents, setDocuments] = useState({ ...INITIAL_DOCS })
   const [selectedPackage, setSelectedPackage] = useState(null)
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null)
+  const [globalTemplateId, setGlobalTemplateId] = useState('classic')
+  const [favouriteTemplateIds, setFavouriteTemplateIds] = useState([])
+  const [logoUrl, setLogoUrl] = useState('')
   const [selectedCrematorium, setSelectedCrematorium] = useState(null)
+  const [caseCustomizations, setCaseCustomizations] = useState({})
+  const [previewTemplate, setPreviewTemplate] = useState(null)
+  const [editingTemplateId, setEditingTemplateId] = useState(null)
   const [isComplete, setIsComplete] = useState(false)
   const [submitError, setSubmitError] = useState(null)
+  const [showEmailConfirm, setShowEmailConfirm] = useState(false)
+  const [expandedPackageId, setExpandedPackageId] = useState(null)
+  const [expandedCrematoriumId, setExpandedCrematoriumId] = useState(null)
+  const [mapCrematorium, setMapCrematorium] = useState(null)
+
+  useEffect(() => {
+    fetchEmailTemplate().then(d => {
+      if (d?.activeTemplateId) setGlobalTemplateId(d.activeTemplateId)
+      if (d?.favouriteIds) setFavouriteTemplateIds(d.favouriteIds)
+    }).catch(() => {})
+    fetchPortalSettingsAuth().then(d => { if (d?.logoUrl) setLogoUrl(d.logoUrl) }).catch(() => {})
+  }, [])
 
   function setFC(key, val) { setFirstCall(p => ({ ...p, [key]: val })) }
   function setRL(key, val) { setRemovalLog(p => ({ ...p, [key]: val })) }
@@ -223,6 +216,9 @@ export function NewCasePage({ onBack, onComplete }) {
     }
     setDocuments(p => ({ ...p, [type]: { status: 'done', path, name: file.name } }))
   }
+
+  const chosenTemplateId = selectedTemplateId || globalTemplateId
+  const chosenTemplate = TEMPLATES.find(t => t.id === chosenTemplateId) || TEMPLATES[0]
 
   async function handleConfirm() {
     setSubmitError(null)
@@ -255,11 +251,61 @@ export function NewCasePage({ onBack, onComplete }) {
     }
     try {
       const newCase = await createCase(payload)
+      if (selectedTemplateId || Object.keys(caseCustomizations).length > 0) {
+        saveEmailOverride(newCase.id, { activeTemplateId: selectedTemplateId || globalTemplateId, customizations: caseCustomizations }).catch(() => {})
+      }
+
+      // Send initial confirmation email to family
+      if (firstCall.nokEmail?.trim()) {
+        try {
+          const cust = caseCustomizations[chosenTemplateId]
+          const config = buildEmailConfig(cust, chosenTemplate, profile?.funeralHomeName)
+          const sections = cust?.sections || DEFAULT_SECTIONS
+          const html = generateEmailHtml(chosenTemplate, sections, config, newCaseData, logoUrl)
+          const subject = buildSubject('pending', config.footerName)
+          const attachments = Object.values(documents)
+            .filter(v => v.status === 'done' && v.path)
+            .map(v => ({ name: v.name || 'document.pdf', storagePath: v.path }))
+          await sendFamilyEmail({ to: firstCall.nokEmail.trim(), subject, html, caseId: newCase.id, attachments })
+          toastSuccess(`Confirmation email sent to ${firstCall.nokEmail.trim()}`)
+        } catch {
+          toastError('Case created, but the confirmation email could not be sent.')
+        }
+      }
+
       setIsComplete(true)
       onComplete?.(newCase)
     } catch (err) {
       setSubmitError(err.message)
     }
+  }
+
+  const newCaseData = {
+    deceased: `${firstCall.firstName} ${firstCall.lastName}`.trim() || undefined,
+    family: firstCall.nokName ? `The ${firstCall.nokName.split(' ').slice(-1)[0]} Family` : undefined,
+    status: 'pending',
+    package: selectedPackage?.name ? `${selectedPackage.name} Package` : undefined,
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    documents: Object.values(documents)
+      .filter(v => v.status === 'done')
+      .map(v => v.name || 'Document'),
+  }
+
+  if (step === 5 && editingTemplateId) {
+    const template = TEMPLATES.find(t => t.id === editingTemplateId)
+    return (
+      <TemplateEditor
+        template={template}
+        customization={caseCustomizations[editingTemplateId]}
+        onSave={data => {
+          setCaseCustomizations(prev => ({ ...prev, [editingTemplateId]: data }))
+          setSelectedTemplateId(editingTemplateId)
+        }}
+        onBack={() => setEditingTemplateId(null)}
+        logoUrl={logoUrl}
+        caseData={newCaseData}
+      />
+    )
   }
 
   if (isComplete) {
@@ -283,7 +329,26 @@ export function NewCasePage({ onBack, onComplete }) {
   }
 
   return (
+    <div className="flex-1 overflow-auto bg-white px-8 py-7">
     <div>
+      {/* Template preview modal — top level so it always reads fresh caseCustomizations */}
+      {previewTemplate && step === 5 && (
+        <PreviewModal
+          t={previewTemplate}
+          isActive={false}
+          isFavourite={favouriteTemplateIds.includes(previewTemplate.id)}
+          onSetActive={id => { setSelectedTemplateId(id); setPreviewTemplate(null) }}
+          onToggleFavourite={() => {}}
+          onClose={() => setPreviewTemplate(null)}
+          onEdit={t => { setPreviewTemplate(null); setEditingTemplateId(t.id) }}
+          logoUrl={logoUrl}
+          caseMode={true}
+          customization={caseCustomizations[previewTemplate.id] || null}
+          caseData={newCaseData}
+          funeralHomeName={profile?.funeralHomeName || SAMPLE.funeralHome}
+        />
+      )}
+
       <div className="mb-6">
         <button
           onClick={onBack}
@@ -301,7 +366,7 @@ export function NewCasePage({ onBack, onComplete }) {
       <StepIndicator currentStep={step} />
 
       {step === 0 && (
-        <div className="bg-surface rounded-xl border border-line p-7 max-w-2xl m-auto">
+        <div className="max-w-2xl mx-auto">
           <h2 className="font-sans text-sm font-semibold text-ink uppercase tracking-wide mb-5">First Call Information</h2>
           <div className="grid grid-cols-2 gap-4">
             <InputField label="First Name" placeholder="Deceased first name" value={firstCall.firstName} onChange={v => setFC('firstName', v)} />
@@ -337,14 +402,14 @@ export function NewCasePage({ onBack, onComplete }) {
             </div>
           </div>
 
-          <div className="flex justify-end mt-6">
+          <div className="flex justify-end mt-8 pt-6 border-t border-line">
             <Button variant="primary" onClick={() => setStep(1)}>Continue →</Button>
           </div>
         </div>
       )}
 
       {step === 1 && (
-        <div className="bg-surface rounded-xl border border-line p-7 max-w-2xl m-auto">
+        <div className="max-w-2xl mx-auto">
           <h2 className="font-sans text-sm font-semibold text-ink uppercase tracking-wide mb-1">Removal Log</h2>
 
           <div className="flex items-start gap-2.5 bg-info-tint rounded-lg px-4 py-3 mb-6 mt-3">
@@ -379,7 +444,7 @@ export function NewCasePage({ onBack, onComplete }) {
             />
           </div>
 
-          <div className="flex justify-between mt-6">
+          <div className="flex justify-between mt-8 pt-6 border-t border-line">
             <Button variant="secondary" onClick={() => setStep(0)}>← Back</Button>
             <Button variant="primary" onClick={() => setStep(2)}>Continue →</Button>
           </div>
@@ -387,7 +452,7 @@ export function NewCasePage({ onBack, onComplete }) {
       )}
 
       {step === 2 && (
-        <div className="bg-surface rounded-xl border border-line p-7 max-w-2xl m-auto">
+        <div className="max-w-2xl mx-auto">
           <h2 className="font-sans text-sm font-semibold text-ink uppercase tracking-wide mb-1">Required Documents</h2>
           <p className="font-sans text-xs text-muted mb-6 mt-1">Upload documents now or continue — you can upload later from the case file.</p>
 
@@ -413,7 +478,7 @@ export function NewCasePage({ onBack, onComplete }) {
             Case will be flagged as <span className="text-warning font-medium">Authorization Pending</span> until all three documents are uploaded.
           </p>
 
-          <div className="flex justify-between mt-6">
+          <div className="flex justify-between mt-8 pt-6 border-t border-line">
             <Button variant="secondary" onClick={() => setStep(1)}>← Back</Button>
             <Button variant="primary" onClick={() => setStep(3)}>Continue →</Button>
           </div>
@@ -421,18 +486,59 @@ export function NewCasePage({ onBack, onComplete }) {
       )}
 
       {step === 3 && (
-        <div>
-          <div className="grid grid-cols-3 gap-4 max-w-3xl mb-6">
-            {packages.map(pkg => (
-              <PackageCard
-                key={pkg.id}
-                pkg={pkg}
-                selected={selectedPackage?.id === pkg.id}
-                onSelect={() => setSelectedPackage(pkg)}
-              />
-            ))}
+        <div className="max-w-2xl mx-auto">
+          <h2 className="font-sans text-sm font-semibold text-ink uppercase tracking-wide mb-1">Select a Package</h2>
+          <p className="font-sans text-xs text-muted mb-6 mt-1">Choose the service package for this arrangement.</p>
+          <div>
+            {packages.map(pkg => {
+              const isSelected = selectedPackage?.id === pkg.id
+              const isExpanded = expandedPackageId === pkg.id
+              return (
+                <div key={pkg.id} className="border-b border-line last:border-0">
+                  <div
+                    onClick={() => setSelectedPackage(pkg)}
+                    className="flex items-center justify-between py-4 cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'border-ink bg-ink' : 'border-line group-hover:border-secondary'}`}>
+                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                      <div>
+                        <p className="font-sans text-sm font-semibold text-ink">{pkg.name}</p>
+                        <p className="font-sans text-xs text-muted mt-0.5">{pkg.features?.slice(0, 2).join(' · ')}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                      <div className="text-right">
+                        <span className="font-display text-2xl text-ink">${pkg.price?.toLocaleString()}</span>
+                        <p className="font-sans text-[10px] text-muted">per service</p>
+                      </div>
+                      <button
+                        onClick={e => { e.stopPropagation(); setExpandedPackageId(isExpanded ? null : pkg.id) }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-ink transition-colors border-0 outline-none cursor-pointer bg-transparent"
+                      >
+                        <ChevronDown size={14} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="pl-8 pb-4">
+                      <p className="font-sans text-[10px] text-muted uppercase tracking-wide mb-3">Included Services</p>
+                      <ul className="space-y-2">
+                        {pkg.features?.map((f, i) => (
+                          <li key={i} className="flex items-start gap-2.5 font-sans text-sm text-secondary">
+                            <Check size={12} className="text-primary mt-0.5 flex-shrink-0" strokeWidth={2.5} />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
-          <div className="flex justify-between max-w-3xl">
+          <div className="flex justify-between mt-8 pt-6 border-t border-line">
             <Button variant="secondary" onClick={() => setStep(2)}>← Back</Button>
             <Button variant="primary" onClick={() => setStep(4)} disabled={!selectedPackage}>
               {selectedPackage ? `Continue with ${selectedPackage.name} →` : 'Select a package'}
@@ -441,80 +547,371 @@ export function NewCasePage({ onBack, onComplete }) {
         </div>
       )}
 
-      {step === 4 && (
-        <div>
-          <div className="grid grid-cols-3 gap-4 max-w-3xl mb-6">
-            {crematoriums.map(crm => (
-              <CrematoriumCard
-                key={crm.id}
-                crm={crm}
-                selected={selectedCrematorium?.id === crm.id}
-                onSelect={() => setSelectedCrematorium(crm)}
-              />
-            ))}
+      {/* ── Step 5: Email Template ── */}
+      {step === 5 && !editingTemplateId && (() => {
+        const favourites = TEMPLATES.filter(t => favouriteTemplateIds.includes(t.id))
+        const renderCard = (t) => {
+          const isSelected = selectedTemplateId ? t.id === selectedTemplateId : t.id === globalTemplateId
+          return (
+            <div
+              key={t.id}
+              onClick={() => setSelectedTemplateId(t.id)}
+              className={`group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 ${
+                isSelected
+                  ? 'ring-2 ring-offset-2 ring-primary shadow-lg shadow-primary/10'
+                  : 'border border-line hover:shadow-md hover:-translate-y-0.5'
+              }`}
+            >
+              {isSelected && (
+                <div className="absolute top-2 left-2 z-20 flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary text-white font-sans text-[10px] font-semibold shadow-sm">
+                  <Check size={9} strokeWidth={3} /> Selected
+                </div>
+              )}
+              {/* Hover overlay */}
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 backdrop-blur-[1px]">
+                <button
+                  onClick={e => { e.stopPropagation(); setPreviewTemplate(t) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-ink font-sans text-xs font-medium shadow-md cursor-pointer border-0 outline-none hover:bg-white/90 transition-colors"
+                >
+                  <Eye size={12} /> Preview
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); setEditingTemplateId(t.id) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-ink font-sans text-xs font-medium shadow-md cursor-pointer border-0 outline-none hover:bg-white/90 transition-colors"
+                >
+                  <Pencil size={12} /> Edit
+                </button>
+                {!isSelected && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setSelectedTemplateId(t.id) }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white font-sans text-xs font-medium shadow-md cursor-pointer border-0 outline-none hover:bg-primary/90 transition-colors"
+                  >
+                    <Check size={12} /> Select
+                  </button>
+                )}
+              </div>
+              <div className="p-3">
+                <div className="rounded-lg overflow-hidden w-full" style={{ backgroundColor: t.bg }}>
+                  <div style={{ backgroundColor: t.headerBg, padding: '6px 10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                      <div style={{ height: 1.5, width: '40%', backgroundColor: (t.headerText || '#fff') + 'AA', borderRadius: 99 }} />
+                    </div>
+                  </div>
+                  <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <div style={{ height: 2, width: '55%', backgroundColor: t.text + '40', borderRadius: 99 }} />
+                    <div style={{ height: 1.5, width: '40%', backgroundColor: (t.muted || '#888') + '50', borderRadius: 99 }} />
+                    <div style={{ backgroundColor: t.cardBg || '#fff', borderRadius: 3, padding: '3px 5px' }}>
+                      <div style={{ height: 1, backgroundColor: t.text + '20', borderRadius: 99, marginBottom: 1.5 }} />
+                      <div style={{ height: 1, width: '75%', backgroundColor: t.text + '15', borderRadius: 99 }} />
+                    </div>
+                  </div>
+                  <div style={{ backgroundColor: t.footerBg, padding: '4px 8px', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ height: 1, width: '35%', backgroundColor: (t.footerText || '#888') + '50', borderRadius: 99 }} />
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-line/50 bg-white px-3 pb-3 pt-2">
+                <div className="font-sans font-semibold text-[13px] text-ink">{t.name}</div>
+                <div className="font-sans text-[11px] text-muted">{t.tagline}</div>
+              </div>
+            </div>
+          )
+        }
+
+        return (
+          <div className="flex flex-col max-w-4xl mx-auto w-full" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+            <p className="font-sans text-sm text-muted mb-4 max-w-4xl shrink-0">
+              Choose the email template the family will receive for this case. Default is <span className="text-ink font-medium">{TEMPLATES.find(t => t.id === globalTemplateId)?.name || 'Classic'}</span>.
+            </p>
+
+            <div className="flex-1 overflow-auto min-h-0 max-w-4xl pb-4 px-1 -mx-1">
+              {/* Favourites */}
+              {favourites.length > 0 && (
+                <div className="mb-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Star size={12} className="text-amber-500 flex-shrink-0" style={{ fill: 'currentColor' }} />
+                    <p className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted">Favourites</p>
+                  </div>
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+                    {favourites.map(renderCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* All Templates */}
+              <div>
+                <p className="font-sans text-[10.5px] uppercase tracking-[0.1em] text-muted mb-3">All Templates</p>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+                  {TEMPLATES.map(renderCard)}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between max-w-4xl pt-4 shrink-0 border-t border-line mt-2">
+              <Button variant="secondary" onClick={() => setStep(4)}>← Back</Button>
+              <Button variant="primary" onClick={() => setStep(6)}>
+                Continue with {chosenTemplate.name} →
+              </Button>
+            </div>
           </div>
-          <div className="flex justify-between max-w-3xl">
+        )
+      })()}
+
+
+      {/* ── Step 4: Crematorium ── */}
+      {step === 4 && (
+        <div className="max-w-2xl mx-auto">
+          <h2 className="font-sans text-sm font-semibold text-ink uppercase tracking-wide mb-1">Select Crematorium</h2>
+          <p className="font-sans text-xs text-muted mb-6 mt-1">Choose the crematorium partner for this case.</p>
+          <div>
+            {crematoriums.map(crm => {
+              const isActive = crm.status === 'active'
+              const isSelected = selectedCrematorium?.id === crm.id
+              const isExpanded = expandedCrematoriumId === crm.id
+              return (
+                <div key={crm.id} className={`border-b border-line last:border-0 ${!isActive ? 'opacity-40' : ''}`}>
+                  <div
+                    onClick={isActive ? () => setSelectedCrematorium(crm) : undefined}
+                    className={`flex items-center justify-between py-4 group ${isActive ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? 'border-ink bg-ink' : 'border-line group-hover:border-secondary'}`}>
+                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                      </div>
+                      <div>
+                        <p className="font-sans text-sm font-semibold text-ink">{crm.name}</p>
+                        <p className="font-sans text-xs text-muted mt-0.5">{crm.location} · {crm.distance}</p>
+                      </div>
+                    </div>
+                    {isActive && (
+                      <button
+                        onClick={e => { e.stopPropagation(); setExpandedCrematoriumId(isExpanded ? null : crm.id) }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-ink transition-colors border-0 outline-none cursor-pointer bg-transparent flex-shrink-0 ml-4"
+                      >
+                        <ChevronDown size={14} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                    )}
+                  </div>
+                  {isExpanded && (
+                    <div className="pl-8 pb-4 flex items-center justify-between">
+                      <div className="grid grid-cols-3 gap-8">
+                        <div>
+                          <p className="font-sans text-[10px] text-muted uppercase tracking-wide">Turnaround</p>
+                          <p className="font-sans text-xs font-medium text-ink mt-1">{crm.avgTurnaround}</p>
+                        </div>
+                        <div>
+                          <p className="font-sans text-[10px] text-muted uppercase tracking-wide">Avg Fee</p>
+                          <p className="font-sans text-xs font-medium text-ink mt-1">{crm.avgFee}</p>
+                        </div>
+                        <div>
+                          <p className="font-sans text-[10px] text-muted uppercase tracking-wide">YTD Orders</p>
+                          <p className="font-sans text-xs font-medium text-ink mt-1">{crm.completedYTD}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setMapCrematorium(crm)}
+                        className="flex items-center gap-1.5 text-xs font-sans text-muted hover:text-ink transition-colors cursor-pointer border-0 outline-none bg-transparent flex-shrink-0 ml-6"
+                      >
+                        <MapPin size={12} />
+                        View on map
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <div className="flex justify-between mt-8 pt-6 border-t border-line">
             <Button variant="secondary" onClick={() => setStep(3)}>← Back</Button>
             <Button variant="primary" onClick={() => setStep(5)} disabled={!selectedCrematorium}>
-              {selectedCrematorium ? `Assign ${selectedCrematorium.name.split(' ')[0]} →` : 'Select a crematorium'}
+              {selectedCrematorium ? `Continue with ${selectedCrematorium.name.split(' ')[0]} →` : 'Select a crematorium'}
             </Button>
           </div>
         </div>
       )}
 
-      {step === 5 && (
-        <div className="max-w-2xl">
-          <div className="bg-ink rounded-xl p-6 text-surface mb-4">
-            <h3 className="font-display text-xl mb-5">Case Summary</h3>
-            <div className="space-y-0">
-              <div className="flex justify-between py-3 border-b border-white/10">
-                <span className="font-sans text-sm text-white/60">Deceased</span>
-                <span className="font-sans text-sm font-medium">
-                  {firstCall.firstName} {firstCall.lastName}
-                </span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-white/10">
-                <span className="font-sans text-sm text-white/60">Date of Death</span>
-                <span className="font-sans text-sm font-medium">{firstCall.dateOfDeath || '—'}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-white/10">
-                <span className="font-sans text-sm text-white/60">Next of Kin</span>
-                <span className="font-sans text-sm font-medium">{firstCall.nokName || '—'}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-white/10">
-                <span className="font-sans text-sm text-white/60">Removal Staff</span>
-                <span className="font-sans text-sm font-medium">{removalLog.staffMember || '—'}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-white/10">
-                <span className="font-sans text-sm text-white/60">Documents</span>
-                <span className="font-sans text-sm font-medium">
-                  {Object.values(documents).filter(v => v.status === 'done').length} / 3 uploaded
-                </span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-white/10">
-                <span className="font-sans text-sm text-white/60">Package</span>
-                <span className="font-sans text-sm font-medium">{selectedPackage?.name}</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-white/10">
-                <span className="font-sans text-sm text-white/60">Crematorium</span>
-                <span className="font-sans text-sm font-medium">{selectedCrematorium?.name}</span>
-              </div>
-              <div className="flex justify-between pt-4 mt-1">
-                <span className="font-sans text-sm text-white/60">Arrangement Total</span>
-                <span className="font-display text-3xl">${selectedPackage?.price.toLocaleString()}</span>
-              </div>
+      {/* ── Step 6: Confirm ── */}
+      {step === 6 && (
+        <div className="max-w-2xl mx-auto">
+          <h2 className="font-sans text-sm font-semibold text-ink uppercase tracking-wide mb-5">Case Summary</h2>
+          <div>
+            <div className="flex justify-between py-3.5 border-b border-line">
+              <span className="font-sans text-sm text-muted">Deceased</span>
+              <span className="font-sans text-sm font-medium text-ink">
+                {firstCall.firstName} {firstCall.lastName}
+              </span>
+            </div>
+            <div className="flex justify-between py-3.5 border-b border-line">
+              <span className="font-sans text-sm text-muted">Date of Death</span>
+              <span className="font-sans text-sm font-medium text-ink">{firstCall.dateOfDeath || '—'}</span>
+            </div>
+            <div className="flex justify-between py-3.5 border-b border-line">
+              <span className="font-sans text-sm text-muted">Next of Kin</span>
+              <span className="font-sans text-sm font-medium text-ink">{firstCall.nokName || '—'}</span>
+            </div>
+            <div className="flex justify-between py-3.5 border-b border-line">
+              <span className="font-sans text-sm text-muted">Removal Staff</span>
+              <span className="font-sans text-sm font-medium text-ink">{removalLog.staffMember || '—'}</span>
+            </div>
+            <div className="flex justify-between py-3.5 border-b border-line">
+              <span className="font-sans text-sm text-muted">Documents</span>
+              <span className="font-sans text-sm font-medium text-ink">
+                {Object.values(documents).filter(v => v.status === 'done').length} / 3 uploaded
+              </span>
+            </div>
+            <div className="flex justify-between py-3.5 border-b border-line">
+              <span className="font-sans text-sm text-muted">Package</span>
+              <span className="font-sans text-sm font-medium text-ink">{selectedPackage?.name}</span>
+            </div>
+            <div className="flex justify-between py-3.5 border-b border-line">
+              <span className="font-sans text-sm text-muted">Email Template</span>
+              <span className="font-sans text-sm font-medium text-ink">{chosenTemplate.name}</span>
+            </div>
+            <div className="flex justify-between py-3.5 border-b border-line">
+              <span className="font-sans text-sm text-muted">Crematorium</span>
+              <span className="font-sans text-sm font-medium text-ink">{selectedCrematorium?.name}</span>
+            </div>
+            <div className="flex justify-between items-baseline pt-5 mt-2 border-t border-line">
+              <span className="font-sans text-sm text-muted">Arrangement Total</span>
+              <span className="font-display text-3xl text-ink">${selectedPackage?.price.toLocaleString()}</span>
             </div>
           </div>
 
           {submitError && (
-            <p className="font-sans text-xs text-danger mb-3">{submitError}</p>
+            <p className="font-sans text-xs text-danger mt-4">{submitError}</p>
           )}
-          <div className="flex justify-between">
-            <Button variant="secondary" onClick={() => setStep(4)}>← Back</Button>
-            <Button variant="primary" onClick={handleConfirm}>Create Case →</Button>
+          <div className="flex justify-between mt-8 pt-6 border-t border-line">
+            <Button variant="secondary" onClick={() => setStep(5)}>← Back</Button>
+            <Button variant="primary" onClick={() => setShowEmailConfirm(true)}>Create Case →</Button>
           </div>
         </div>
       )}
+
+      {/* ── Crematorium map modal ── */}
+      {mapCrematorium && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setMapCrematorium(null)} />
+          <div className="relative z-10 w-full max-w-2xl mx-4 bg-canvas rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-line bg-surface">
+              <div>
+                <p className="font-sans font-semibold text-[15px] text-ink">{mapCrematorium.name}</p>
+                <p className="font-sans text-xs text-muted mt-0.5">{mapCrematorium.location} · {mapCrematorium.distance}</p>
+              </div>
+              <button
+                onClick={() => setMapCrematorium(null)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-ink hover:bg-line/50 transition-colors cursor-pointer border-0 outline-none bg-transparent"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <div className="h-80">
+              <iframe
+                title={mapCrematorium.name}
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                src={`https://www.google.com/maps?q=${encodeURIComponent(mapCrematorium.location)}&output=embed`}
+              />
+            </div>
+            <div className="flex items-center justify-between px-6 py-3 border-t border-line bg-surface">
+              <div className="flex items-center gap-5">
+                <div>
+                  <p className="font-sans text-[10px] text-muted uppercase tracking-wide">Turnaround</p>
+                  <p className="font-sans text-xs font-medium text-ink mt-0.5">{mapCrematorium.avgTurnaround}</p>
+                </div>
+                <div>
+                  <p className="font-sans text-[10px] text-muted uppercase tracking-wide">Avg Fee</p>
+                  <p className="font-sans text-xs font-medium text-ink mt-0.5">{mapCrematorium.avgFee}</p>
+                </div>
+                <div>
+                  <p className="font-sans text-[10px] text-muted uppercase tracking-wide">YTD Orders</p>
+                  <p className="font-sans text-xs font-medium text-ink mt-0.5">{mapCrematorium.completedYTD}</p>
+                </div>
+              </div>
+              <a
+                href={`https://www.google.com/maps/search/${encodeURIComponent(mapCrematorium.location)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line text-secondary hover:text-ink hover:border-ink/30 font-sans text-xs font-medium transition-colors outline-none"
+              >
+                <MapPin size={12} />
+                Open in Maps
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Email confirmation modal ── */}
+      {showEmailConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowEmailConfirm(false)} />
+          <div className="relative z-10 w-full max-w-2xl mx-4 max-h-[92vh] flex flex-col bg-canvas rounded-2xl shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-line flex-shrink-0 bg-surface">
+              <div>
+                <p className="font-sans font-semibold text-[15px] text-ink">Confirm Initial Email</p>
+                <p className="font-sans text-xs text-muted mt-0.5">
+                  Sending to <span className="font-medium text-ink">{firstCall.nokEmail || 'no email provided'}</span>
+                  {' '}using the <span className="font-medium text-ink">{chosenTemplate.name}</span> template
+                </p>
+                {!firstCall.nokEmail && (
+                  <p className="font-sans text-[11px] text-warning mt-0.5">No email address — case will be created but no email will be sent.</p>
+                )}
+              </div>
+              <button
+                onClick={() => setShowEmailConfirm(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted hover:text-ink hover:bg-line/50 transition-colors cursor-pointer border-0 outline-none bg-transparent"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto bg-canvas">
+              <div className="p-6">
+                <div className="rounded-xl overflow-hidden shadow-lg ring-1 ring-black/5">
+                  <EditableEmailPreview
+                    template={chosenTemplate}
+                    sections={caseCustomizations[chosenTemplateId]?.sections || DEFAULT_SECTIONS}
+                    config={{
+                      fontSize: caseCustomizations[chosenTemplateId]?.fontSize || 13,
+                      headingSize: caseCustomizations[chosenTemplateId]?.headingSize || 22,
+                      headingColor: caseCustomizations[chosenTemplateId]?.headingColor || chosenTemplate.text,
+                      message: caseCustomizations[chosenTemplateId]?.message || SAMPLE.message,
+                      greeting: caseCustomizations[chosenTemplateId]?.greeting || '',
+                      progressLabels: caseCustomizations[chosenTemplateId]?.progressLabels || [...DEFAULT_PROGRESS_LABELS],
+                      buttonLabel: caseCustomizations[chosenTemplateId]?.buttonLabel || 'Contact',
+                      buttonRadius: 8,
+                      cardRadius: 10,
+                      footerName: caseCustomizations[chosenTemplateId]?.footerName || profile?.funeralHomeName || SAMPLE.funeralHome,
+                      footerTagline: caseCustomizations[chosenTemplateId]?.footerTagline || SAMPLE.tagline,
+                      footerAddress: caseCustomizations[chosenTemplateId]?.footerAddress || '123 Memorial Lane · San Francisco · (415) 555-0100',
+                      footerCopyright: caseCustomizations[chosenTemplateId]?.footerCopyright || `© ${new Date().getFullYear()} ${caseCustomizations[chosenTemplateId]?.footerName || profile?.funeralHomeName || SAMPLE.funeralHome} · Unsubscribe`,
+                    }}
+                    logoUrl={logoUrl}
+                    caseData={newCaseData}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between px-6 py-4 border-t border-line bg-surface flex-shrink-0">
+              <button
+                onClick={() => setShowEmailConfirm(false)}
+                className="px-4 py-2 rounded-lg border border-line bg-white font-sans text-[13px] text-secondary hover:text-ink hover:border-ink/30 transition-colors cursor-pointer outline-none"
+              >
+                ← Go Back
+              </button>
+              <button
+                onClick={() => { setShowEmailConfirm(false); handleConfirm() }}
+                className="px-5 py-2 rounded-lg bg-primary text-white font-sans text-[13px] font-medium cursor-pointer border-0 outline-none hover:bg-primary/90 transition-colors"
+              >
+                Confirm & Create Case
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
     </div>
   )
 }

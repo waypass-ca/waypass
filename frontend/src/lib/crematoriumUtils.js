@@ -57,8 +57,8 @@ export function normalizeDbRecord(row) {
     openNow: periods ? isOpenNow(periods) : null,
     weekdayDescriptions: row.opening_hours?.weekday_text ?? null,
     photos: [],
-    onPassage: row.is_passage_network ?? false,
-    passageTier: row.passage_tier ?? null,
+    onWaypass: row.is_waypass_network ?? false,
+    waypassTier: row.waypass_tier ?? null,
     status: 'active',
     contactName: null,
   }

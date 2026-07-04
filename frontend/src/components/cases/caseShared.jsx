@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, useRef } from 'react'
 import { Folder, FileText, Star, Phone, Check, Plus, X, MoreHorizontal, Home, Clock, AlertTriangle, Users, ChevronRight } from 'lucide-react'
 

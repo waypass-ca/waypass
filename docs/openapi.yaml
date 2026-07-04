@@ -1,0 +1,293 @@
+openapi: 3.1.0
+info:
+  title: Passage API — Crematoriums
+  version: 1.0.0
+  description: Endpoints for managing crematorium partners, including automatic logo fetching.
+
+servers:
+  - url: http://localhost:3001
+    description: Local development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Crematorium:
+      type: object
+      properties:
+        id:
+          type: string
+          example: CRM-123456
+        name:
+          type: string
+          example: Westlake Cremation Services
+        location:
+          type: string
+          example: San Francisco, CA
+        streetAddress:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+        distance:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+          example: https://westlakecremation.com
+        logoUrl:
+          type: string
+          nullable: true
+          description: Cloudinary URL of the crematorium logo. Populated automatically when a website is provided.
+          example: https://res.cloudinary.com/dv7iv29qj/image/upload/crematorium-logos/westlakecremation.com.png
+        phone:
+          type: string
+          nullable: true
+        contactName:
+          type: string
+          nullable: true
+        contactEmail:
+          type: string
+          nullable: true
+        rating:
+          type: number
+          nullable: true
+        userRatingCount:
+          type: integer
+          nullable: true
+        weekdayDescriptions:
+          type: array
+          items:
+            type: string
+          nullable: true
+        avgTurnaround:
+          type: string
+          nullable: true
+        avgFee:
+          type: string
+          nullable: true
+        baseFee:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [active, inactive]
+        networkStatus:
+          type: string
+          enum: [private, public]
+        partnerSince:
+          type: string
+          example: "2026"
+        licenseNumber:
+          type: string
+          nullable: true
+        vettingNotes:
+          type: string
+          nullable: true
+        connectedFuneralHomeIds:
+          type: array
+          items:
+            type: string
+
+paths:
+  /api/crematoriums:
+    get:
+      summary: List connected crematoriums
+      description: Returns all crematoriums connected to the authenticated funeral home.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of crematoriums
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Crematorium'
+
+    post:
+      summary: Create a new crematorium partner
+      description: |
+        Manually creates a crematorium and connects it to the authenticated funeral home.
+        If `website` is provided, a logo is automatically fetched from Clearbit (falling back to
+        Google Favicon) and uploaded to Cloudinary. The resulting Cloudinary URL is stored in `logoUrl`.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: Westlake Cremation Services
+                location:
+                  type: string
+                  example: San Francisco, CA
+                streetAddress:
+                  type: string
+                city:
+                  type: string
+                state:
+                  type: string
+                zip:
+                  type: string
+                distance:
+                  type: string
+                website:
+                  type: string
+                  example: https://westlakecremation.com
+                  description: When provided, triggers automatic logo fetch and Cloudinary upload.
+                phone:
+                  type: string
+                contactName:
+                  type: string
+                contactEmail:
+                  type: string
+                avgTurnaround:
+                  type: string
+                avgFee:
+                  type: string
+                networkStatus:
+                  type: string
+                  enum: [private, public]
+      responses:
+        '201':
+          description: Crematorium created with logo populated if website was valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Crematorium'
+
+  /api/crematoriums/{id}:
+    patch:
+      summary: Update a crematorium
+      description: |
+        Updates fields on an existing crematorium. If `website` is changed to a new non-empty value,
+        a new logo is fetched and stored in Cloudinary, replacing the previous `logoUrl`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Crematorium'
+      responses:
+        '200':
+          description: Updated crematorium
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Crematorium'
+        '404':
+          description: Crematorium not found
+
+    delete:
+      summary: Soft-delete a crematorium
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+
+  /api/crematoriums/{id}/connect:
+    post:
+      summary: Connect to an existing crematorium
+      description: |
+        Adds the authenticated funeral home to a crematorium's `connectedFuneralHomeIds`.
+        If the crematorium has a `website` but no `logo_url`, the logo is fetched and stored
+        asynchronously after the response is sent — subsequent connects will use the cached logo.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated crematorium (logoUrl may be null if background fetch is still in progress)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Crematorium'
+        '404':
+          description: Crematorium not found
+
+    delete:
+      summary: Disconnect from a crematorium
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated crematorium
+
+  /api/crematoriums/nearby:
+    get:
+      summary: Discover unconnected crematoriums
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lat
+          in: query
+          schema:
+            type: number
+        - name: lng
+          in: query
+          schema:
+            type: number
+        - name: radius
+          in: query
+          schema:
+            type: number
+            default: 50
+        - name: query
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of nearby crematoriums not yet connected
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/Crematorium'
+                    - type: object
+                      properties:
+                        onWaypass:
+                          type: boolean

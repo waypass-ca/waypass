@@ -1,5 +1,5 @@
 {
-  "name": "passage-backend",
+  "name": "waypass-backend",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -8,15 +8,17 @@
     "seed": "node scripts/seed.js",
     "seed:crematoriums": "node scripts/seedCrematoriums.js",
     "refresh:crematoriums": "node scripts/refreshCrematoriums.js",
+    "seed:shippingPartners": "node scripts/seedShippingPartners.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",
+    "cloudinary": "^2.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
-    "resend": "^6.12.4"
+    "resend": "^6.14.0"
   },
   "devDependencies": {
     "supertest": "^7.2.2",

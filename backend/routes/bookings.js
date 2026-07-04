@@ -1,7 +1,56 @@
 import { Router } from 'express'
+import crypto from 'crypto'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { requireWrite } from '../middleware/requireRole.js'
 import { createInboxItem, shouldEmail } from '../lib/notifications.js'
+import { recordBookingEvent } from '../lib/bookingEvents.js'
+
+// Audit-log writes shouldn't fail the user-facing request. Log + swallow.
+async function safeRecordBookingEvent(args) {
+  try {
+    return await recordBookingEvent(args)
+  } catch (err) {
+    console.error(`booking_events insert failed (${args.eventType}):`, err.message)
+    return null
+  }
+}
+
+// Get active user IDs for a funeral home (for inbox/email notifications in public handlers)
+async function getFhUserIds(funeralHomeId) {
+  const { data } = await supabase
+    .from('users')
+    .select('id, role')
+    .eq('funeral_home_id', funeralHomeId)
+    .eq('status', 'active')
+    .is('deleted_at', null)
+  return (data ?? []).map(u => u.id)
+}
+
+// Notify all active users of a funeral home via inbox
+async function notifyFhUsers(funeralHomeId, inboxItemArgs) {
+  const userIds = await getFhUserIds(funeralHomeId)
+  for (const userId of userIds) {
+    await createInboxItem({ ...inboxItemArgs, userId }).catch(e =>
+      console.error('createInboxItem failed for user', userId, e.message)
+    )
+  }
+}
+
+// Check email prefs using the first admin user ID (for pre-send shouldEmail checks)
+async function fhShouldEmail(funeralHomeId, flag) {
+  const { data } = await supabase
+    .from('users')
+    .select('id')
+    .eq('funeral_home_id', funeralHomeId)
+    .eq('role', 'admin')
+    .eq('status', 'active')
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle()
+  if (!data) return true
+  return shouldEmail(data.id, flag)
+}
 
 const withLastName = (name, subject) => {
   if (!name) return subject
@@ -88,12 +137,12 @@ async function sendBookingInvite(booking, deceasedName) {
     : ''
 
   await resend.emails.send({
-    from: process.env.RESEND_FROM ?? 'bookings@passagefunerals.com',
+    from: process.env.RESEND_FROM ?? 'theoleone@waypass.ca',
     to: booking.crematoriumEmail,
     subject: `${subjectPrefix}Pickup Request — ${deceasedName} (Case ${booking.caseId})`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-        <p style="font-size:14px;color:#666">Passage Funeral Management</p>
+        <p style="font-size:14px;color:#666">Waypass</p>
         <h2 style="margin:0 0 8px">Pickup Request: ${esc(deceasedName)}</h2>
         <p style="font-size:14px;color:#444">Case ID: ${esc(booking.caseId)}</p>
         ${rescheduleNote}
@@ -140,12 +189,12 @@ async function sendShippingInvite(booking, deceasedName) {
     : ''
 
   await resend.emails.send({
-    from: process.env.RESEND_FROM ?? 'bookings@passagefunerals.com',
+    from: process.env.RESEND_FROM ?? 'theoleone@waypass.ca',
     to: booking.shippingPartnerEmail,
     subject: `${subjectPrefix}Transport Request — ${deceasedName} (Case ${booking.caseId})`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-        <p style="font-size:14px;color:#666">Passage Funeral Management</p>
+        <p style="font-size:14px;color:#666">Waypass</p>
         <h2 style="margin:0 0 8px">Transport Request: ${esc(deceasedName)}</h2>
         <p style="font-size:14px;color:#444">Case ID: ${esc(booking.caseId)}</p>
         ${rescheduleNote}
@@ -182,12 +231,12 @@ async function sendShippingCancellation(booking, deceasedName) {
   const resend = new Resend(apiKey)
 
   await resend.emails.send({
-    from: process.env.RESEND_FROM ?? 'bookings@passagefunerals.com',
+    from: process.env.RESEND_FROM ?? 'theoleone@waypass.ca',
     to: booking.shippingPartnerEmail,
     subject: `Transport Request Cancelled — ${deceasedName} (Case ${booking.caseId})`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-        <p style="font-size:14px;color:#666">Passage Funeral Management</p>
+        <p style="font-size:14px;color:#666">Waypass</p>
         <h2 style="margin:0 0 8px">Transport Request Cancelled: ${esc(deceasedName)}</h2>
         <p style="font-size:14px;color:#444">Case ID: ${esc(booking.caseId)}</p>
         <p style="font-size:14px;color:#444;margin:20px 0 8px">The funeral home has cancelled this booking. No transport is required.</p>
@@ -224,12 +273,12 @@ async function sendBookingConfirmation({ to, recipientLabel, deceasedName, booki
   const whenLabel = `${dayLabel} · ${fmt(startH)} – ${fmt(endH)}`
 
   await resend.emails.send({
-    from: process.env.RESEND_FROM ?? 'bookings@passagefunerals.com',
+    from: process.env.RESEND_FROM ?? 'theoleone@waypass.ca',
     to,
     subject: `Pickup Confirmed — ${deceasedName} (Case ${booking.caseId})`,
     html: `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;color:#1a1a1a">
-        <p style="font-size:14px;color:#666">Passage Funeral Management</p>
+        <p style="font-size:14px;color:#666">Waypass</p>
         <h2 style="margin:0 0 8px">Pickup Confirmed: ${esc(deceasedName)}</h2>
         <p style="font-size:14px;color:#444">Case ID: ${esc(booking.caseId)}</p>
         <p style="font-size:14px;margin:20px 0 8px"><strong>Confirmed time:</strong></p>
@@ -306,17 +355,46 @@ router.post('/respond/:token', async (req, res, next) => {
     const deceased = shaped.deceasedName ?? shaped.caseId
     const slotCount = crematoriumSlots.length
 
+    const cremRespondedEvent = await safeRecordBookingEvent({
+      bookingId: shaped.id,
+      caseId: shaped.caseId,
+      funeralHomeId: shaped.funeralHomeId,
+      eventType: 'crematorium_responded',
+      actorType: 'crematorium',
+      actorLabel: cremName,
+      payload: {
+        crematorium_name: cremName,
+        crematorium_slots: crematoriumSlots,
+        proposed_slots: shaped.proposedSlots,
+      },
+    })
+
     if (hasShipping) {
       let shippingSent = false
-      if (await shouldEmail(shaped.funeralHomeId, 'new_shipping_request')) {
+      if (await fhShouldEmail(shaped.funeralHomeId, 'new_shipping_request')) {
         try {
           shippingSent = await sendShippingInvite(shaped, deceased)
         } catch (emailErr) {
           console.error('Shipping email send failed:', emailErr.message)
         }
       }
-      await createInboxItem({
-        userId: shaped.funeralHomeId,
+
+      const shippingInvitedEvent = await safeRecordBookingEvent({
+        bookingId: shaped.id,
+        caseId: shaped.caseId,
+        funeralHomeId: shaped.funeralHomeId,
+        eventType: 'shipping_invited',
+        actorType: 'system',
+        actorLabel: shaped.shippingPartnerName ?? null,
+        payload: {
+          shipping_partner_name: shaped.shippingPartnerName,
+          shipping_partner_email: shaped.shippingPartnerEmail,
+          crematorium_slots: crematoriumSlots,
+          email_sent: shippingSent,
+        },
+      })
+
+      await notifyFhUsers(shaped.funeralHomeId, {
         type: 'schedule',
         sender: cremName,
         subject: withLastName(deceased, 'Awaiting shipping availability'),
@@ -332,12 +410,12 @@ router.post('/respond/:token', async (req, res, next) => {
         ].join('\n'),
         caseId: shaped.caseId,
         bookingId: shaped.id,
+        bookingEventId: shippingInvitedEvent?.id ?? cremRespondedEvent?.id ?? null,
         severity: 'info',
       })
     } else {
       const preview = `${deceased} · ${cremName} responded with ${slotCount} available time${slotCount === 1 ? '' : 's'}.`
-      await createInboxItem({
-        userId: shaped.funeralHomeId,
+      await notifyFhUsers(shaped.funeralHomeId, {
         type: 'schedule',
         sender: cremName,
         subject: withLastName(deceased, 'Availability received'),
@@ -348,10 +426,11 @@ router.post('/respond/:token', async (req, res, next) => {
           `Available slots:`,
           ...crematoriumSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
           ``,
-          `Review and confirm a slot in Passage.`,
+          `Review and confirm a slot in Waypass.`,
         ].join('\n'),
         caseId: shaped.caseId,
         bookingId: shaped.id,
+        bookingEventId: cremRespondedEvent?.id ?? null,
         severity: 'info',
       })
     }
@@ -432,8 +511,21 @@ router.post('/respond-shipping/:token', async (req, res, next) => {
     const deceased = shaped.deceasedName ?? shaped.caseId
     const slotCount = shippingSlots.length
 
-    await createInboxItem({
-      userId: shaped.funeralHomeId,
+    const shippingRespondedEvent = await safeRecordBookingEvent({
+      bookingId: shaped.id,
+      caseId: shaped.caseId,
+      funeralHomeId: shaped.funeralHomeId,
+      eventType: 'shipping_responded',
+      actorType: 'shipping_partner',
+      actorLabel: shipName,
+      payload: {
+        shipping_partner_name: shipName,
+        shipping_slots: shippingSlots,
+        crematorium_slots: shaped.crematoriumSlots ?? [],
+      },
+    })
+
+    await notifyFhUsers(shaped.funeralHomeId, {
       type: 'schedule',
       sender: shipName,
       subject: withLastName(deceased, 'Shipping availability received'),
@@ -444,10 +536,11 @@ router.post('/respond-shipping/:token', async (req, res, next) => {
         `Available slots:`,
         ...shippingSlots.map(s => `  • ${s.date}  ${s.start} – ${s.end}`),
         ``,
-        `Review and confirm a slot in Passage.`,
+        `Review and confirm a slot in Waypass.`,
       ].join('\n'),
       caseId: shaped.caseId,
       bookingId: shaped.id,
+      bookingEventId: shippingRespondedEvent?.id ?? null,
       severity: 'info',
     })
 
@@ -466,7 +559,7 @@ router.get('/', async (req, res, next) => {
     const { data, error } = await supabase
       .from('cremation_bookings')
       .select('*')
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .order('created_at', { ascending: false })
     if (error) throw error
     res.json(data.map(shapeRow))
@@ -482,7 +575,7 @@ router.get('/:id', async (req, res, next) => {
       .from('cremation_bookings')
       .select('*')
       .eq('id', req.params.id)
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .single()
     if (error || !data) return res.status(404).json({ error: 'Not found' })
     res.json(shapeRow(data))
@@ -492,7 +585,7 @@ router.get('/:id', async (req, res, next) => {
 })
 
 // ── POST /api/bookings ───────────────────────────
-router.post('/', async (req, res, next) => {
+router.post('/', requireWrite, async (req, res, next) => {
   try {
     const {
       caseId,
@@ -513,7 +606,7 @@ router.post('/', async (req, res, next) => {
       .from('cremation_bookings')
       .select('id')
       .eq('case_id', caseId)
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .neq('status', 'cancelled')
       .maybeSingle()
     if (existingActive) {
@@ -530,7 +623,7 @@ router.post('/', async (req, res, next) => {
         .eq('id', shippingPartnerId)
         .is('deleted_at', null)
         .single()
-      if (!partner?.connected_funeral_home_ids?.includes(req.user.id)) {
+      if (!partner?.connected_funeral_home_ids?.includes(req.user.funeralHomeId)) {
         return res.status(400).json({ error: 'Shipping partner is not connected to your account' })
       }
     }
@@ -546,7 +639,7 @@ router.post('/', async (req, res, next) => {
         shipping_partner_email: shippingPartnerEmail ?? null,
         shipping_partner_name: shippingPartnerName ?? null,
         deceased_name: deceasedName ?? null,
-        funeral_home_id: req.user.id,
+        funeral_home_id: req.user.funeralHomeId,
         proposed_slots: proposedSlots,
       })
       .select()
@@ -569,6 +662,24 @@ router.post('/', async (req, res, next) => {
     const shaped = shapeRow(data)
     const nameForDisplay = deceasedName ?? 'Unknown'
 
+    await safeRecordBookingEvent({
+      bookingId: shaped.id,
+      caseId: shaped.caseId,
+      funeralHomeId: shaped.funeralHomeId,
+      eventType: 'booking_created',
+      actorType: 'user',
+      actorId: req.user.id,
+      actorLabel: req.user.label ?? req.user.email ?? null,
+      payload: {
+        crematorium_name: shaped.crematoriumName,
+        crematorium_id: shaped.crematoriumId,
+        shipping_partner_name: shaped.shippingPartnerName,
+        shipping_partner_id: shaped.shippingPartnerId,
+        proposed_slots: shaped.proposedSlots,
+        deceased_name: nameForDisplay,
+      },
+    })
+
     let sent = false
     if (await shouldEmail(req.user.id, 'new_crematorium_request')) {
       try {
@@ -577,6 +688,21 @@ router.post('/', async (req, res, next) => {
         console.error('Email send failed:', emailErr.message)
       }
     }
+
+    const cremInvitedEvent = await safeRecordBookingEvent({
+      bookingId: shaped.id,
+      caseId: shaped.caseId,
+      funeralHomeId: shaped.funeralHomeId,
+      eventType: 'crematorium_invited',
+      actorType: 'system',
+      actorLabel: shaped.crematoriumName ?? null,
+      payload: {
+        crematorium_name: shaped.crematoriumName,
+        crematorium_email: shaped.crematoriumEmail,
+        proposed_slots: shaped.proposedSlots,
+        email_sent: sent,
+      },
+    })
 
     if (sent) {
       await createInboxItem({
@@ -595,6 +721,7 @@ router.post('/', async (req, res, next) => {
         ].join('\n'),
         caseId: shaped.caseId,
         bookingId: shaped.id,
+        bookingEventId: cremInvitedEvent?.id ?? null,
         severity: 'info',
       })
     }
@@ -606,7 +733,7 @@ router.post('/', async (req, res, next) => {
 })
 
 // ── POST /api/bookings/:id/confirm ───────────────
-router.post('/:id/confirm', async (req, res, next) => {
+router.post('/:id/confirm', requireWrite, async (req, res, next) => {
   try {
     const { slot } = req.body // { date, start, end }
     if (!slot?.date || !slot?.start) return res.status(400).json({ error: 'slot required' })
@@ -615,7 +742,7 @@ router.post('/:id/confirm', async (req, res, next) => {
       .from('cremation_bookings')
       .select('*')
       .eq('id', req.params.id)
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .single()
     if (fetchErr || !existing) return res.status(404).json({ error: 'Not found' })
     if (existing.status !== 'responded') return res.status(400).json({ error: 'Booking must be in responded status to confirm' })
@@ -651,6 +778,22 @@ router.post('/:id/confirm', async (req, res, next) => {
     const displayWhen = `${slot.date} · ${fmt(slotStart)} – ${fmt(slotEnd)}`
     const scheduledFor = new Date(`${slot.date}T${slot.start}:00`).toISOString()
 
+    const confirmedEvent = await safeRecordBookingEvent({
+      bookingId: shaped.id,
+      caseId: shaped.caseId,
+      funeralHomeId: shaped.funeralHomeId,
+      eventType: 'booking_confirmed',
+      actorType: 'user',
+      actorId: req.user.id,
+      actorLabel: req.user.label ?? req.user.email ?? null,
+      payload: {
+        confirmed_slot: slot,
+        crematorium_name: cremName,
+        shipping_partner_name: shaped.shippingPartnerName,
+        scheduled_for: scheduledFor,
+      },
+    })
+
     await createInboxItem({
       userId: req.user.id,
       type: 'schedule',
@@ -664,6 +807,7 @@ router.post('/:id/confirm', async (req, res, next) => {
       ].join('\n'),
       caseId: shaped.caseId,
       bookingId: shaped.id,
+      bookingEventId: confirmedEvent?.id ?? null,
       severity: 'info',
       scheduledFor,
     })
@@ -701,7 +845,7 @@ router.post('/:id/confirm', async (req, res, next) => {
 })
 
 // ── POST /api/bookings/:id/reschedule ────────────
-router.post('/:id/reschedule', async (req, res, next) => {
+router.post('/:id/reschedule', requireWrite, async (req, res, next) => {
   try {
     const { proposedSlots } = req.body
     if (!Array.isArray(proposedSlots) || proposedSlots.length === 0) {
@@ -710,7 +854,7 @@ router.post('/:id/reschedule', async (req, res, next) => {
 
     const { data: existing, error: fetchErr } = await supabase
       .from('cremation_bookings').select('*')
-      .eq('id', req.params.id).eq('funeral_home_id', req.user.id).single()
+      .eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
     if (fetchErr || !existing) return res.status(404).json({ error: 'Booking not found' })
 
     const hasShipping = Boolean(existing.shipping_partner_id)
@@ -735,13 +879,31 @@ router.post('/:id/reschedule', async (req, res, next) => {
       .from('cremation_bookings')
       .update(updates)
       .eq('id', req.params.id)
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
       .select()
       .single()
     if (error) throw error
 
     const shaped = shapeRow(data)
     const deceased = shaped.deceasedName ?? 'Unknown'
+
+    const previousProposed = existing.proposed_slots ?? []
+    const previousConfirmed = existing.confirmed_slot ?? null
+
+    const rescheduledEvent = await safeRecordBookingEvent({
+      bookingId: shaped.id,
+      caseId: shaped.caseId,
+      funeralHomeId: shaped.funeralHomeId,
+      eventType: 'booking_rescheduled',
+      actorType: 'user',
+      actorId: req.user.id,
+      actorLabel: req.user.label ?? req.user.email ?? null,
+      payload: {
+        from: { proposed_slots: previousProposed, confirmed_slot: previousConfirmed },
+        to: { proposed_slots: shaped.proposedSlots },
+        previous_status: existing.status,
+      },
+    })
 
     let sent = false
     if (await shouldEmail(req.user.id, 'new_crematorium_request')) {
@@ -751,6 +913,22 @@ router.post('/:id/reschedule', async (req, res, next) => {
         console.error('Reschedule email send failed:', emailErr.message)
       }
     }
+
+    await safeRecordBookingEvent({
+      bookingId: shaped.id,
+      caseId: shaped.caseId,
+      funeralHomeId: shaped.funeralHomeId,
+      eventType: 'crematorium_invited',
+      actorType: 'system',
+      actorLabel: shaped.crematoriumName ?? null,
+      payload: {
+        crematorium_name: shaped.crematoriumName,
+        crematorium_email: shaped.crematoriumEmail,
+        proposed_slots: shaped.proposedSlots,
+        email_sent: sent,
+        reason: 'reschedule',
+      },
+    })
 
     const cremName = shaped.crematoriumName ?? 'Crematorium'
     await createInboxItem({
@@ -769,6 +947,7 @@ router.post('/:id/reschedule', async (req, res, next) => {
       ].join('\n'),
       caseId: shaped.caseId,
       bookingId: shaped.id,
+      bookingEventId: rescheduledEvent?.id ?? null,
       severity: 'info',
     })
 
@@ -779,11 +958,11 @@ router.post('/:id/reschedule', async (req, res, next) => {
 })
 
 // ── DELETE /api/bookings/:id ─────────────────────
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireWrite, async (req, res, next) => {
   try {
     const { data: existing, error: fetchErr } = await supabase
       .from('cremation_bookings').select('*')
-      .eq('id', req.params.id).eq('funeral_home_id', req.user.id).single()
+      .eq('id', req.params.id).eq('funeral_home_id', req.user.funeralHomeId).single()
     if (fetchErr || !existing) return res.status(404).json({ error: 'Booking not found' })
     if (existing.status === 'cancelled') return res.status(204).send()
 
@@ -791,7 +970,7 @@ router.delete('/:id', async (req, res, next) => {
       .from('cremation_bookings')
       .update({ status: 'cancelled' })
       .eq('id', req.params.id)
-      .eq('funeral_home_id', req.user.id)
+      .eq('funeral_home_id', req.user.funeralHomeId)
     if (error) throw error
 
     const shaped = shapeRow(existing)
@@ -822,6 +1001,23 @@ router.delete('/:id', async (req, res, next) => {
       }
     }
 
+    const cancelledEvent = await safeRecordBookingEvent({
+      bookingId: shaped.id,
+      caseId: shaped.caseId,
+      funeralHomeId: shaped.funeralHomeId,
+      eventType: 'booking_cancelled',
+      actorType: 'user',
+      actorId: req.user.id,
+      actorLabel: req.user.label ?? req.user.email ?? null,
+      payload: {
+        previous_status: existing.status,
+        crematorium_name: cremName,
+        shipping_partner_name: shaped.shippingPartnerName,
+        shipping_notified: shippingNotified,
+        cancel_reason: req.body?.reason ?? null,
+      },
+    })
+
     await createInboxItem({
       userId: req.user.id,
       type: 'schedule',
@@ -838,6 +1034,7 @@ router.delete('/:id', async (req, res, next) => {
       ].filter(Boolean).join('\n\n'),
       caseId: shaped.caseId,
       bookingId: shaped.id,
+      bookingEventId: cancelledEvent?.id ?? null,
       severity: 'warning',
     })
 

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import { fetchShippingPartners, createShippingPartner, fetchNearbyShippingPartners } from '../lib/api.js'
-import { useAuth } from '../context/AuthContext.jsx'
+import { useUser } from '../context/UserContext.jsx'
 import { PageTitle } from '../components/layout/PageTitle'
 import { Button } from '../components/ui/Button'
+
 import { Search } from 'lucide-react'
 import { AddPartnerModal } from '../components/partners/AddPartnerModal'
 import { DisconnectModal } from '../components/partners/DisconnectModal'
@@ -10,19 +12,24 @@ import { PartnerDetailPage } from './PartnerDetailPage'
 import { PartnersList } from '../components/partners/PartnersList'
 import { NearbyDiscovery } from '../components/partners/NearbyDiscovery'
 
-export function ShippingPartnersPage({ cases = [], onViewCase }) {
-  const { user } = useAuth()
+export function ShippingPartnersPage() {
+  const navigate = useNavigate()
+  const { id: selectedId } = useParams()
+  const { cases = [] } = useOutletContext()
+  const onViewCase = (id) => navigate('/cases/' + id)
+  const { canWrite } = useUser()
   const [tab, setTab] = useState('partners')
   const [partners, setPartners] = useState([])
-  const [nearby, setNearby] = useState([])
   const [loading, setLoading] = useState(true)
+  const [nearby, setNearby] = useState([])
   const [nearbyLoading, setNearbyLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [userLocation, setUserLocation] = useState(null)
   const [locationError, setLocationError] = useState(false)
   const [disconnecting, setDisconnecting] = useState(null)
   const [addingPartner, setAddingPartner] = useState(null)
-  const [selectedPartner, setSelectedPartner] = useState(null)
+
+  const selectedPartner = selectedId ? partners.find(p => p.id === selectedId) : null
 
   useEffect(() => {
     fetchShippingPartners().then(setPartners).catch(console.error).finally(() => setLoading(false))
@@ -37,16 +44,16 @@ export function ShippingPartnersPage({ cases = [], onViewCase }) {
 
   useEffect(() => {
     if (!userLocation) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- toggle loading state around the discovery fetch
     setNearbyLoading(true)
     fetchNearbyShippingPartners(userLocation.lat, userLocation.lng)
       .then(setNearby).catch(console.error).finally(() => setNearbyLoading(false))
   }, [userLocation])
 
   useEffect(() => {
-    if (!selectedPartner) return
-    const updated = partners.find(c => c.id === selectedPartner.id)
-    if (updated) setSelectedPartner(updated)
-  }, [partners])
+    if (!selectedId || loading) return
+    if (!partners.some(p => p.id === selectedId)) navigate('/shipping', { replace: true })
+  }, [selectedId, loading, partners, navigate])
 
   function handleSaved(updated) {
     setPartners(prev => prev.map(c => c.id === updated.id ? updated : c))
@@ -55,7 +62,7 @@ export function ShippingPartnersPage({ cases = [], onViewCase }) {
   function handleDisconnected(id) {
     setPartners(prev => prev.filter(c => c.id !== id))
     setDisconnecting(null)
-    if (selectedPartner?.id === id) setSelectedPartner(null)
+    if (selectedId === id) navigate('/shipping')
   }
 
   async function handleConfirmAdd(enriched) {
@@ -79,11 +86,8 @@ export function ShippingPartnersPage({ cases = [], onViewCase }) {
     setAddingPartner(null)
   }
 
-  if (loading) return (
-    <div className="flex-1 flex items-center justify-center">
-      <p className="font-sans text-sm text-muted">Loading…</p>
-    </div>
-  )
+
+  if (loading) return null
 
   if (selectedPartner) {
     return (
@@ -95,7 +99,7 @@ export function ShippingPartnersPage({ cases = [], onViewCase }) {
           crm={selectedPartner}
           cases={cases}
           kind="shipping"
-          onBack={() => setSelectedPartner(null)}
+          onBack={() => navigate('/shipping')}
           onSave={handleSaved}
           onRemove={crm => setDisconnecting(crm)}
           onViewCase={onViewCase}
@@ -153,7 +157,7 @@ export function ShippingPartnersPage({ cases = [], onViewCase }) {
           crematoriums={partners}
           search={search}
           kind="shipping"
-          onSelect={setSelectedPartner}
+          onSelect={p => navigate('/shipping/' + p.id)}
         />
       )}
 
@@ -167,14 +171,14 @@ export function ShippingPartnersPage({ cases = [], onViewCase }) {
             search={search}
             setSearch={setSearch}
             kind="shipping"
-            onAdd={crm => setAddingPartner(crm)}
+            onAdd={canWrite ? crm => setAddingPartner(crm) : undefined}
           />
           <footer className="flex-shrink-0 bg-surface border-t border-line px-6 py-5 flex items-center justify-between gap-4">
             <div>
               <p className="font-sans text-sm font-medium text-ink">Don&rsquo;t see yours?</p>
               <p className="font-sans text-xs text-muted mt-0.5">Manually add a shipping partner that isn&rsquo;t in our directory.</p>
             </div>
-            <Button variant="primary" onClick={() => setAddingPartner({})}>+ Add New</Button>
+            {canWrite && <Button variant="primary" onClick={() => setAddingPartner({})}>+ Add New</Button>}
           </footer>
         </div>
       )}

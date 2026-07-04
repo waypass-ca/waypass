@@ -1,4 +1,4 @@
-export const PASSAGE_MAP_STYLE = [
+export const WAYPASS_MAP_STYLE = [
   { featureType: 'administrative', elementType: 'geometry', stylers: [{ visibility: 'off' }] },
   { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
   { featureType: 'administrative.neighborhood', stylers: [{ visibility: 'off' }] },

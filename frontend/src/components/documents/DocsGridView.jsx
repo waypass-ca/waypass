@@ -10,7 +10,6 @@ export function DocsGridView({ docs, docFolders, docFolderCounts, gridDocFolderV
     ? docs.filter(d => d._folderId === gridDocFolderView)
     : docs.filter(d => !d._folderId)
 
-  const hasFolders = !gridDocFolderView && docFolders.length > 0
   const hasUnfiled = !gridDocFolderView && displayDocs.length > 0
 
   return (

@@ -54,12 +54,12 @@ export function WeekGrid({ weekStart, renderCell, onMouseUp, onMouseLeave, class
         })}
       </div>
 
-      {/* Hour grid — rows stretch to fill remaining height */}
+      {/* Hour grid — fixed row height, scrollable */}
       <div
-        className="flex-1 grid overflow-hidden"
+        className="flex-1 grid overflow-y-auto"
         style={{
           gridTemplateColumns: '52px repeat(7, 1fr)',
-          gridTemplateRows: `repeat(${HOURS_LIST.length}, 1fr)`,
+          gridAutoRows: '60px',
         }}
       >
         {HOURS_LIST.flatMap(hour => [

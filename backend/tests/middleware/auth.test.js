@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { makeSupabaseMock, authedUser, badToken } from '../setup.js'
+import { makeSupabaseMock, authedUser, badToken, dbProfile } from '../setup.js'
 
-const { supabase, chain: _chain } = makeSupabaseMock()
+const { supabase, usersChain } = makeSupabaseMock()
 
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
@@ -21,6 +21,7 @@ function makeRes() {
 describe('requireAuth middleware', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    usersChain.maybeSingle.mockResolvedValue({ data: dbProfile, error: null })
   })
 
   it('returns 401 when Authorization header is missing', async () => {
@@ -61,7 +62,22 @@ describe('requireAuth middleware', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
-  it('calls next() and sets req.user on valid token', async () => {
+  it('returns 403 when user has no profile or funeral_home_id', async () => {
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    usersChain.maybeSingle.mockResolvedValue({ data: null, error: null })
+
+    const req = { headers: { authorization: 'Bearer valid-token' } }
+    const res = makeRes()
+    const next = vi.fn()
+
+    await requireAuth(req, res, next)
+
+    expect(res._status).toBe(403)
+    expect(res._body.error).toBe('account_not_setup')
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('calls next() and sets req.user with funeralHomeId and role on valid token', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
 
     const req = { headers: { authorization: 'Bearer valid-token' } }
@@ -71,6 +87,12 @@ describe('requireAuth middleware', () => {
     await requireAuth(req, res, next)
 
     expect(next).toHaveBeenCalled()
-    expect(req.user).toEqual(authedUser.data.user)
+    expect(req.user).toMatchObject({
+      id: authedUser.data.user.id,
+      email: authedUser.data.user.email,
+      funeralHomeId: dbProfile.funeral_home_id,
+      role: dbProfile.role,
+      token: 'valid-token',
+    })
   })
 })

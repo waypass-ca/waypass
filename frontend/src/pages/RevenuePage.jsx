@@ -24,6 +24,7 @@ export function RevenuePage() {
   const avgCaseValue = Math.round(totalRevenue / totalCases)
 
   return (
+    <main className="flex-1 px-8 py-7 bg-canvas overflow-auto">
     <div>
       <PageHeader
         title="Revenue"
@@ -150,5 +151,6 @@ export function RevenuePage() {
         </table>
       </div>
     </div>
+    </main>
   )
 }

@@ -1,0 +1,1 @@
+//TODO: create a script to seed shipping partners, and update the book cremation page to use it. also add a way to set a default shipping partner for a user and have it auto-selected when booking a cremation

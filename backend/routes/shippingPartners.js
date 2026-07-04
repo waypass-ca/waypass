@@ -1,8 +1,15 @@
 import { Router } from 'express'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
+import { requireAdminKey } from '../middleware/requireAdminKey.js'
 
 const router = Router()
+
+// Strip characters that carry meaning inside a PostgREST `.or()` filter string
+// (comma separates conditions, parens group them, `*` is the ilike wildcard).
+function sanitizeFilterTerm(value) {
+  return String(value ?? '').replace(/[,()*\\]/g, '').trim()
+}
 
 function shapeRow(row) {
   return {
@@ -19,7 +26,7 @@ function shapeRow(row) {
     avgTurnaround: row.avg_turnaround,
     avgFee: row.avg_fee,
     baseFee: row.base_fee,
-    passageRevenueShare: row.passage_revenue_share,
+    waypassRevenueShare: row.waypass_revenue_share,
     status: row.status,
     networkStatus: row.network_status ?? 'private',
     contactName: row.contact_name,
@@ -43,7 +50,7 @@ router.get('/', requireAuth, async (req, res, next) => {
       .from('shipping_partners')
       .select('*')
       .is('deleted_at', null)
-      .contains('connected_funeral_home_ids', [req.user.id])
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
       .order('name')
     if (error) throw error
     res.json(data.map(shapeRow))
@@ -52,7 +59,7 @@ router.get('/', requireAuth, async (req, res, next) => {
   }
 })
 
-// GET /nearby — discovery from the Passage DB (non-connected partners)
+// GET /nearby — discovery from the Waypass DB (non-connected partners)
 router.get('/nearby', requireAuth, async (req, res, next) => {
   try {
     const { query = '' } = req.query
@@ -61,21 +68,22 @@ router.get('/nearby', requireAuth, async (req, res, next) => {
       .from('shipping_partners')
       .select('*')
       .is('deleted_at', null)
-      .not('connected_funeral_home_ids', 'cs', `{${req.user.id}}`)
+      .not('connected_funeral_home_ids', 'cs', `{${req.user.funeralHomeId}}`)
 
-    if (query) {
-      dbQuery = dbQuery.or(`name.ilike.%${query}%,location.ilike.%${query}%,city.ilike.%${query}%`)
+    const term = sanitizeFilterTerm(query)
+    if (term) {
+      dbQuery = dbQuery.or(`name.ilike.%${term}%,location.ilike.%${term}%,city.ilike.%${term}%`)
     }
 
     const { data: dbRows, error: dbError } = await dbQuery.order('name')
     if (dbError) throw dbError
 
-    const passageResults = dbRows.map(row => ({
+    const waypassResults = dbRows.map(row => ({
       ...shapeRow(row),
-      onPassage: true,
+      onWaypass: true,
     }))
 
-    res.json(passageResults)
+    res.json(waypassResults)
   } catch (err) {
     next(err)
   }
@@ -108,7 +116,7 @@ router.post('/', requireAuth, async (req, res, next) => {
         avg_turnaround: body.avgTurnaround ?? null,
         avg_fee: body.avgFee ?? null,
         base_fee: body.baseFee ?? null,
-        passage_revenue_share: body.passageRevenueShare ?? null,
+        waypass_revenue_share: body.waypassRevenueShare ?? null,
         network_status: body.networkStatus ?? 'private',
         status: 'active',
         active_orders: 0,
@@ -116,7 +124,7 @@ router.post('/', requireAuth, async (req, res, next) => {
         partner_since: partnerSince,
         license_number: body.licenseNumber ?? null,
         vetting_notes: body.vettingNotes ?? null,
-        connected_funeral_home_ids: [req.user.id],
+        connected_funeral_home_ids: [req.user.funeralHomeId],
       })
       .select()
       .single()
@@ -140,8 +148,8 @@ router.post('/:id/connect', requireAuth, async (req, res, next) => {
     if (!current) return res.status(404).json({ error: 'Shipping partner not found' })
 
     const ids = current.connected_funeral_home_ids ?? []
-    if (!ids.includes(req.user.id)) {
-      ids.push(req.user.id)
+    if (!ids.includes(req.user.funeralHomeId)) {
+      ids.push(req.user.funeralHomeId)
     }
 
     const { data, error } = await supabase
@@ -169,7 +177,7 @@ router.delete('/:id/connect', requireAuth, async (req, res, next) => {
     if (fetchErr) throw fetchErr
     if (!current) return res.status(404).json({ error: 'Shipping partner not found' })
 
-    const ids = (current.connected_funeral_home_ids ?? []).filter(id => id !== req.user.id)
+    const ids = (current.connected_funeral_home_ids ?? []).filter(id => id !== req.user.funeralHomeId)
 
     const { data, error } = await supabase
       .from('shipping_partners')
@@ -207,7 +215,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
         avg_turnaround: body.avgTurnaround,
         avg_fee: body.avgFee,
         base_fee: body.baseFee,
-        passage_revenue_share: body.passageRevenueShare,
+        waypass_revenue_share: body.waypassRevenueShare,
         network_status: body.networkStatus,
         status: body.status,
         license_number: body.licenseNumber,
@@ -215,6 +223,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
         modified_at: new Date().toISOString(),
       })
       .eq('id', req.params.id)
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
       .select()
       .single()
     if (error) throw error
@@ -227,11 +236,15 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
 
 router.delete('/:id', requireAuth, async (req, res, next) => {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('shipping_partners')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', req.params.id)
+      .contains('connected_funeral_home_ids', [req.user.funeralHomeId])
+      .select('id')
+      .single()
     if (error) throw error
+    if (!data) return res.status(404).json({ error: 'Shipping partner not found' })
     res.status(204).send()
   } catch (err) {
     next(err)
@@ -242,12 +255,12 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
 
 router.get('/db', async (req, res, next) => {
   try {
-    const { state, city, is_passage_network, tier } = req.query
+    const { state, city, is_waypass_network, tier } = req.query
     let q = supabase.from('shipping_partners_db').select('*').eq('needs_review', false)
     if (state) q = q.eq('state', state)
     if (city) q = q.ilike('city', `%${city}%`)
-    if (is_passage_network !== undefined) q = q.eq('is_passage_network', is_passage_network === 'true')
-    if (tier) q = q.eq('passage_tier', tier)
+    if (is_waypass_network !== undefined) q = q.eq('is_waypass_network', is_waypass_network === 'true')
+    if (tier) q = q.eq('waypass_tier', tier)
     const { data, error } = await q.order('name')
     if (error) throw error
     res.json(data)
@@ -278,15 +291,12 @@ router.get('/db/:id', async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
-router.patch('/db/:id/network', async (req, res, next) => {
+router.patch('/db/:id/network', requireAdminKey, async (req, res, next) => {
   try {
-    if (req.headers['x-admin-key'] !== process.env.ADMIN_API_KEY) {
-      return res.status(401).json({ error: 'Unauthorized' })
-    }
-    const { is_passage_network, passage_tier } = req.body
+    const { is_waypass_network, waypass_tier } = req.body
     const { data, error } = await supabase
       .from('shipping_partners_db')
-      .update({ is_passage_network, passage_tier })
+      .update({ is_waypass_network, waypass_tier })
       .eq('id', req.params.id)
       .select()
       .single()

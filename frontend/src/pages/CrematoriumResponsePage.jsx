@@ -2,13 +2,8 @@ import { useState, useEffect } from 'react'
 import { CheckCircle2, Calendar } from 'lucide-react'
 import { fetchBookingByToken, respondToBooking } from '../lib/api.js'
 import { WeekTimeGrid } from '../components/booking/WeekTimeGrid.jsx'
-import { getMondayOf, objToKey, slotToObj, slotToLabel } from '../lib/slotUtils.js'
+import { getMondayOf, objToKey, slotToLabel } from '../lib/slotUtils.js'
 import { Button } from '../components/ui/Button.jsx'
-
-function formatSlotDate(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00')
-  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-}
 
 export function CrematoriumResponsePage({ token }) {
   const [state, setState] = useState('loading') // loading | active | already_responded | invalid | success
@@ -92,7 +87,7 @@ export function CrematoriumResponsePage({ token }) {
             <div className="w-7 h-7 rounded bg-ink flex items-center justify-center">
               <span className="font-sans text-[9px] font-bold text-surface leading-none">P</span>
             </div>
-            <span className="font-sans text-[13px] font-semibold text-ink">Passage</span>
+            <span className="font-sans text-[13px] font-semibold text-ink">Waypass</span>
           </div>
 
           {state === 'success' ? (

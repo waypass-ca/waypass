@@ -9,6 +9,11 @@ async function request(path, options = {}) {
     ...options,
     headers: { 'Content-Type': 'application/json', ...options.headers },
   })
+  if (res.status === 401) {
+    await supabase.auth.signOut().catch(() => {})
+    window.location.href = '/'
+    return
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.error ?? `HTTP ${res.status}`)
@@ -29,26 +34,59 @@ async function mutate(path, options = {}) {
 }
 
 // ── Packages ──────────────────────────────────────────
-export const fetchPackages = () => request('/api/packages')
+export const fetchPackages = () => mutate('/api/packages')
 
 // ── Addons ────────────────────────────────────────────
-export const fetchAddons = () => request('/api/addons')
+export const fetchAddons = () => mutate('/api/addons')
 
 // ── Cases ─────────────────────────────────────────────
-export const fetchCases = () => request('/api/cases')
-export const fetchCase = (id) => request(`/api/cases/${id}`)
+export const fetchCases = () => mutate('/api/cases')
+export const fetchCase = (id) => mutate(`/api/cases/${id}`)
 export const createCase = (payload) =>
   mutate('/api/cases', { method: 'POST', body: JSON.stringify(payload) })
 export const updateCaseStatus = (id, status) =>
   mutate(`/api/cases/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) })
 export const addCaseNote = (id, note) =>
   mutate(`/api/cases/${id}/notes`, { method: 'POST', body: JSON.stringify(note) })
-export const fetchCustody = (id) => request(`/api/cases/${id}/custody`)
+export const fetchCustody = (id) => mutate(`/api/cases/${id}/custody`)
 export const updateCustodyStage = (id, stage, payload) =>
   mutate(`/api/cases/${id}/custody/${stage}`, { method: 'PUT', body: JSON.stringify(payload) })
 
 export const addCaseDocument = (id, doc) =>
   mutate(`/api/cases/${id}/documents`, { method: 'POST', body: JSON.stringify(doc) })
+
+// Structured documents (case_documents table) — used by the documents tab.
+export const fetchCaseDocuments = (id) => mutate(`/api/cases/${id}/documents/structured`)
+export const createCaseDocument = (id, doc) =>
+  mutate(`/api/cases/${id}/documents/structured`, { method: 'POST', body: JSON.stringify(doc) })
+export const updateCaseDocument = (caseId, docId, patch) =>
+  mutate(`/api/cases/${caseId}/documents/structured/${docId}`, { method: 'PATCH', body: JSON.stringify(patch) })
+export const deleteCaseDocument = (caseId, docId) =>
+  mutate(`/api/cases/${caseId}/documents/structured/${docId}`, { method: 'DELETE' })
+
+// Case edit endpoints.
+export const updateCase = (id, patch) =>
+  mutate(`/api/cases/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
+export const updateCaseDeceased = (id, patch) =>
+  mutate(`/api/cases/${id}/deceased`, { method: 'PATCH', body: JSON.stringify(patch) })
+export const updateCaseFinancials = (id, patch) =>
+  mutate(`/api/cases/${id}/financials`, { method: 'PATCH', body: JSON.stringify(patch) })
+export const addCaseAddon = (id, addonId) =>
+  mutate(`/api/cases/${id}/addons`, { method: 'POST', body: JSON.stringify({ addonId }) })
+export const removeCaseAddon = (id, addonId) =>
+  mutate(`/api/cases/${id}/addons/${addonId}`, { method: 'DELETE' })
+
+// Case contacts (already had CRUD on backend).
+export const fetchCaseContacts = (id) => mutate(`/api/cases/${id}/contacts`)
+export const createCaseContact = (id, contact) =>
+  mutate(`/api/cases/${id}/contacts`, { method: 'POST', body: JSON.stringify(contact) })
+export const updateCaseContact = (caseId, contactId, patch) =>
+  mutate(`/api/cases/${caseId}/contacts/${contactId}`, { method: 'PATCH', body: JSON.stringify(patch) })
+export const deleteCaseContact = (caseId, contactId) =>
+  mutate(`/api/cases/${caseId}/contacts/${contactId}`, { method: 'DELETE' })
+
+// Unified activity feed.
+export const fetchCaseActivity = (id) => mutate(`/api/cases/${id}/activity`)
 
 // ── Crematoriums ──────────────────────────────────────
 export const fetchCrematoriums = () => mutate('/api/crematoriums')
@@ -62,6 +100,8 @@ export const connectCrematorium = (id) =>
   mutate(`/api/crematoriums/${id}/connect`, { method: 'POST' })
 export const disconnectCrematorium = (id) =>
   mutate(`/api/crematoriums/${id}/connect`, { method: 'DELETE' })
+export const generateCrematoriumLogo = (id) =>
+  mutate(`/api/crematoriums/${id}/generate-logo`, { method: 'POST' })
 
 const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
 
@@ -172,15 +212,60 @@ export const fetchNotificationPrefs = () => mutate('/api/notifications')
 export const saveNotificationPrefs = (prefs) =>
   mutate('/api/notifications', { method: 'PUT', body: JSON.stringify(prefs) })
 
+// ── Auth / account management ─────────────────────────
+export const signupFuneralHome = (payload) =>
+  request('/api/auth/signup', { method: 'POST', body: JSON.stringify(payload) })
+export const getInviteInfo = (token) =>
+  request(`/api/auth/invite-info/${token}`)
+export const acceptInvite = (payload) =>
+  request('/api/auth/accept-invite', { method: 'POST', body: JSON.stringify(payload) })
+
+// ── Users ─────────────────────────────────────────────
+export const fetchCurrentUser = () => mutate('/api/users/me')
+export const fetchUsers = () => mutate('/api/users')
+export const fetchPendingInvites = () => mutate('/api/users/invites')
+export const inviteUser = (email, role) =>
+  mutate('/api/users/invite', { method: 'POST', body: JSON.stringify({ email, role }) })
+export const revokeInvite = (id) => mutate(`/api/users/invites/${id}`, { method: 'DELETE' })
+export const resendInvite = (id) => mutate(`/api/users/invites/${id}/resend`, { method: 'POST' })
+export const changeUserRole = (id, role) =>
+  mutate(`/api/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) })
+export const removeUser = (id) => mutate(`/api/users/${id}`, { method: 'DELETE' })
+export const updateProfile = (id, patch) =>
+  mutate(`/api/users/${id}`, { method: 'PATCH', body: JSON.stringify(patch) })
+
+// ── Funeral Home ──────────────────────────────────────
+export const fetchFuneralHome = () => mutate('/api/funeral-homes/me')
+export const updateFuneralHome = (patch) =>
+  mutate('/api/funeral-homes/me', { method: 'PATCH', body: JSON.stringify(patch) })
+
 // ── Orders ────────────────────────────────────────────
-export const fetchOrders = () => request('/api/orders')
+export const fetchOrders = () => mutate('/api/orders')
 export const advanceOrder = (id) =>
   mutate(`/api/orders/${id}/advance`, { method: 'PATCH' })
 
 // ── Portal settings ───────────────────────────────────
-export const fetchPortalSettings = () => request('/api/portal-settings')
+export const fetchPortalSettings = (funeralHomeId) =>
+  request(`/api/portal-settings${funeralHomeId ? `?funeralHomeId=${funeralHomeId}` : ''}`)
+export const fetchPortalSettingsAuth = () => mutate('/api/portal-settings')
 export const savePortalSettings = (payload) =>
   mutate('/api/portal-settings', { method: 'PUT', body: JSON.stringify(payload) })
+
+// ── Email template ────────────────────────────────────
+export const fetchEmailTemplate = () => mutate('/api/email-template')
+export const saveEmailTemplate = (payload) =>
+  mutate('/api/email-template', { method: 'PUT', body: JSON.stringify(payload) })
+export const fetchEmailOverride = (caseId) =>
+  mutate(`/api/email-template/overrides/${caseId}`)
+export const saveEmailOverride = (caseId, overrides, logoStoragePath = null) =>
+  mutate(`/api/email-template/overrides/${caseId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ overrides, logoStoragePath }),
+  })
+export const deleteEmailOverride = (caseId) =>
+  mutate(`/api/email-template/overrides/${caseId}`, { method: 'DELETE' })
+export const sendFamilyEmail = (payload) =>
+  mutate('/api/email-template/send-family', { method: 'POST', body: JSON.stringify(payload) })
 
 // ── Folders ───────────────────────────────────────────
 export const fetchFolders = (type) => mutate(`/api/folders?type=${type}`)
@@ -192,3 +277,6 @@ export const assignCaseFolder = (caseId, folderId) =>
   mutate(`/api/cases/${caseId}/folder`, { method: 'PATCH', body: JSON.stringify({ folderId }) })
 export const assignDocFolder = (caseId, docId, folderId) =>
   mutate(`/api/cases/${caseId}/documents/structured/${docId}/folder`, { method: 'PATCH', body: JSON.stringify({ folderId }) })
+
+// ── Global search ─────────────────────────────────────
+export const globalSearch = (q) => mutate(`/api/search?q=${encodeURIComponent(q)}`)

@@ -144,8 +144,8 @@ const baseRow = {
     periods: [{ open: { day: 1, time: '0900' }, close: { day: 1, time: '1700' } }],
     weekday_text: ['Monday: 9:00 AM – 5:00 PM'],
   },
-  is_passage_network: false,
-  passage_tier: null,
+  is_waypass_network: false,
+  waypass_tier: null,
   distance_miles: null,
 }
 
@@ -221,15 +221,15 @@ describe('normalizeDbRecord', () => {
     expect(typeof out.openNow).toBe('boolean')
   })
 
-  it('maps is_passage_network to onPassage', () => {
-    expect(normalizeDbRecord({ ...baseRow, is_passage_network: true }).onPassage).toBe(true)
-    expect(normalizeDbRecord({ ...baseRow, is_passage_network: false }).onPassage).toBe(false)
-    expect(normalizeDbRecord({ ...baseRow, is_passage_network: null }).onPassage).toBe(false)
+  it('maps is_waypass_network to onWaypass', () => {
+    expect(normalizeDbRecord({ ...baseRow, is_waypass_network: true }).onWaypass).toBe(true)
+    expect(normalizeDbRecord({ ...baseRow, is_waypass_network: false }).onWaypass).toBe(false)
+    expect(normalizeDbRecord({ ...baseRow, is_waypass_network: null }).onWaypass).toBe(false)
   })
 
-  it('maps passage_tier', () => {
-    expect(normalizeDbRecord({ ...baseRow, passage_tier: 'preferred' }).passageTier).toBe('preferred')
-    expect(normalizeDbRecord({ ...baseRow, passage_tier: null }).passageTier).toBeNull()
+  it('maps waypass_tier', () => {
+    expect(normalizeDbRecord({ ...baseRow, waypass_tier: 'preferred' }).waypassTier).toBe('preferred')
+    expect(normalizeDbRecord({ ...baseRow, waypass_tier: null }).waypassTier).toBeNull()
   })
 
   it('formats distance from miles to km', () => {

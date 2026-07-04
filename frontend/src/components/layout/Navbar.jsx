@@ -12,7 +12,7 @@ export function Navbar({ activeTab, onTabChange, user, onSignOut }) {
       {/* Logo */}
       <div className="flex-1 flex items-center">
         <span className="font-display text-xl text-surface tracking-wide">
-          Passage
+          Waypass
           <em className="text-warning not-italic">.</em>
         </span>
       </div>

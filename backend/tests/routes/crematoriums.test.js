@@ -1,16 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
-import { makeSupabaseMock, authedUser, badToken, authHeader, adminKeyHeader } from '../setup.js'
+import { makeSupabaseMock, authedUser, badToken, authHeader, adminKeyHeader, resetDispatch } from '../setup.js'
 
-const { supabase, chain } = makeSupabaseMock()
+const { supabase, chain, usersChain } = makeSupabaseMock()
 vi.mock('../../lib/supabase.js', () => ({ supabase }))
+vi.mock('../../lib/logoService.js', () => ({
+  fetchAndStoreLogo: vi.fn().mockResolvedValue(null),
+}))
 
 // Set ADMIN_API_KEY before app imports so the route can read it
 process.env.ADMIN_API_KEY = 'test-admin-key'
 
 const { default: app } = await import('../../server.js')
+const { fetchAndStoreLogo } = await import('../../lib/logoService.js')
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
+
+const LOGO_URL = 'https://res.cloudinary.com/dv7iv29qj/image/upload/crematorium-logos/example.com.png'
 
 const dbRow = {
   id: 'CRM-000001',
@@ -27,7 +33,7 @@ const dbRow = {
   avg_turnaround: '2.1 days',
   avg_fee: '$520',
   base_fee: 520,
-  passage_revenue_share: 0.08,
+  waypass_revenue_share: 0.08,
   status: 'active',
   network_status: 'passage_network',
   contact_name: 'Marie Tremblay',
@@ -39,6 +45,7 @@ const dbRow = {
   license_number: 'ON-1234',
   vetting_notes: null,
   deleted_at: null,
+  logo_url: null,
   connected_funeral_home_ids: ['test-user-id'],
 }
 
@@ -56,7 +63,7 @@ const shaped = {
   avgTurnaround: '2.1 days',
   avgFee: '$520',
   baseFee: 520,
-  passageRevenueShare: 0.08,
+  waypassRevenueShare: 0.08,
   status: 'active',
   networkStatus: 'passage_network',
   contactName: 'Marie Tremblay',
@@ -70,6 +77,7 @@ const shaped = {
   licenseNumber: 'ON-1234',
   vettingNotes: null,
   connectedFuneralHomeIds: ['test-user-id'],
+  logoUrl: null,
 }
 
 const dbRecord = {
@@ -90,8 +98,8 @@ const dbRecord = {
     periods: [{ open: { day: 1, time: '0900' }, close: { day: 1, time: '1700' } }],
     weekday_text: ['Monday: 9:00 AM – 5:00 PM'],
   },
-  is_passage_network: false,
-  passage_tier: null,
+  is_waypass_network: false,
+  waypass_tier: null,
   needs_review: false,
   last_verified_at: '2026-01-01T00:00:00Z',
   created_at: '2026-01-01T00:00:00Z',
@@ -102,6 +110,7 @@ const dbRecord = {
 describe('GET /api/crematoriums', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.is.mockReturnThis()
     chain.contains.mockReturnThis()
@@ -124,7 +133,7 @@ describe('GET /api/crematoriums', () => {
   it('filters by connected_funeral_home_ids via contains', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     await request(app).get('/api/crematoriums').set(authHeader)
-    expect(chain.contains).toHaveBeenCalledWith('connected_funeral_home_ids', ['test-user-id'])
+    expect(chain.contains).toHaveBeenCalledWith('connected_funeral_home_ids', ['fh-uuid-1'])
   })
 
   it('returns 500 on DB error', async () => {
@@ -140,6 +149,7 @@ describe('GET /api/crematoriums', () => {
 describe('GET /api/crematoriums/nearby', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.is.mockReturnThis()
     chain.not.mockReturnThis()
@@ -156,13 +166,13 @@ describe('GET /api/crematoriums/nearby', () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     const res = await request(app).get('/api/crematoriums/nearby').set(authHeader)
     expect(res.status).toBe(200)
-    expect(res.body[0]).toHaveProperty('onPassage', true)
+    expect(res.body[0]).toHaveProperty('onWaypass', true)
   })
 
   it('filters out user-connected crematoriums via not()', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     await request(app).get('/api/crematoriums/nearby').set(authHeader)
-    expect(chain.not).toHaveBeenCalledWith('connected_funeral_home_ids', 'cs', `{test-user-id}`)
+    expect(chain.not).toHaveBeenCalledWith('connected_funeral_home_ids', 'cs', `{fh-uuid-1}`)
   })
 
   it('applies name/location filter when query param provided', async () => {
@@ -188,6 +198,7 @@ describe('POST /api/crematoriums', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.insert.mockReturnThis()
     chain.select.mockReturnThis()
     chain.single.mockResolvedValue({ data: dbRow, error: null })
@@ -206,11 +217,11 @@ describe('POST /api/crematoriums', () => {
     expect(res.body).toEqual(shaped)
   })
 
-  it('auto-connects creating user in connected_funeral_home_ids', async () => {
+  it('auto-connects creating funeral home in connected_funeral_home_ids', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     await request(app).post('/api/crematoriums').set(authHeader).send(payload)
     expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({
-      connected_funeral_home_ids: ['test-user-id'],
+      connected_funeral_home_ids: ['fh-uuid-1'],
     }))
   })
 })
@@ -220,6 +231,7 @@ describe('POST /api/crematoriums', () => {
 describe('POST /api/crematoriums/:id/connect', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.is.mockReturnThis()
@@ -242,20 +254,20 @@ describe('POST /api/crematoriums/:id/connect', () => {
       .set(authHeader)
     expect(res.status).toBe(200)
     expect(chain.update).toHaveBeenCalledWith(
-      expect.objectContaining({ connected_funeral_home_ids: expect.arrayContaining(['test-user-id']) })
+      expect.objectContaining({ connected_funeral_home_ids: expect.arrayContaining(['fh-uuid-1']) })
     )
   })
 
   it('does not duplicate if already connected', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.single
-      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: ['test-user-id'] }, error: null })
+      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: ['fh-uuid-1'] }, error: null })
       .mockResolvedValueOnce({ data: dbRow, error: null })
     chain.update.mockReturnThis()
     await request(app).post('/api/crematoriums/CRM-000001/connect').set(authHeader)
     const updateCall = chain.update.mock.calls[0][0]
     const ids = updateCall.connected_funeral_home_ids
-    expect(ids.filter(id => id === 'test-user-id')).toHaveLength(1)
+    expect(ids.filter(id => id === 'fh-uuid-1')).toHaveLength(1)
   })
 
   it('returns 404 when crematorium not found', async () => {
@@ -271,6 +283,7 @@ describe('POST /api/crematoriums/:id/connect', () => {
 describe('DELETE /api/crematoriums/:id/connect', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.is.mockReturnThis()
@@ -285,13 +298,13 @@ describe('DELETE /api/crematoriums/:id/connect', () => {
   it('removes user ID from connected_funeral_home_ids', async () => {
     supabase.auth.getUser.mockResolvedValue(authedUser)
     chain.single
-      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: ['test-user-id', 'other-id'] }, error: null })
+      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: ['fh-uuid-1', 'other-id'] }, error: null })
       .mockResolvedValueOnce({ data: { ...dbRow, connected_funeral_home_ids: ['other-id'] }, error: null })
     chain.update.mockReturnThis()
     const res = await request(app).delete('/api/crematoriums/CRM-000001/connect').set(authHeader)
     expect(res.status).toBe(200)
     const updateCall = chain.update.mock.calls[0][0]
-    expect(updateCall.connected_funeral_home_ids).not.toContain('test-user-id')
+    expect(updateCall.connected_funeral_home_ids).not.toContain('fh-uuid-1')
     expect(updateCall.connected_funeral_home_ids).toContain('other-id')
   })
 
@@ -310,6 +323,7 @@ describe('PATCH /api/crematoriums/:id', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.select.mockReturnThis()
@@ -342,8 +356,10 @@ describe('PATCH /api/crematoriums/:id', () => {
 describe('DELETE /api/crematoriums/:id', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
-    chain.eq.mockResolvedValue({ data: null, error: null })
+    chain.eq.mockReturnThis()
+    chain.single.mockResolvedValue({ data: { id: 'CRM-000001' }, error: null })
   })
 
   it('returns 401 without auth', async () => {
@@ -367,6 +383,7 @@ describe('DELETE /api/crematoriums/:id', () => {
 describe('GET /api/crematoriums/db', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.ilike.mockReturnThis()
@@ -389,19 +406,19 @@ describe('GET /api/crematoriums/db', () => {
     expect(chain.ilike).toHaveBeenCalledWith('city', '%Oakland%')
   })
 
-  it('applies is_passage_network=true filter', async () => {
-    await request(app).get('/api/crematoriums/db?is_passage_network=true')
-    expect(chain.eq).toHaveBeenCalledWith('is_passage_network', true)
+  it('applies is_waypass_network=true filter', async () => {
+    await request(app).get('/api/crematoriums/db?is_waypass_network=true')
+    expect(chain.eq).toHaveBeenCalledWith('is_waypass_network', true)
   })
 
-  it('applies is_passage_network=false filter', async () => {
-    await request(app).get('/api/crematoriums/db?is_passage_network=false')
-    expect(chain.eq).toHaveBeenCalledWith('is_passage_network', false)
+  it('applies is_waypass_network=false filter', async () => {
+    await request(app).get('/api/crematoriums/db?is_waypass_network=false')
+    expect(chain.eq).toHaveBeenCalledWith('is_waypass_network', false)
   })
 
   it('applies tier filter', async () => {
     await request(app).get('/api/crematoriums/db?tier=preferred')
-    expect(chain.eq).toHaveBeenCalledWith('passage_tier', 'preferred')
+    expect(chain.eq).toHaveBeenCalledWith('waypass_tier', 'preferred')
   })
 
   it('returns rating and user_ratings_total in response', async () => {
@@ -441,6 +458,7 @@ describe('GET /api/crematoriums/nearby-db', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     supabase.rpc.mockResolvedValue({ data: nearbyResult, error: null })
   })
 
@@ -491,6 +509,7 @@ describe('GET /api/crematoriums/nearby-db', () => {
 describe('GET /api/crematoriums/db/:id', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.select.mockReturnThis()
     chain.eq.mockReturnThis()
   })
@@ -519,10 +538,11 @@ describe('GET /api/crematoriums/db/:id', () => {
 // ── PATCH /api/crematoriums/db/:id/network ───────────────────────────────────
 
 describe('PATCH /api/crematoriums/db/:id/network', () => {
-  const payload = { is_passage_network: true, passage_tier: 'preferred' }
+  const payload = { is_waypass_network: true, waypass_tier: 'preferred' }
 
   beforeEach(() => {
     vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
     chain.update.mockReturnThis()
     chain.eq.mockReturnThis()
     chain.select.mockReturnThis()
@@ -544,13 +564,13 @@ describe('PATCH /api/crematoriums/db/:id/network', () => {
   })
 
   it('returns 200 and updates network fields with valid admin key', async () => {
-    chain.single.mockResolvedValue({ data: { ...dbRecord, is_passage_network: true, passage_tier: 'preferred' }, error: null })
+    chain.single.mockResolvedValue({ data: { ...dbRecord, is_waypass_network: true, waypass_tier: 'preferred' }, error: null })
     const res = await request(app)
       .patch('/api/crematoriums/db/uuid-001/network')
       .set(adminKeyHeader)
       .send(payload)
     expect(res.status).toBe(200)
-    expect(chain.update).toHaveBeenCalledWith({ is_passage_network: true, passage_tier: 'preferred' })
+    expect(chain.update).toHaveBeenCalledWith({ is_waypass_network: true, waypass_tier: 'preferred' })
   })
 
   it('returns 500 on DB error', async () => {
@@ -560,5 +580,255 @@ describe('PATCH /api/crematoriums/db/:id/network', () => {
       .set(adminKeyHeader)
       .send(payload)
     expect(res.status).toBe(500)
+  })
+})
+
+// ── Logo: POST /api/crematoriums ──────────────────────────────────────────────
+
+describe('POST /api/crematoriums — logo fetching', () => {
+  const base = { name: 'Bay Area Cremation', location: 'San Jose, CA' }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    chain.insert.mockReturnThis()
+    chain.select.mockReturnThis()
+    chain.single.mockResolvedValue({ data: dbRow, error: null })
+  })
+
+  it('calls fetchAndStoreLogo with the website when provided', async () => {
+    vi.mocked(fetchAndStoreLogo).mockResolvedValue(LOGO_URL)
+    await request(app).post('/api/crematoriums').set(authHeader).send({ ...base, website: 'https://example.com' })
+    expect(fetchAndStoreLogo).toHaveBeenCalledWith('https://example.com')
+  })
+
+  it('inserts logo_url returned by fetchAndStoreLogo', async () => {
+    vi.mocked(fetchAndStoreLogo).mockResolvedValue(LOGO_URL)
+    await request(app).post('/api/crematoriums').set(authHeader).send({ ...base, website: 'https://example.com' })
+    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ logo_url: LOGO_URL }))
+  })
+
+  it('inserts logo_url as null when no website is provided', async () => {
+    await request(app).post('/api/crematoriums').set(authHeader).send(base)
+    expect(fetchAndStoreLogo).not.toHaveBeenCalled()
+    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ logo_url: null }))
+  })
+
+  it('inserts logo_url as null when fetchAndStoreLogo returns null and still returns 201', async () => {
+    vi.mocked(fetchAndStoreLogo).mockResolvedValue(null)
+    const res = await request(app).post('/api/crematoriums').set(authHeader).send({ ...base, website: 'https://nologohere.com' })
+    expect(res.status).toBe(201)
+    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ logo_url: null }))
+  })
+
+  it('response includes logoUrl from the returned row', async () => {
+    vi.mocked(fetchAndStoreLogo).mockResolvedValue(LOGO_URL)
+    chain.single.mockResolvedValue({ data: { ...dbRow, logo_url: LOGO_URL }, error: null })
+    const res = await request(app).post('/api/crematoriums').set(authHeader).send({ ...base, website: 'https://example.com' })
+    expect(res.body.logoUrl).toBe(LOGO_URL)
+  })
+})
+
+// ── Logo: POST /api/crematoriums/:id/connect — fire-and-forget ────────────────
+
+describe('POST /api/crematoriums/:id/connect — logo fire-and-forget', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    chain.select.mockReturnThis()
+    chain.eq.mockReturnThis()
+    chain.is.mockReturnThis()
+    chain.update.mockReturnThis()
+    chain.contains.mockReturnThis()
+  })
+
+  it('triggers fetchAndStoreLogo when logo_url is null and website exists', async () => {
+    chain.single
+      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: [], logo_url: null, website: 'https://example.com' }, error: null })
+      .mockResolvedValueOnce({ data: dbRow, error: null })
+    vi.mocked(fetchAndStoreLogo).mockResolvedValue(LOGO_URL)
+
+    await request(app).post('/api/crematoriums/CRM-000001/connect').set(authHeader)
+
+    expect(fetchAndStoreLogo).toHaveBeenCalledWith('https://example.com')
+  })
+
+  it('updates logo_url in DB after fire-and-forget fetch', async () => {
+    chain.single
+      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: [], logo_url: null, website: 'https://example.com' }, error: null })
+      .mockResolvedValueOnce({ data: dbRow, error: null })
+      .mockResolvedValue({ data: { id: 'CRM-000001' }, error: null })
+    vi.mocked(fetchAndStoreLogo).mockResolvedValue(LOGO_URL)
+
+    await request(app).post('/api/crematoriums/CRM-000001/connect').set(authHeader)
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ logo_url: LOGO_URL }))
+  })
+
+  it('does not trigger fetchAndStoreLogo when logo_url already set', async () => {
+    chain.single
+      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: [], logo_url: LOGO_URL, website: 'https://example.com' }, error: null })
+      .mockResolvedValueOnce({ data: dbRow, error: null })
+
+    await request(app).post('/api/crematoriums/CRM-000001/connect').set(authHeader)
+
+    expect(fetchAndStoreLogo).not.toHaveBeenCalled()
+  })
+
+  it('does not trigger fetchAndStoreLogo when website is null', async () => {
+    chain.single
+      .mockResolvedValueOnce({ data: { connected_funeral_home_ids: [], logo_url: null, website: null }, error: null })
+      .mockResolvedValueOnce({ data: dbRow, error: null })
+
+    await request(app).post('/api/crematoriums/CRM-000001/connect').set(authHeader)
+
+    expect(fetchAndStoreLogo).not.toHaveBeenCalled()
+  })
+})
+
+// ── Logo: POST /api/crematoriums/:id/generate-logo ───────────────────────────
+
+describe('POST /api/crematoriums/:id/generate-logo', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    chain.select.mockReturnThis()
+    chain.eq.mockReturnThis()
+    chain.contains.mockReturnThis()
+    chain.update.mockReturnThis()
+  })
+
+  it('returns 401 without auth', async () => {
+    supabase.auth.getUser.mockResolvedValue(badToken)
+    const res = await request(app).post('/api/crematoriums/CRM-000001/generate-logo')
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 404 when crematorium not found', async () => {
+    chain.single.mockResolvedValue({ data: null, error: null })
+    const res = await request(app).post('/api/crematoriums/CRM-000001/generate-logo').set(authHeader)
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 400 when no website on file', async () => {
+    chain.single.mockResolvedValue({ data: { website: null }, error: null })
+    const res = await request(app).post('/api/crematoriums/CRM-000001/generate-logo').set(authHeader)
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/website/)
+  })
+
+  it('returns 422 when fetchAndStoreLogo returns null', async () => {
+    chain.single.mockResolvedValue({ data: { website: 'https://example.com' }, error: null })
+    vi.mocked(fetchAndStoreLogo).mockResolvedValue(null)
+    const res = await request(app).post('/api/crematoriums/CRM-000001/generate-logo').set(authHeader)
+    expect(res.status).toBe(422)
+    expect(res.body.error).toMatch(/logo/)
+  })
+
+  it('returns 200 with updated crematorium on success', async () => {
+    chain.single
+      .mockResolvedValueOnce({ data: { website: 'https://example.com' }, error: null })
+      .mockResolvedValueOnce({ data: { ...dbRow, logo_url: LOGO_URL }, error: null })
+    vi.mocked(fetchAndStoreLogo).mockResolvedValue(LOGO_URL)
+
+    const res = await request(app).post('/api/crematoriums/CRM-000001/generate-logo').set(authHeader)
+
+    expect(res.status).toBe(200)
+    expect(res.body.logoUrl).toBe(LOGO_URL)
+  })
+
+  it('calls fetchAndStoreLogo with the crematorium website', async () => {
+    chain.single
+      .mockResolvedValueOnce({ data: { website: 'https://example.com' }, error: null })
+      .mockResolvedValueOnce({ data: { ...dbRow, logo_url: LOGO_URL }, error: null })
+    vi.mocked(fetchAndStoreLogo).mockResolvedValue(LOGO_URL)
+
+    await request(app).post('/api/crematoriums/CRM-000001/generate-logo').set(authHeader)
+
+    expect(fetchAndStoreLogo).toHaveBeenCalledWith('https://example.com')
+  })
+
+  it('updates logo_url in the crematoriums row', async () => {
+    chain.single
+      .mockResolvedValueOnce({ data: { website: 'https://example.com' }, error: null })
+      .mockResolvedValueOnce({ data: { ...dbRow, logo_url: LOGO_URL }, error: null })
+    vi.mocked(fetchAndStoreLogo).mockResolvedValue(LOGO_URL)
+
+    await request(app).post('/api/crematoriums/CRM-000001/generate-logo').set(authHeader)
+
+    expect(chain.update).toHaveBeenCalledWith({ logo_url: LOGO_URL })
+  })
+
+  it('returns 500 on DB error', async () => {
+    chain.single.mockResolvedValue({ data: null, error: new Error('db fail') })
+    const res = await request(app).post('/api/crematoriums/CRM-000001/generate-logo').set(authHeader)
+    expect(res.status).toBe(500)
+  })
+})
+
+// ── Logo: PATCH /api/crematoriums/:id — logo handling ────────────────────────
+
+describe('PATCH /api/crematoriums/:id — logo handling', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    resetDispatch(supabase, usersChain, chain)
+    supabase.auth.getUser.mockResolvedValue(authedUser)
+    chain.update.mockReturnThis()
+    chain.eq.mockReturnThis()
+    chain.select.mockReturnThis()
+    chain.contains.mockReturnThis()
+    chain.single.mockResolvedValue({ data: dbRow, error: null })
+  })
+
+  it('accepts an explicit logoUrl and includes it in the update', async () => {
+    const res = await request(app)
+      .patch('/api/crematoriums/CRM-000001')
+      .set(authHeader)
+      .send({ logoUrl: LOGO_URL })
+
+    expect(res.status).toBe(200)
+    expect(fetchAndStoreLogo).not.toHaveBeenCalled()
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ logo_url: LOGO_URL }))
+  })
+
+  it('re-fetches logo when website changes to a new value', async () => {
+    chain.single
+      .mockResolvedValueOnce({ data: { website: 'https://old.com', logo_url: null }, error: null })
+      .mockResolvedValueOnce({ data: dbRow, error: null })
+    vi.mocked(fetchAndStoreLogo).mockResolvedValue(LOGO_URL)
+
+    await request(app)
+      .patch('/api/crematoriums/CRM-000001')
+      .set(authHeader)
+      .send({ website: 'https://new.com' })
+
+    expect(fetchAndStoreLogo).toHaveBeenCalledWith('https://new.com')
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ logo_url: LOGO_URL }))
+  })
+
+  it('does not re-fetch logo when website is unchanged', async () => {
+    chain.single
+      .mockResolvedValueOnce({ data: { website: 'https://same.com', logo_url: 'existing-url' }, error: null })
+      .mockResolvedValueOnce({ data: dbRow, error: null })
+
+    await request(app)
+      .patch('/api/crematoriums/CRM-000001')
+      .set(authHeader)
+      .send({ website: 'https://same.com' })
+
+    expect(fetchAndStoreLogo).not.toHaveBeenCalled()
+  })
+
+  it('does not fetch logo when website is not in the patch payload', async () => {
+    await request(app)
+      .patch('/api/crematoriums/CRM-000001')
+      .set(authHeader)
+      .send({ name: 'New Name' })
+
+    expect(fetchAndStoreLogo).not.toHaveBeenCalled()
   })
 })

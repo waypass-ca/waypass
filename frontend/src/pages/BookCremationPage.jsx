@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useLocation, useOutletContext } from 'react-router-dom'
 import { Search, X, CheckCircle2, Send, ChevronLeft, ChevronRight, Info, CalendarCheck } from 'lucide-react'
 import { fetchCrematoriums, fetchShippingPartners, fetchBookings, createBooking, confirmBooking, cancelBooking } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useUser } from '../context/UserContext.jsx'
 import { getDefaultShippingPartnerId } from '../lib/preferences.js'
-import { getSundayOf, slotToObj, objToKey, slotKey, slotToLabel, formatWeekRange } from '../lib/slotUtils.js'
+
+import { getSundayOf, slotToObj, objToKey, slotToLabel, formatWeekRange } from '../lib/slotUtils.js'
 import { Button } from '../components/ui/Button.jsx'
 import { WeekGrid } from '../components/booking/WeekGrid.jsx'
 import { RescheduleBookingModal } from '../components/booking/RescheduleBookingModal.jsx'
@@ -138,11 +141,18 @@ function BookingPanelRow({ booking, onConfirm, onCancel, onReschedule }) {
   )
 }
 
-export function BookCremationPage({ cases, preselectedCase }) {
+export function BookCremationPage() {
+  const location = useLocation()
+  const { cases } = useOutletContext()
+  const preselectedCase = location.state?.preselectedCase ?? null
   const { user } = useAuth()
+  const { canWrite } = useUser()
+  const defaultShippingId = getDefaultShippingPartnerId(user?.id)
+
   const [crematoriums, setCrematoriums] = useState([])
   const [shippingPartners, setShippingPartners] = useState([])
   const [existingBookings, setExistingBookings] = useState([])
+  const [loading, setLoading] = useState(true)
 
   const [query, setQuery] = useState(preselectedCase?.deceased ?? preselectedCase?.id ?? '')
   const [showDropdown, setShowDropdown] = useState(false)
@@ -166,21 +176,23 @@ export function BookCremationPage({ cases, preselectedCase }) {
   const pendingSlots = useRef(null)
 
   useEffect(() => {
-    fetchCrematoriums().then(list => {
-      setCrematoriums(list)
-      if (preselectedCase?.crematoriumId) {
-        setMatchedCrem(list.find(cr => cr.id === preselectedCase.crematoriumId) ?? null)
-      }
-    }).catch(() => {})
-    fetchShippingPartners().then(list => {
-      setShippingPartners(list)
-      const defaultId = getDefaultShippingPartnerId(user?.id)
-      if (defaultId) {
-        const defaultPartner = list.find(p => p.id === defaultId)
-        if (defaultPartner) setSelectedShipping(defaultPartner)
-      }
-    }).catch(() => {})
-    fetchBookings().then(setExistingBookings).catch(() => {})
+    Promise.allSettled([
+      fetchCrematoriums().then(list => {
+        setCrematoriums(list)
+        if (preselectedCase?.crematoriumId) {
+          setMatchedCrem(list.find(cr => cr.id === preselectedCase.crematoriumId) ?? null)
+        }
+      }),
+      fetchShippingPartners().then(list => {
+        setShippingPartners(list)
+        const defaultId = getDefaultShippingPartnerId(user?.id)
+        if (defaultId) {
+          const defaultPartner = list.find(p => p.id === defaultId)
+          if (defaultPartner) setSelectedShipping(defaultPartner)
+        }
+      }),
+      fetchBookings().then(setExistingBookings),
+    ]).finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -322,6 +334,8 @@ export function BookCremationPage({ cases, preselectedCase }) {
   const canSend = selectedCase && matchedCrem && selectedSlots.size > 0 && !caseHasActiveBooking
   const disabled = !selectedCase || !matchedCrem || !!caseHasActiveBooking
 
+  if (loading) return null
+
   return (
     <div className="flex-1 flex overflow-hidden bg-surface">
 
@@ -445,10 +459,12 @@ export function BookCremationPage({ cases, preselectedCase }) {
               This case already has an active booking with <strong>{caseHasActiveBooking.crematoriumName}</strong>.
               Change or cancel it from the sidebar before booking a new one.
             </p>
-            <button onClick={() => setRescheduleTarget(caseHasActiveBooking)}
-              className="font-sans text-[12px] font-medium text-amber-800 hover:text-amber-900 underline underline-offset-2">
-              Change booking
-            </button>
+            {canWrite && (
+              <button onClick={() => setRescheduleTarget(caseHasActiveBooking)}
+                className="font-sans text-[12px] font-medium text-amber-800 hover:text-amber-900 underline underline-offset-2">
+                Change booking
+              </button>
+            )}
           </div>
         )}
 
@@ -458,7 +474,7 @@ export function BookCremationPage({ cases, preselectedCase }) {
           className={`select-none bg-white ${disabled ? 'opacity-50' : ''}`}
           onMouseUp={commitDrag}
           onMouseLeave={commitDrag}
-          renderCell={(key, date, hour, isToday) => {
+          renderCell={(key, date, hour) => {
             const isSelected = selectedSlots.has(key)
             const busyLabel = busySlots.get(key)
             const isBusy = busyLabel !== undefined
@@ -525,10 +541,12 @@ export function BookCremationPage({ cases, preselectedCase }) {
                 <p className="font-sans text-[11px] text-muted">+ {selectedShipping.contactEmail ?? 'no email'}</p>
               )}
             </div>
-            <Button onClick={handleSend} disabled={!canSend || sending} className="flex items-center gap-2">
-              <Send size={13} strokeWidth={2} />
-              {sending ? 'Sending…' : 'Send Invite'}
-            </Button>
+            {canWrite && (
+              <Button onClick={handleSend} disabled={!canSend || sending} className="flex items-center gap-2">
+                <Send size={13} strokeWidth={2} />
+                {sending ? 'Sending…' : 'Send Invite'}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -552,7 +570,7 @@ export function BookCremationPage({ cases, preselectedCase }) {
               <p className="font-sans text-[12px] text-muted px-5 py-6">No active bookings.</p>
             ) : (
               activeBookings.map(b => (
-                <BookingPanelRow key={b.id} booking={b} onConfirm={handleConfirm} onCancel={() => setCancelTarget(b)} onReschedule={setRescheduleTarget} />
+                <BookingPanelRow key={b.id} booking={b} onConfirm={canWrite ? handleConfirm : undefined} onCancel={canWrite ? () => setCancelTarget(b) : undefined} onReschedule={canWrite ? setRescheduleTarget : undefined} />
               ))
             )}
           </div>

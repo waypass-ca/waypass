@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npm install:*)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(npx vite *)",
+      "mcp__2fc469fe-e927-4608-9568-14a3a2e91f32__list_projects"
     ]
   }
 }

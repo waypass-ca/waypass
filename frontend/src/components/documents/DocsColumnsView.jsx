@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { Folder, File, FileText, ChevronRight, Plus, X } from 'lucide-react'
 import { makeDocDragImage } from '../../lib/dragImage.js'
-import { DOC_TYPES, STATUS_CONFIG, FileIcon, DocMenu, activeDragDocId, setActiveDragDocId } from './docsShared'
+import { DOC_TYPES, STATUS_CONFIG, FileIcon, DocMenu, setActiveDragDocId } from './docsShared'
 
 const COL1_TYPES = [{ id: 'all', label: 'All Types' }, ...DOC_TYPES.map(t => ({ id: t, label: t }))]
 

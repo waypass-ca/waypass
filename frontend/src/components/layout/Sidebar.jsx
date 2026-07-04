@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Search, Home, Inbox, Archive, Building2, UserPen,
   CalendarPlus, CalendarDays, FileText, Landmark, Settings, ChevronDown,
   ArrowLeftToLine, ArrowRightToLine, Truck,
 } from 'lucide-react'
 import { useInboxUnreadCount } from '../notifications/useInboxUnreadCount.js'
+import { useUser } from '../../context/UserContext.jsx'
+import { fetchFuneralHome } from '../../lib/api.js'
 
 function NavItem({ id, label, icon: Icon, badge, badgeProminent, isActive, onClick, collapsed }) {
   const badgeText = badge && badge > 99 ? '99+' : badge
@@ -73,6 +75,24 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [collapsed, setCollapsed] = useState({ patients: false, partners: false })
   const inboxUnread = useInboxUnreadCount()
+  const { profile, canWrite } = useUser()
+  const [funeralHome, setFuneralHome] = useState(null)
+
+  useEffect(() => {
+    if (profile?.funeralHomeId) {
+      fetchFuneralHome().then(setFuneralHome).catch(() => {})
+    }
+  }, [profile?.funeralHomeId])
+
+  const funeralHomeLoading = !funeralHome && !!profile?.funeralHomeId
+  const homeName = funeralHome?.name ?? funeralHome?.displayName ?? ''
+  const logoUrl = funeralHome?.logoUrl ?? null
+  const initials = homeName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0].toUpperCase())
+    .join('')
 
   function toggle(id) {
     setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))
@@ -86,15 +106,29 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
       {/* Org header */}
       <div className={`py-4 border-b border-line ${sidebarCollapsed ? 'px-2' : 'px-3'}`}>
         {sidebarCollapsed ? (
-          <div className="w-7 h-7 rounded bg-ink flex items-center justify-center mx-auto">
-            <span className="font-sans text-[9px] font-bold text-surface leading-none">EG</span>
+          <div className="w-7 h-7 rounded overflow-hidden bg-ink flex items-center justify-center mx-auto flex-shrink-0">
+            {funeralHomeLoading
+              ? null
+              : logoUrl
+                ? <img src={logoUrl} alt={homeName} className="w-full h-full object-cover" />
+                : <span className="font-sans text-[9px] font-bold text-surface leading-none">{initials}</span>
+            }
           </div>
         ) : (
           <div className="flex items-center gap-2.5 px-2 py-1.5">
-            <div className="w-5 h-5 rounded bg-ink flex items-center justify-center flex-shrink-0">
-              <span className="font-sans text-[9px] font-bold text-surface leading-none">EG</span>
-            </div>
-            <span className="font-sans text-[13px] font-semibold text-ink flex-1 truncate">Evergreen Medical</span>
+            {funeralHomeLoading ? (
+              <div className="animate-pulse bg-line rounded h-3.5 w-32" />
+            ) : (
+              <>
+                <div className="w-5 h-5 rounded overflow-hidden bg-ink flex items-center justify-center flex-shrink-0">
+                  {logoUrl
+                    ? <img src={logoUrl} alt={homeName} className="w-full h-full object-cover" />
+                    : <span className="font-sans text-[9px] font-bold text-surface leading-none">{initials}</span>
+                  }
+                </div>
+                <span className="font-sans text-[13px] font-semibold text-ink flex-1 truncate">{homeName}</span>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -110,7 +144,7 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
         {!collapsed.patients && (
           <>
             <NavItem id="cases"         label="Cases"         icon={Archive}  isActive={activeItem === 'cases'}         onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="family-editor" label="Family Editor" icon={UserPen}  isActive={activeItem === 'family-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
+            <NavItem id="email-editor" label="Email Editor" icon={UserPen}  isActive={activeItem === 'email-editor'} onClick={onItemChange} collapsed={sidebarCollapsed} />
           </>
         )}
 
@@ -119,7 +153,7 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
           <>
             <NavItem id="partners"          label="Crematoriums"   icon={Building2}    isActive={activeItem === 'partners'}          onClick={onItemChange} collapsed={sidebarCollapsed} />
             <NavItem id="shipping-partners" label="Shipping"       icon={Truck}        isActive={activeItem === 'shipping-partners'} onClick={onItemChange} collapsed={sidebarCollapsed} />
-            <NavItem id="book-cremation"    label="Book Cremation" icon={CalendarPlus} isActive={activeItem === 'book-cremation'}    onClick={onItemChange} collapsed={sidebarCollapsed} />
+            {canWrite && <NavItem id="book-cremation" label="Book Cremation" icon={CalendarPlus} isActive={activeItem === 'book-cremation'} onClick={onItemChange} collapsed={sidebarCollapsed} />}
           </>
         )}
 

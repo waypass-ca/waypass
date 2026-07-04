@@ -5,10 +5,10 @@ export function PackageCard({ pkg, selected, onSelect }) {
     <div
       onClick={onSelect}
       className={`
-        relative bg-surface rounded-xl p-6 cursor-pointer border-2 transition-all
+        relative bg-surface rounded-xl p-6 cursor-pointer transition-all
         ${selected
-          ? 'border-ink shadow-lg shadow-ink/10'
-          : 'border-line shadow-sm hover:shadow-md hover:border-secondary/30'
+          ? 'border-2 border-ink shadow-lg shadow-ink/10'
+          : 'border border-line shadow-sm hover:shadow-md hover:border-secondary/30'
         }
       `}
     >
