@@ -156,7 +156,7 @@ export function WeekTimeGrid({
                 if (isBusy) {
                   cellClass += 'bg-danger/10 cursor-not-allowed '
                 } else if (isSelected) {
-                  cellClass += 'bg-primary text-surface '
+                  cellClass += 'bg-primary text-primary-contrast '
                 } else if (isHighlighted && !readOnly) {
                   cellClass += 'bg-primary/10 hover:bg-primary/20 '
                 } else if (isHighlighted && readOnly) {

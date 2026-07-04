@@ -238,6 +238,8 @@ export const updateProfile = (id, patch) =>
 export const fetchFuneralHome = () => mutate('/api/funeral-homes/me')
 export const updateFuneralHome = (patch) =>
   mutate('/api/funeral-homes/me', { method: 'PATCH', body: JSON.stringify(patch) })
+export const generateFuneralHomeLogo = () =>
+  mutate('/api/funeral-homes/me/generate-logo', { method: 'POST' })
 
 // ── Orders ────────────────────────────────────────────
 export const fetchOrders = () => mutate('/api/orders')

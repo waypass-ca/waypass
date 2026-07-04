@@ -17,8 +17,9 @@
   --color-line:           #DCE3F0;   /* borders & dividers               */
 
   /* Brand */
-  --color-primary:        #4A72B8;   /* primary action & success         */
-  --color-primary-light:  #EBF0FA;   /* tinted primary background        */
+  --color-primary:          #4A72B8; /* primary action & success         */
+  --color-primary-light:    #EBF0FA; /* tinted primary background        */
+  --color-primary-contrast: #FFFFFF; /* readable text on solid primary   */
 
   /* Warning */
   --color-warning:        #C4965A;   /* warnings & attention             */
@@ -48,8 +49,9 @@
   --color-muted:          #52525E;
   --color-line:           #252A3D;
 
-  --color-primary:        #6B93D6;
-  --color-primary-light:  #18243E;
+  --color-primary:          #6B93D6;
+  --color-primary-light:    #18243E;
+  --color-primary-contrast: #FFFFFF;
 
   --color-warning:        #D4A86C;
   --color-warning-light:  #231A0D;

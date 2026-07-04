@@ -21,7 +21,7 @@ function StepIndicator({ currentStep }) {
               <div
                 className={`
                   w-7 h-7 rounded-full flex items-center justify-center text-xs font-sans font-medium transition-all
-                  ${isDone ? 'bg-primary text-surface' : isActive ? 'bg-ink text-surface' : 'bg-line text-muted'}
+                  ${isDone ? 'bg-primary text-primary-contrast' : isActive ? 'bg-ink text-surface' : 'bg-line text-muted'}
                 `}
               >
                 {isDone ? (
