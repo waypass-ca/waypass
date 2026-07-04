@@ -2,7 +2,9 @@
 import { Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import { UserProvider, useUser } from './context/UserContext.jsx'
+import { FuneralHomeProvider } from './context/FuneralHomeContext.jsx'
 import { DarkModeProvider } from './context/DarkModeContext.jsx'
+import { BrandThemeApplier } from './components/brand/BrandThemeApplier.jsx'
 import { LoginScreen } from './components/auth/LoginScreen.jsx'
 import { DashboardLayout } from './components/layout/DashboardLayout.jsx'
 import { CrematoriumResponsePage } from './pages/CrematoriumResponsePage.jsx'
@@ -87,7 +89,12 @@ function AppInner() {
     )
   }
 
-  return <AuthenticatedRoutes />
+  return (
+    <FuneralHomeProvider>
+      <BrandThemeApplier />
+      <AuthenticatedRoutes />
+    </FuneralHomeProvider>
+  )
 }
 
 export default function App() {

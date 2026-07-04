@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { Button } from '../ui/Button'
 import { SectionTitle, Divider, AppearancePicker } from './settingsShared'
 import { useUser } from '../../context/UserContext.jsx'
-import { fetchFuneralHome, updateFuneralHome } from '../../lib/api.js'
+import { useFuneralHome } from '../../context/FuneralHomeContext.jsx'
+import { updateFuneralHome } from '../../lib/api.js'
 
 export function GeneralSection() {
   const { isAdmin } = useUser()
+  const { funeralHome, setFuneralHome } = useFuneralHome()
 
   const [name, setName] = useState('')
   const [licenseNumber, setLicenseNumber] = useState('')
@@ -19,19 +21,16 @@ export function GeneralSection() {
   const [msg, setMsg] = useState(null)
 
   useEffect(() => {
-    fetchFuneralHome()
-      .then(data => {
-        setName(data.name ?? '')
-        setLicenseNumber(data.licenseNumber ?? data.license_number ?? '')
-        setPhone(data.phone ?? '')
-        setStreetAddress(data.streetAddress ?? data.street_address ?? '')
-        setCity(data.city ?? '')
-        setStateZip(data.stateZip ?? data.state_zip ?? '')
-        setEmail(data.email ?? '')
-        setWebsite(data.website ?? '')
-      })
-      .catch(() => {})
-  }, [])
+    if (!funeralHome) return
+    setName(funeralHome.name ?? '')
+    setLicenseNumber(funeralHome.licenseNumber ?? '')
+    setPhone(funeralHome.phone ?? '')
+    setStreetAddress(funeralHome.streetAddress ?? '')
+    setCity(funeralHome.city ?? '')
+    setStateZip(funeralHome.stateZip ?? '')
+    setEmail(funeralHome.email ?? '')
+    setWebsite(funeralHome.website ?? '')
+  }, [funeralHome])
 
   const inputClass = (disabled) =>
     `w-full border border-line rounded-lg px-3.5 py-2.5 text-sm font-sans text-ink outline-none transition-colors bg-surface dark:bg-surface ${
@@ -42,7 +41,7 @@ export function GeneralSection() {
     setSaving(true)
     setMsg(null)
     try {
-      await updateFuneralHome({
+      const next = await updateFuneralHome({
         name,
         license_number: licenseNumber,
         phone,
@@ -52,6 +51,7 @@ export function GeneralSection() {
         email,
         website,
       })
+      setFuneralHome(next)
       setMsg({ ok: true, text: 'Changes saved.' })
     } catch (err) {
       setMsg({ ok: false, text: err.message ?? 'Failed to save changes.' })

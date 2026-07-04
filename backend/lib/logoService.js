@@ -9,7 +9,7 @@ async function resolveSourceUrl(domain) {
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
 }
 
-export async function fetchAndStoreLogo(websiteUrl) {
+export async function fetchAndStoreLogo(websiteUrl, { folder = 'crematorium-logos' } = {}) {
   try {
     const normalised = websiteUrl.startsWith('http') ? websiteUrl : `https://${websiteUrl}`
     const domain = new URL(normalised).hostname.replace(/^www\./, '')
@@ -19,7 +19,7 @@ export async function fetchAndStoreLogo(websiteUrl) {
     const buffer = Buffer.from(await imgRes.arrayBuffer())
     const result = await cloudinary.uploader.upload(
       `data:image/png;base64,${buffer.toString('base64')}`,
-      { folder: 'crematorium-logos', public_id: domain, overwrite: true },
+      { folder, public_id: domain, overwrite: true },
     )
     return result.secure_url
   } catch {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   Search, Home, Inbox, Archive, Building2, UserPen,
   CalendarPlus, CalendarDays, FileText, Landmark, Settings, ChevronDown,
@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { useInboxUnreadCount } from '../notifications/useInboxUnreadCount.js'
 import { useUser } from '../../context/UserContext.jsx'
-import { fetchFuneralHome } from '../../lib/api.js'
+import { useFuneralHome } from '../../context/FuneralHomeContext.jsx'
 
 function NavItem({ id, label, icon: Icon, badge, badgeProminent, isActive, onClick, collapsed }) {
   const badgeText = badge && badge > 99 ? '99+' : badge
@@ -76,15 +76,9 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
   const [collapsed, setCollapsed] = useState({ patients: false, partners: false })
   const inboxUnread = useInboxUnreadCount()
   const { profile, canWrite } = useUser()
-  const [funeralHome, setFuneralHome] = useState(null)
+  const { funeralHome, loading: funeralHomeLoadingFlag } = useFuneralHome()
 
-  useEffect(() => {
-    if (profile?.funeralHomeId) {
-      fetchFuneralHome().then(setFuneralHome).catch(() => {})
-    }
-  }, [profile?.funeralHomeId])
-
-  const funeralHomeLoading = !funeralHome && !!profile?.funeralHomeId
+  const funeralHomeLoading = funeralHomeLoadingFlag && !funeralHome && !!profile?.funeralHomeId
   const homeName = funeralHome?.name ?? funeralHome?.displayName ?? ''
   const logoUrl = funeralHome?.logoUrl ?? null
   const initials = homeName
@@ -106,11 +100,11 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
       {/* Org header */}
       <div className={`py-4 border-b border-line ${sidebarCollapsed ? 'px-2' : 'px-3'}`}>
         {sidebarCollapsed ? (
-          <div className="w-7 h-7 rounded overflow-hidden bg-ink flex items-center justify-center mx-auto flex-shrink-0">
+          <div className={`w-7 h-7 rounded overflow-hidden flex items-center justify-center mx-auto flex-shrink-0 ${logoUrl ? '' : 'bg-ink'}`} style={logoUrl ? { backgroundColor: '#ffffff' } : undefined}>
             {funeralHomeLoading
               ? null
               : logoUrl
-                ? <img src={logoUrl} alt={homeName} className="w-full h-full object-cover" />
+                ? <img src={logoUrl} alt={homeName} className="w-full h-full object-contain" />
                 : <span className="font-sans text-[9px] font-bold text-surface leading-none">{initials}</span>
             }
           </div>
@@ -120,9 +114,9 @@ export function Sidebar({ activeItem = 'home', onItemChange }) {
               <div className="animate-pulse bg-line rounded h-3.5 w-32" />
             ) : (
               <>
-                <div className="w-5 h-5 rounded overflow-hidden bg-ink flex items-center justify-center flex-shrink-0">
+                <div className={`w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 ${logoUrl ? '' : 'bg-ink'}`} style={logoUrl ? { backgroundColor: '#ffffff' } : undefined}>
                   {logoUrl
-                    ? <img src={logoUrl} alt={homeName} className="w-full h-full object-cover" />
+                    ? <img src={logoUrl} alt={homeName} className="w-full h-full object-contain" />
                     : <span className="font-sans text-[9px] font-bold text-surface leading-none">{initials}</span>
                   }
                 </div>
