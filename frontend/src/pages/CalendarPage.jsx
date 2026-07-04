@@ -11,7 +11,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal.jsx'
 const STATUS_STYLES = {
   pending:   { chip: 'bg-amber-100 text-amber-800', dot: 'bg-amber-400' },
   responded: { chip: 'bg-blue-100 text-blue-800', dot: 'bg-blue-400' },
-  confirmed: { chip: 'bg-emerald-100 text-emerald-800', dot: 'bg-emerald-500' },
+  confirmed: { chip: 'bg-primary/10 text-primary', dot: 'bg-primary' },
   cancelled: { chip: 'bg-line text-muted', dot: 'bg-line' },
 }
 
@@ -93,9 +93,9 @@ function DetailPanel({ booking, deceasedName, onConfirm, onCancel, onReschedule,
           )}
 
           {booking.confirmedSlot && (
-            <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-              <p className="font-sans text-[10px] text-emerald-600 uppercase tracking-wide mb-1">Confirmed</p>
-              <p className="font-sans text-[12px] font-semibold text-emerald-700">
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="font-sans text-[10px] text-primary/80 uppercase tracking-wide mb-1">Confirmed</p>
+              <p className="font-sans text-[12px] font-semibold text-primary">
                 {slotToLabel(objToKey(booking.confirmedSlot))}
               </p>
             </div>
@@ -289,12 +289,12 @@ export function CalendarPage() {
                 {slotMap[key] && (
                   <button
                     onClick={() => setSelectedBooking(slotMap[key])}
-                    className="w-full h-full rounded px-1.5 flex flex-col justify-center bg-emerald-100 hover:bg-emerald-200 transition-colors text-left overflow-hidden"
+                    className="w-full h-full rounded px-1.5 flex flex-col justify-center bg-primary/10 hover:bg-primary/20 transition-colors text-left overflow-hidden"
                   >
-                    <span className="font-sans text-[10px] font-semibold text-emerald-800 truncate leading-tight">
+                    <span className="font-sans text-[10px] font-semibold text-primary truncate leading-tight">
                       {cases.find(c => c.id === slotMap[key].caseId)?.deceased ?? slotMap[key].caseId}
                     </span>
-                    <span className="font-sans text-[9px] text-emerald-600 truncate leading-tight">
+                    <span className="font-sans text-[9px] text-primary/70 truncate leading-tight">
                       {slotMap[key].crematoriumName}
                     </span>
                   </button>
@@ -332,7 +332,7 @@ export function CalendarPage() {
                   className={`border-b border-r border-line last:border-r-0 min-h-[100px] p-2 ${isPast ? 'bg-canvas/40' : ''}`}
                 >
                   <div className={`font-sans text-[12px] font-medium mb-1.5 w-6 h-6 flex items-center justify-center rounded-full ${
-                    isToday ? 'bg-primary text-surface' : isPast ? 'text-muted' : 'text-ink'
+                    isToday ? 'bg-primary text-primary-contrast' : isPast ? 'text-muted' : 'text-ink'
                   }`}>
                     {date.getDate()}
                   </div>
@@ -352,7 +352,7 @@ export function CalendarPage() {
           {/* Legend */}
           <div className="flex-shrink-0 flex items-center gap-4 px-4 py-3">
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              <div className="w-2 h-2 rounded-full bg-primary" />
               <span className="font-sans text-[11px] text-muted">Confirmed pickup</span>
             </div>
           </div>

@@ -24,6 +24,17 @@ function tint(hex, ratio = 0.12) {
   })
 }
 
+function contrastFor(hex) {
+  const c = parseHex(hex)
+  if (!c) return null
+  const [r, g, b] = [c.r, c.g, c.b].map(v => {
+    const s = v / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  })
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  return L > 0.55 ? '#1C1C1E' : '#FFFFFF'
+}
+
 export function BrandThemeApplier() {
   const { funeralHome } = useFuneralHome()
   const accent = funeralHome?.accentColor ?? null
@@ -33,14 +44,18 @@ export function BrandThemeApplier() {
     if (!accent) {
       root.style.removeProperty('--color-primary')
       root.style.removeProperty('--color-primary-light')
+      root.style.removeProperty('--color-primary-contrast')
       return
     }
     root.style.setProperty('--color-primary', accent)
     const light = tint(accent)
     if (light) root.style.setProperty('--color-primary-light', light)
+    const contrast = contrastFor(accent)
+    if (contrast) root.style.setProperty('--color-primary-contrast', contrast)
     return () => {
       root.style.removeProperty('--color-primary')
       root.style.removeProperty('--color-primary-light')
+      root.style.removeProperty('--color-primary-contrast')
     }
   }, [accent])
 

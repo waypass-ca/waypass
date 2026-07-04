@@ -19,16 +19,16 @@ function NavItem({ id, label, icon: Icon, badge, badgeProminent, isActive, onCli
         w-full flex items-center rounded-md text-[13px] font-sans mb-px text-left transition-colors cursor-pointer border-0 outline-none relative
         ${collapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5'}
         ${isActive
-          ? 'bg-ink/[0.06] text-ink font-medium'
+          ? 'bg-primary/10 text-primary font-medium'
           : 'text-secondary hover:bg-ink/[0.04] font-normal'
         }
       `}
     >
-      <Icon size={14} className={`flex-shrink-0 ${isActive ? 'text-ink' : 'text-muted'}`} strokeWidth={1.8} />
+      <Icon size={14} className={`flex-shrink-0 ${isActive ? 'text-primary' : 'text-muted'}`} strokeWidth={1.8} />
       {collapsed && badge ? (
         <span
           className={`absolute top-1 right-1 min-w-[14px] h-[14px] px-1 rounded-full text-[9px] font-semibold leading-none flex items-center justify-center ${
-            badgeProminent ? 'bg-ink text-surface' : 'bg-line text-muted'
+            badgeProminent ? 'bg-primary text-primary-contrast' : 'bg-line text-muted'
           }`}
         >
           {badgeText}
@@ -40,7 +40,7 @@ function NavItem({ id, label, icon: Icon, badge, badgeProminent, isActive, onCli
           {badge ? (
             <span
               className={`font-sans text-[10px] font-semibold rounded-full px-1.5 py-px leading-none ${
-                badgeProminent ? 'bg-ink text-surface' : 'bg-line text-muted'
+                badgeProminent ? 'bg-primary text-primary-contrast' : 'bg-line text-muted'
               }`}
             >
               {badgeText}
