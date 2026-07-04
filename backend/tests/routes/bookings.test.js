@@ -7,7 +7,8 @@ vi.mock('../../lib/supabase.js', () => ({ supabase }))
 
 const shouldEmail = vi.fn().mockResolvedValue(false)
 const createInboxItem = vi.fn().mockResolvedValue(null)
-vi.mock('../../lib/notifications.js', () => ({ shouldEmail, createInboxItem }))
+const notifyUser = vi.fn().mockResolvedValue(null)
+vi.mock('../../lib/notifications.js', () => ({ shouldEmail, createInboxItem, notifyUser }))
 
 process.env.ENABLE_RESEND = 'false'
 

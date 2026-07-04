@@ -3,7 +3,7 @@ import crypto from 'crypto'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireWrite } from '../middleware/requireRole.js'
-import { createInboxItem, shouldEmail } from '../lib/notifications.js'
+import { createInboxItem, shouldEmail, notifyUser } from '../lib/notifications.js'
 import { recordBookingEvent } from '../lib/bookingEvents.js'
 
 // Audit-log writes shouldn't fail the user-facing request. Log + swallow.
@@ -27,13 +27,21 @@ async function getFhUserIds(funeralHomeId) {
   return (data ?? []).map(u => u.id)
 }
 
-// Notify all active users of a funeral home via inbox
-async function notifyFhUsers(funeralHomeId, inboxItemArgs) {
+// Notify all active users of a funeral home. If `eventKey` is provided the
+// notification honours each recipient's per-channel prefs (email + in-app)
+// via notifyUser; otherwise it falls back to an unconditional inbox insert.
+async function notifyFhUsers(funeralHomeId, inboxItemArgs, eventKey = null) {
   const userIds = await getFhUserIds(funeralHomeId)
   for (const userId of userIds) {
-    await createInboxItem({ ...inboxItemArgs, userId }).catch(e =>
-      console.error('createInboxItem failed for user', userId, e.message)
-    )
+    if (eventKey) {
+      await notifyUser(userId, eventKey, inboxItemArgs).catch(e =>
+        console.error(`notifyUser failed (${eventKey}) for user`, userId, e.message)
+      )
+    } else {
+      await createInboxItem({ ...inboxItemArgs, userId }).catch(e =>
+        console.error('createInboxItem failed for user', userId, e.message)
+      )
+    }
   }
 }
 
@@ -412,7 +420,7 @@ router.post('/respond/:token', async (req, res, next) => {
         bookingId: shaped.id,
         bookingEventId: shippingInvitedEvent?.id ?? cremRespondedEvent?.id ?? null,
         severity: 'info',
-      })
+      }, 'caseStatusUpdated')
     } else {
       const preview = `${deceased} · ${cremName} responded with ${slotCount} available time${slotCount === 1 ? '' : 's'}.`
       await notifyFhUsers(shaped.funeralHomeId, {
@@ -432,7 +440,7 @@ router.post('/respond/:token', async (req, res, next) => {
         bookingId: shaped.id,
         bookingEventId: cremRespondedEvent?.id ?? null,
         severity: 'info',
-      })
+      }, 'caseStatusUpdated')
     }
 
     res.json(shaped)
@@ -542,7 +550,7 @@ router.post('/respond-shipping/:token', async (req, res, next) => {
       bookingId: shaped.id,
       bookingEventId: shippingRespondedEvent?.id ?? null,
       severity: 'info',
-    })
+    }, 'caseStatusUpdated')
 
     res.json(shaped)
   } catch (err) {

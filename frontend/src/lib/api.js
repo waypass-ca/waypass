@@ -207,7 +207,8 @@ export const unarchiveInboxItem = (id) => mutate(`/api/inbox/${id}/unarchive`, {
 // Back-compat alias — InboxPage used to call this.
 export const deleteInboxItem = archiveInboxItem
 
-// ── Notification preferences (email) ─────────────────
+// ── Notification preferences (email + in-app) ────────
+// Payload shape: { email: { key: bool, ... }, inApp: { key: bool, ... } }
 export const fetchNotificationPrefs = () => mutate('/api/notifications')
 export const saveNotificationPrefs = (prefs) =>
   mutate('/api/notifications', { method: 'PUT', body: JSON.stringify(prefs) })

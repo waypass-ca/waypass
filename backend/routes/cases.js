@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { supabase } from '../lib/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireWrite } from '../middleware/requireRole.js'
-import { createInboxItem } from '../lib/notifications.js'
+import { notifyUser } from '../lib/notifications.js'
 
 // Case IDs are shown to staff, so keep the recognizable PSG-YEAR-XXXXXX shape,
 // but use a random suffix (not a slice of Date.now()) so IDs can't be enumerated.
@@ -554,8 +554,11 @@ router.put('/:id/custody/:stage', requireAuth, async (req, res, next) => {
       const { data: caseRow } = await supabase
         .from('cases').select('deceased').eq('id', caseId).single()
       const deceasedName = caseRow?.deceased ?? caseId
-      await createInboxItem({
-        userId: req.user.id,
+      // Stage 8 = "Delivered to Family" is the terminal milestone, so route
+      // it through the caseMarkedComplete pref; earlier stages are treated
+      // as ordinary status updates.
+      const eventKey = stage === 8 ? 'caseMarkedComplete' : 'caseStatusUpdated'
+      await notifyUser(req.user.id, eventKey, {
         type: 'alert',
         sender: staffName,
         subject: withLastName(deceasedName, stageLabel),
